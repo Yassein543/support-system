@@ -1,0 +1,13 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Google-Site-Verification",
+          "value": "google9ab313e3ff939c03"
+        }
+      ]
+    }
+  ]
+}

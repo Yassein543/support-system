@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080d1a">
+    <meta name="description" content="سياسة خصوصية YS-Bot، وما نجمعه من بيانات وكيف نستخدمها ونحميها.">
+    <title>سياسة الخصوصية | YS-Bot</title>
+    <style>
+        :root { color-scheme: dark; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #080d1a; color: #eef2ff; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 50% -15%, #1b3159 0, transparent 52%), #080d1a; line-height: 1.85; }
+        .topbar { max-width: 980px; margin: auto; padding: 24px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .brand { color: #fff; font-size: 1.15rem; font-weight: 800; text-decoration: none; letter-spacing: .02em; }
+        .actions { display: flex; gap: 10px; align-items: center; }
+        .actions a, .actions button { color: #dbeafe; background: #111c31; border: 1px solid #293b5d; border-radius: 999px; padding: 8px 15px; text-decoration: none; font: inherit; font-size: .9rem; cursor: pointer; }
+        .actions a:hover, .actions button:hover { background: #1b2b49; }
+        main { width: min(900px, calc(100% - 32px)); margin: 30px auto 80px; padding: clamp(24px, 5vw, 52px); border: 1px solid #243451; border-radius: 24px; background: rgba(13, 21, 38, .94); box-shadow: 0 24px 80px #0005; }
+        .eyebrow { margin: 0 0 8px; color: #70d5c3; font-size: .88rem; font-weight: 700; }
+        h1 { margin: 0; color: #fff; font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.25; }
+        .updated { color: #aab8d0; margin: 10px 0 30px; font-size: .92rem; }
+        .intro { color: #d7e2f3; font-size: 1.08rem; }
+        h2 { margin: 30px 0 8px; color: #a7f3e7; font-size: 1.2rem; }
+        p, li { color: #cfdaeb; }
+        ul { padding-inline-start: 1.35rem; }
+        li { margin: 7px 0; }
+        a { color: #80d9cd; }
+        .note { margin-top: 30px; padding: 16px 18px; border-inline-start: 3px solid #70d5c3; border-radius: 12px; background: #13253a; color: #dbeafe; }
+        .contact { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+        .contact a { padding: 10px 14px; background: #15243a; border: 1px solid #2b4162; border-radius: 12px; text-decoration: none; }
+        .english { margin-top: 52px; padding-top: 42px; border-top: 1px solid #2b3b56; direction: ltr; text-align: left; }
+        .english[hidden] { display: none; }
+        @media (max-width: 560px) { .topbar { padding: 18px 16px; } .actions { gap: 6px; } .actions a, .actions button { padding: 7px 10px; font-size: .82rem; } main { margin-top: 14px; border-radius: 18px; } }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="/">YS-Bot</a>
+        <nav class="actions" aria-label="التنقل">
+            <a href="/">العودة للموقع</a>
+            <button id="language-toggle" type="button" aria-controls="english-policy" aria-expanded="false">English</button>
+        </nav>
+    </header>
+    <main>
+        <section lang="ar" aria-labelledby="privacy-title-ar">
+            <p class="eyebrow">الخصوصية والبيانات</p>
+            <h1 id="privacy-title-ar">سياسة الخصوصية</h1>
+            <p class="updated">آخر تحديث: 16 أكتوبر 2026</p>
+            <p class="intro">توضح هذه السياسة كيف يتعامل YS-Bot مع المعلومات عند استخدام الموقع ولوحة التحكم وبوت Discord. نجمع المعلومات اللازمة لتشغيل الخدمة وتقديم الدعم والحماية من إساءة الاستخدام.</p>
+
+            <h2>المعلومات التي نتعامل معها</h2>
+            <ul>
+                <li><strong>تسجيل الدخول عبر Discord:</strong> عند استخدام تسجيل الدخول، يطلب الموقع من Discord بيانات الحساب الأساسية وقائمة السيرفرات التي وافقت على مشاركتها. يُحفظ رمز وصول Discord في التخزين المحلي لمتصفحك لاستخدامه في تسجيل الدخول وطلبات لوحة التحكم. يمكنك تسجيل الخروج من الموقع، كما يمكنك إدارة صلاحية YS-Bot من إعدادات Discord.</li>
+                <li><strong>بيانات الحساب والأمان:</strong> عند تسجيل الدخول قد نحفظ معرّف Discord واسم المستخدم وعنوان IP ووقت آخر زيارة لأغراض تشغيل الحساب ومكافحة إساءة الاستخدام. يفحص الموقع عنوان الاتصال لمقارنته بقائمة الحظر، ولا يعني هذا الفحص وحده حفظ عنوان كل زائر.</li>
+                <li><strong>استخدام أوامر البوت:</strong> عند استخدام الأمرين النصيين <code>!plan</code> أو <code>!anticrash</code> في سيرفر، قد نسجل معرّف المستخدم واسم Discord ومعرّف السيرفر ووقت النشاط وعدد الأوامر لأغراض تشغيل الخدمة وإدارتها.</li>
+                <li><strong>الإعدادات:</strong> إذا حفظت لغة ردود البوت، نخزن معرّف Discord واللغة المختارة.</li>
+                <li><strong>طلبات الدعم والتحقق من البريد:</strong> يعالج الموقع اسم Discord ونوع الطلب والرسالة التي ترسلها. إذا طلبت رمز تحقق بالبريد، نعالج عنوان بريدك ونخزن تجزئة الرمز ووقت انتهاء صلاحيته (10 دقائق) للتحقق؛ لا تخزن قاعدة البيانات الرمز بصيغته الأصلية.</li>
+                <li><strong>ميزة المصادقة الثنائية الاختيارية:</strong> إذا فعّلتها، يحفظ النظام السرّ الذي تنشئه مع معرّف Discord وحالة التفعيل، ويعالج رموز التحقق لتوليد رموز TOTP والتحقق منها.</li>
+                <li><strong>المدفوعات:</strong> تتم معالجة الدفع من خلال PayPal. لا نطلب منك إدخال رقم البطاقة في نماذج YS-Bot. بعد الدفع قد يظهر رقم المعاملة في متصفحك لتقديمه للدعم عند طلب تفعيل الخطة.</li>
+                <li><strong>مساعد AI، عند تفعيله:</strong> قد تُرسل رسالتك وآخر رسائل المحادثة إلى مزود OpenAI لإعداد الرد. إذا لم تكن الميزة متاحة، قد يستخدم الموقع ردود مساعدة محلية محدودة.</li>
+            </ul>
+
+            <h2>كيف نستخدم المعلومات</h2>
+            <p>نستخدم هذه المعلومات لتسجيل الدخول وعرض السيرفرات وإدارة إعدادات البوت، وتشغيل ميزاته، وحماية الموقع من إساءة الاستخدام، ومعالجة طلبات الدعم والتحقق، وتفعيل المشتريات التي تتم عبر PayPal، وتحسين استقرار الخدمة.</p>
+
+            <h2>مقدمو الخدمات ومشاركة البيانات</h2>
+            <p>نتبادل البيانات اللازمة مع الخدمات التي يعتمد عليها الموقع: Discord للمصادقة ومعلومات الحساب والسيرفرات، وVercel لاستضافة الموقع وتشغيله، وNeon لتخزين بعض سجلات الحسابات والإعدادات وطلبات الدعم، وPayPal لمعالجة الدفع، وOpenAI فقط عند استخدام ميزة المساعد المدعومة به. يعالج كل مزود البيانات وفق خدماته وسياساته. لا نبيع المعلومات الشخصية.</p>
+
+            <h2>التخزين والاحتفاظ</h2>
+            <p>تُخزن بعض البيانات في قاعدة بيانات الخدمة، بينما يُحفظ رمز Discord في متصفحك. نحتفظ بالمعلومات ما دامت لازمة لتشغيل الخدمة والأمان ومعالجة الدعم والمشتريات، أو للوفاء بالالتزامات النظامية وحل النزاعات. لا تطبق الخدمة حاليًا مدة حذف تلقائي ثابتة لسجلات الحساب والأوامر وطلبات الدعم؛ يمكنك طلب مراجعة بياناتك أو حذفها عبر الدعم، مع مراعاة الالتزامات النظامية والأمنية. قد يحتفظ مقدمو الاستضافة والخدمات بسجلات تشغيل وفق سياساتهم.</p>
+
+            <h2>ملفات الارتباط والتخزين في المتصفح</h2>
+            <p>قد تستخدم بعض مسارات تسجيل الدخول جلسة متصفح أساسية. كما يحفظ الموقع تفضيل اللغة ورمز Discord في التخزين المحلي للمتصفح، ويحمّل مكتبة الدفع من PayPal. يمكنك حذف بيانات الموقع من إعدادات المتصفح، لكن ذلك قد يتطلب تسجيل الدخول من جديد أو يعيد تفضيلاتك إلى الوضع الافتراضي.</p>
+
+            <h2>أمان المعلومات</h2>
+            <p>نستخدم ضوابط تقنية وإدارية لحماية الخدمة، لكن لا يمكن ضمان أمان مطلق لأي نقل أو تخزين عبر الإنترنت. لا تشارك رمز Discord أو رموز المصادقة الثنائية أو مفاتيح API مع أي شخص، وتواصل معنا فورًا إذا اشتبهت باستخدام غير مصرح به لحسابك.</p>
+
+            <h2>اختياراتك وطلباتك</h2>
+            <p>يمكنك تسجيل الخروج، وإدارة صلاحية Discord من إعدادات Discord، ومسح التخزين المحلي من المتصفح. يمكنك أيضًا طلب نسخة من بياناتك أو تصحيحها أو حذفها، بحسب ما تسمح به القوانين المنطبقة ومتطلبات الأمان، عبر قنوات الدعم أدناه. قد نطلب معلومات كافية للتحقق من هويتك قبل تنفيذ الطلب.</p>
+
+            <h2>التغييرات والتواصل</h2>
+            <p>قد نحدّث هذه السياسة عند تغيير الخدمة أو طريقة معالجة البيانات. سننشر النسخة المعدّلة هنا مع تحديث تاريخها. للاستفسارات أو طلبات الخصوصية، تواصل مع فريق YS-Bot:</p>
+            <div class="contact">
+                <a href="mailto:support.ys.bot@gmail.com">support.ys.bot@gmail.com</a>
+                <a href="https://discord.gg/r9YQMhkZJm" target="_blank" rel="noopener noreferrer">سيرفر دعم Discord</a>
+            </div>
+            <p class="note">هذه صفحة معلومات عن ممارسات الموقع الحالية وليست استشارة قانونية. راجع السياسة عند إضافة خدمات أو تغييرات جديدة في طريقة جمع البيانات.</p>
+        </section>
+
+        <section class="english" id="english-policy" lang="en" aria-labelledby="privacy-title-en" hidden>
+            <p class="eyebrow">Privacy and data</p>
+            <h1 id="privacy-title-en">Privacy Policy</h1>
+            <p class="updated">Last updated: October 16, 2026</p>
+            <p class="intro">This policy explains how YS-Bot handles information when you use the website, dashboard, and Discord bot. We use information needed to operate the service, provide support, and prevent abuse.</p>
+
+            <h2>Information we handle</h2>
+            <ul>
+                <li><strong>Discord sign-in:</strong> When you sign in, the site requests basic account details and the server list you authorize Discord to share. A Discord access token is stored in your browser's local storage for sign-in and dashboard requests. You can sign out of the site and manage YS-Bot's authorization in Discord settings.</li>
+                <li><strong>Account and safety data:</strong> When you sign in, we may store your Discord ID, username, IP address, and last-seen time to operate accounts and prevent abuse. The site checks connection IPs against its ban list; this check alone does not mean every visitor's IP is saved.</li>
+                <li><strong>Bot commands:</strong> When you use the text commands <code>!plan</code> or <code>!anticrash</code> in a server, we may record your Discord ID and username, server ID, activity time, and command count to operate and administer the service.</li>
+                <li><strong>Preferences:</strong> If you save the bot's response language, we store your Discord ID and selected language.</li>
+                <li><strong>Support and email verification:</strong> The site processes your Discord username, request category, and message. If you request an email verification code, we process your email address and store a hash of the code and its expiry time (10 minutes) for verification; the database does not store the code in its original form.</li>
+                <li><strong>Optional two-factor feature:</strong> If enabled, the service stores the generated secret with your Discord ID and activation status, and processes verification codes to create and verify TOTP codes.</li>
+                <li><strong>Payments:</strong> Payments are handled through PayPal. YS-Bot forms do not ask you to enter your card number. After payment, a transaction reference may appear in your browser for you to provide to support if you request plan activation.</li>
+                <li><strong>AI assistant, when enabled:</strong> Your message and recent conversation messages may be sent to OpenAI to produce a response. If the feature is unavailable, the site may use limited local help responses.</li>
+            </ul>
+
+            <h2>How we use information</h2>
+            <p>We use this information to sign you in, display servers, manage bot settings and features, protect the site from abuse, handle support and verification requests, activate purchases made through PayPal, and keep the service reliable.</p>
+
+            <h2>Service providers and sharing</h2>
+            <p>We share the information needed with providers the site relies on: Discord for authentication and account/server information; Vercel for hosting and running the site; Neon for some account records, preferences, and support requests; PayPal for payment processing; and OpenAI only when the AI-assisted feature is used. Each provider processes data under its own services and policies. We do not sell personal information.</p>
+
+            <h2>Storage and retention</h2>
+            <p>Some data is stored in the service database, while your Discord token is stored in your browser. We keep information as long as needed to operate and secure the service, handle support and purchases, or meet legal obligations and resolve disputes. The service currently does not apply a fixed automatic deletion period to account, command, and support records; you can ask support to review or delete your data, subject to legal and security requirements. Hosting and service providers may retain operational logs under their own policies.</p>
+
+            <h2>Cookies and browser storage</h2>
+            <p>Some sign-in flows may use an essential browser session. The site also stores your language preference and Discord token in browser local storage, and loads PayPal's payment library. You can clear site data in your browser settings, but you may need to sign in again or your preferences may reset.</p>
+
+            <h2>Information security</h2>
+            <p>We use technical and administrative safeguards to protect the service, but no online transmission or storage can be guaranteed completely secure. Do not share your Discord token, two-factor codes, or API keys. Contact us promptly if you suspect unauthorized use of your account.</p>
+
+            <h2>Your choices and requests</h2>
+            <p>You can sign out, manage Discord authorization in Discord settings, and clear browser local storage. You may also ask for access to, correction, or deletion of your data, subject to applicable laws and security requirements, using the support contacts below. We may request enough information to verify your identity before acting.</p>
+
+            <h2>Changes and contact</h2>
+            <p>We may update this policy when the service or its data practices change. The revised version will appear here with an updated date. For privacy questions or requests, contact the YS-Bot team:</p>
+            <div class="contact">
+                <a href="mailto:support.ys.bot@gmail.com">support.ys.bot@gmail.com</a>
+                <a href="https://discord.gg/r9YQMhkZJm" target="_blank" rel="noopener noreferrer">Discord Support Server</a>
+            </div>
+            <p class="note">This page describes current site practices and is not legal advice. Review it when adding services or changing how data is collected.</p>
+        </section>
+    </main>
+    <script src="button-effects.js" defer></script>
+    <script>
+        const toggle = document.getElementById('language-toggle');
+        const english = document.getElementById('english-policy');
+        toggle.addEventListener('click', () => {
+            const showEnglish = english.hidden;
+            english.hidden = !showEnglish;
+            toggle.setAttribute('aria-expanded', String(showEnglish));
+            toggle.textContent = showEnglish ? 'العربية' : 'English';
+            document.documentElement.lang = showEnglish ? 'en' : 'ar';
+            document.documentElement.dir = showEnglish ? 'ltr' : 'rtl';
+            if (showEnglish) english.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            else window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم | Yenson Security</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { position: relative; isolation: isolate; min-height: 100vh; overflow-x: hidden; font-family: 'Tajawal', sans-serif; background-color: #08121f; background-image: radial-gradient(ellipse at 12% 4%, rgba(35, 176, 158, .16), transparent 34%), radial-gradient(ellipse at 88% 18%, rgba(74, 112, 214, .13), transparent 30%), linear-gradient(145deg, #0b1725 0%, #08111d 55%, #0d1a28 100%); color: #f2f7fa; margin: 0; padding: 20px; }
+        body::before { position: fixed; inset: 0; z-index: -1; background-image: linear-gradient(rgba(143, 181, 202, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(143, 181, 202, .025) 1px, transparent 1px); background-size: 42px 42px; content: ''; mask-image: linear-gradient(to bottom, black, transparent 82%); pointer-events: none; }
+        body::after { position: fixed; top: 16vh; right: max(3vw, calc((100vw - 1300px) / 2)); z-index: -1; color: rgba(92, 224, 202, .025); content: 'YS'; font: 900 clamp(18rem, 39vw, 40rem)/.8 system-ui, sans-serif; letter-spacing: -.12em; pointer-events: none; }
+        .dashboard-brand { display: flex; width: min(100%, 1200px); min-height: 58px; align-items: center; gap: 11px; margin: 0 auto 20px; padding: 10px 14px; box-sizing: border-box; border: 1px solid rgba(133, 171, 194, .15); border-radius: 15px; background: linear-gradient(110deg, rgba(19, 39, 55, .9), rgba(13, 26, 41, .76)); box-shadow: 0 12px 35px rgba(0, 0, 0, .16); backdrop-filter: blur(14px); }
+        .dashboard-brand img { width: 38px; height: 38px; flex: 0 0 38px; border: 1px solid rgba(84, 220, 198, .38); border-radius: 12px; box-shadow: 0 4px 18px rgba(30, 187, 164, .17); object-fit: cover; }
+        .dashboard-brand-copy { display: grid; gap: 2px; }
+        .dashboard-brand-copy strong { color: #eef9fb; font-size: 1rem; font-weight: 900; letter-spacing: .01em; }
+        .dashboard-brand-copy small { color: #80cfc3; font: 700 .62rem/1 system-ui, sans-serif; letter-spacing: .15em; }
+        .dashboard-brand-status { display: inline-flex; align-items: center; gap: 7px; margin-inline-start: auto; padding: 7px 10px; border: 1px solid rgba(71, 215, 194, .19); border-radius: 999px; background: rgba(37, 150, 135, .09); color: #9adfd5; font-size: .72rem; font-weight: 800; }
+        .dashboard-brand-status::before { width: 7px; height: 7px; border-radius: 50%; background: #47d7c2; box-shadow: 0 0 10px rgba(71, 215, 194, .7); content: ''; }
+        .dashboard-container { max-width: 1200px; margin: 30px auto; }
+        .dashboard-workspace { display:grid; grid-template-columns:220px minmax(0,1fr); align-items:start; gap:22px; }
+        .dashboard-main { min-width:0; }
+        .dashboard-side-nav { position:sticky; top:18px; display:grid; gap:7px; padding:13px; border:1px solid rgba(133,171,194,.15); border-radius:16px; background:linear-gradient(160deg,rgba(18,34,51,.96),rgba(9,19,31,.96)); box-shadow:0 14px 36px rgba(0,0,0,.18); }
+        .dashboard-side-nav-label { padding:5px 10px 9px; color:#80cfc3; font-size:.75rem; font-weight:900; letter-spacing:.05em; }
+        .dashboard-side-nav a, .dashboard-side-nav button { display:flex; min-height:44px; align-items:center; gap:10px; padding:8px 10px; border:1px solid transparent; border-radius:10px; background:transparent; color:#d9e6ed; font:700 .88rem 'Tajawal',sans-serif; text-decoration:none; text-align:start; cursor:pointer; transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease; }
+        .dashboard-side-nav a:hover, .dashboard-side-nav a:focus-visible, .dashboard-side-nav button:not(:disabled):hover, .dashboard-side-nav button:not(:disabled):focus-visible { border-color:rgba(71,215,194,.22); background:rgba(39,136,128,.14); color:#a6f0e3; outline:none; }
+        .dashboard-side-nav a:active, .dashboard-side-nav button:not(:disabled):active { transform:scale(.99); }
+        .dashboard-side-nav button:disabled { opacity:.48; cursor:not-allowed; }
+        .dashboard-nav-icon { display:grid; width:27px; height:27px; flex:0 0 27px; place-items:center; border:1px solid rgba(71,215,194,.16); border-radius:8px; background:rgba(39,136,128,.1); color:#80d8c9; }
+        .dashboard-nav-icon svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+        .dashboard-nav-hint { margin:4px 5px 2px; padding:10px 9px 2px; border-top:1px solid rgba(133,171,194,.12); color:#91a3b2; font-size:.72rem; line-height:1.6; }
+        .guild-list-section { scroll-margin-top:20px; margin:0 0 22px; }
+        .guild-list-section h3 { margin:0 0 14px; }
+        @media(max-width:780px){.dashboard-workspace{grid-template-columns:minmax(0,1fr);gap:14px}.dashboard-side-nav{position:sticky;top:8px;z-index:30;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:8px;backdrop-filter:blur(14px)}.dashboard-side-nav-label,.dashboard-nav-hint{display:none}.dashboard-side-nav a,.dashboard-side-nav button{justify-content:center;gap:6px;min-height:42px;padding:7px 5px;font-size:.76rem}.dashboard-nav-icon{width:23px;height:23px;flex-basis:23px;font-size:.9rem}.dashboard-container{margin-top:18px}}
+        @media(max-width:480px){body{padding:12px}.dashboard-side-nav a,.dashboard-side-nav button{flex-direction:column;gap:3px;min-height:55px;font-size:.68rem}.dashboard-nav-icon{width:21px;height:21px;flex-basis:21px}}
+        .user-header { display: flex; align-items: center; gap: 20px; background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
+        .user-avatar { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #5865F2; }
+        .guilds-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+        .guild-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .guild-icon { width: 64px; height: 64px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; }
+        .btn-upgrade { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 10px 17px; border: 1px solid rgba(123, 242, 221, .28); border-radius: 11px; background: linear-gradient(135deg, #20bca7, #11877e); box-shadow: 0 8px 20px rgba(17, 135, 126, .2); color: #fff; text-decoration: none; font: 800 .92rem 'Tajawal', sans-serif; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+        .btn-upgrade::after { content: '↗'; font: 700 1.08rem/1 system-ui, sans-serif; opacity: .9; }
+        .btn-upgrade:hover { transform: translateY(-2px); border-color: rgba(123, 242, 221, .65); box-shadow: 0 12px 25px rgba(17, 135, 126, .3); }
+        .btn-upgrade:focus-visible { outline: 3px solid rgba(71, 215, 194, .55); outline-offset: 3px; }
+        .loading { text-align: center; font-size: 1.2rem; margin-top: 50px; }
+
+        .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 30px; max-width: 450px; width: 90%; text-align: center; }
+        .modal h3 { margin-top: 0; }
+        .qr-code { background: #fff; padding: 15px; border-radius: 8px; margin: 20px 0; display: inline-block; }
+        .qr-code img { width: 200px; height: 200px; }
+        .secret-code { background: #0f172a; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 1.1rem; margin: 10px 0; word-break: break-all; }
+        .code-input { width: 100%; padding: 12px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: #fff; font-size: 1.1rem; text-align: center; letter-spacing: 4px; margin: 15px 0; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        .btn-modal { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-modal.primary { background: #5865F2; color: #fff; }
+        .btn-modal.secondary { background: #334155; color: #fff; }
+        .error-message { color: #ef4444; margin-top: 10px; font-size: 0.9rem; }
+        .success-message { color: #10b981; margin-top: 10px; font-size: 0.9rem; }
+        .server-settings-panel { background: #111e2e; border: 1px solid #2a3b4f; border-radius: 16px; padding: 24px; margin: 28px 0; }
+        .server-settings-panel[hidden] { display: none; }
+        .server-settings-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .server-settings-heading h3 { margin: 0; }
+        .settings-note { color: #9aabba; font-size: .92rem; line-height: 1.8; }
+        .server-backup-tool { margin-top: 24px; padding: 20px; border: 1px solid rgba(71, 215, 194, .2); border-radius: 15px; background: linear-gradient(145deg, rgba(17, 36, 53, .92), rgba(10, 22, 35, .9)); }
+        .server-backup-heading { display: flex; align-items: center; gap: 11px; }
+        .server-backup-tool h4 { margin: 0 0 8px; font-size: 1.12rem; }
+        .server-backup-brand-icon { width: 34px; height: 34px; border: 1px solid rgba(71, 215, 194, .32); border-radius: 10px; object-fit: cover; box-shadow: 0 0 16px rgba(71, 215, 194, .16); }
+        .server-backup-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }
+        .server-backup-actions button, .server-backup-actions select { min-height: 42px; padding: 9px 13px; border: 1px solid #365066; border-radius: 9px; background: #102235; color: #eef8fa; font: 700 .9rem 'Tajawal', sans-serif; }
+        .server-backup-actions button { cursor: pointer; }
+        .server-backup-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .server-backup-action-icon { width: 19px; height: 19px; flex: 0 0 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+        .server-backup-actions button:disabled { cursor: wait; opacity: .55; }
+        .server-backup-create { border-color: rgba(71, 215, 194, .38) !important; background: linear-gradient(135deg, #1cae9d, #117a75) !important; }
+        .server-backup-restore { border-color: rgba(139, 124, 255, .35) !important; background: linear-gradient(135deg, #6057ce, #4744a4) !important; }
+        .server-backup-progress { margin-top: 18px; }
+        .server-backup-progress[hidden], .server-backup-success[hidden] { display: none; }
+        .server-backup-progress-track { height: 10px; overflow: hidden; border: 1px solid #294257; border-radius: 999px; background: #07131f; }
+        .server-backup-progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #22b8a6, #71e0cc); box-shadow: 0 0 16px rgba(71, 215, 194, .45); transition: width .45s ease; }
+        .server-backup-progress-label { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; color: #a8bac8; font-size: .84rem; }
+        .server-backup-success { display: flex; align-items: center; gap: 14px; margin-top: 16px; padding: 14px; border: 1px solid rgba(71, 215, 194, .32); border-radius: 13px; background: rgba(20, 130, 112, .12); }
+        .server-backup-success img { width: 54px; height: 54px; flex: 0 0 54px; border: 1px solid rgba(71, 215, 194, .4); border-radius: 14px; object-fit: cover; }
+        .server-backup-success strong { display: block; color: #8de8d9; }
+        .server-backup-success small { display: block; margin-top: 3px; color: #aec4ce; line-height: 1.6; }
+        .server-backup-success-like { width: 31px; height: 31px; flex: 0 0 31px; margin-inline-start: auto; color: #58ddc8; filter: drop-shadow(0 0 9px rgba(71, 215, 194, .35)); }
+        .server-backup-error { margin-top: 12px; color: #fca5a5; line-height: 1.7; }
+        .server-backup-error:empty { display: none; }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 14px; }
+        .setting-card { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid #2a3b4f; border-radius: 12px; background: #0d1928; }
+        .setting-card input[type="checkbox"] { width: 19px; height: 19px; accent-color: #1bb49f; flex: 0 0 auto; margin-top: 3px; }
+        .setting-card b { display: block; margin-bottom: 5px; }
+        .setting-card small { color: #91a3b2; line-height: 1.6; }
+        .setting-prefix { display: grid; gap: 8px; max-width: 300px; margin: 20px 0; color: #dce8ee; font-weight: 700; }
+        .setting-prefix input { width: 100%; box-sizing: border-box; padding: 11px 13px; border: 1px solid #33485e; border-radius: 9px; background: #0a1421; color: #fff; font: 700 1rem monospace; }
+        .settings-actions { position: sticky; top: 10px; z-index: 20; display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin: 0 0 18px; padding: 12px; border: 1px solid #2a3b4f; border-radius: 12px; background: rgba(17,30,46,.96); backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+        .settings-save { border: 0; border-radius: 9px; padding: 11px 18px; background: linear-gradient(135deg,#1bb49f,#128c83); color: #fff; font: 800 .95rem 'Tajawal',sans-serif; cursor: pointer; }
+        .settings-save:disabled { opacity: .55; cursor: wait; }
+        .settings-status { min-height: 24px; color: #71e0cc; }
+        .btn-configure { border: 1px solid rgba(71,215,194,.28); border-radius: 8px; padding: 8px 12px; background: #12312f; color: #98eee0; font: 700 .88rem 'Tajawal',sans-serif; cursor: pointer; }
+        .advanced-settings { margin-top: 28px; padding-top: 22px; border-top: 1px solid #2a3b4f; }
+        .advanced-settings h4 { margin: 0 0 8px; font-size: 1.1rem; }
+        .advanced-settings-intro { color: #91a3b2; font-size: .9rem; line-height: 1.8; }
+        .advanced-groups { display: grid; gap: 16px; margin-top: 18px; }
+        .advanced-group { padding: 16px; border: 1px solid #26384a; border-radius: 12px; background: rgba(9,20,33,.55); }
+        .advanced-group summary { margin: 0; color: #82dfd2; font-size: .98rem; font-weight: 800; cursor: pointer; }
+        .advanced-group[open] summary { margin-bottom: 13px; }
+        .advanced-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(205px,1fr)); gap: 12px; }
+        .advanced-field { display: grid; align-content: start; gap: 7px; color: #dce8ee; font-size: .86rem; font-weight: 700; }
+        .advanced-field:has(input[type="checkbox"]) { display: flex; flex-wrap: wrap; align-items: center; min-height: 45px; gap: 9px; }
+        .advanced-field input:not([type="checkbox"]), .advanced-field select, .advanced-field textarea { box-sizing: border-box; width: 100%; min-height: 39px; padding: 9px 10px; border: 1px solid #33485e; border-radius: 8px; outline: none; background: #0a1421; color: #fff; font: 500 .86rem 'Tajawal',sans-serif; }
+        .advanced-field input[type="checkbox"] { width: 18px; height: 18px; accent-color: #1bb49f; }
+        .advanced-field textarea { min-height: 70px; resize: vertical; }
+        .advanced-field-help { grid-column: 1 / -1; color: #91a3b2; font-size: .76rem; font-weight: 400; line-height: 1.65; }
+        .advanced-field:has(input[type="checkbox"]) .advanced-field-help { flex: 1 0 100%; }
+        .advanced-field-help code { color: #82dfd2; direction: ltr; unicode-bidi: isolate; }
+        .settings-coming-soon { display: inline-block; margin-inline-start: 6px; padding: 3px 7px; border: 1px solid rgba(139,160,179,.2); border-radius: 99px; color: #91a3b2; font-size: .66rem; font-weight: 600; }
+        .settings-coming-soon.current { border-color: rgba(71,215,194,.26); background: rgba(35,155,139,.1); color: #82dfd2; }
+        .personal-settings { scroll-margin-top: 20px; margin: 0 0 28px; padding: 22px; border: 1px solid rgba(71,215,194,.2); border-radius: 16px; background: linear-gradient(145deg,rgba(18,36,51,.94),rgba(12,24,38,.94)); box-shadow: 0 18px 45px rgba(0,0,0,.18); }
+        .personal-settings h3 { margin: 0 0 6px; }
+        .personal-settings p { margin: 0 0 16px; color: #9aabba; line-height: 1.7; }
+        .profile-theme-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; }
+        .profile-theme-option { min-width: 0; padding: 7px; border: 1px solid #2a3b4f; border-radius: 12px; background: #0a1421; color: #dce8ee; text-align: start; font: 700 .84rem 'Tajawal',sans-serif; cursor: pointer; transition: transform .16s ease,border-color .16s ease,box-shadow .16s ease; }
+        .profile-theme-option:hover { transform: translateY(-2px); border-color: rgba(71,215,194,.55); }
+        .profile-theme-option[aria-pressed="true"] { border-color: #47d7c2; box-shadow: 0 0 0 2px rgba(71,215,194,.18),0 8px 24px rgba(0,0,0,.2); }
+        .profile-theme-option img { display: block; width: 100%; aspect-ratio: 2 / 1; margin-bottom: 7px; border-radius: 8px; object-fit: cover; }
+        .personal-settings-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 15px; }
+        .profile-theme-save { border: 0; border-radius: 9px; padding: 10px 16px; background: linear-gradient(135deg,#1bb49f,#128c83); color: #fff; font: 800 .9rem 'Tajawal',sans-serif; cursor: pointer; }
+        .profile-theme-save:disabled { opacity: .55; cursor: wait; }
+        .profile-image-box { display: grid; grid-template-columns: minmax(180px,260px) minmax(0,1fr); align-items: center; gap: 18px; margin: 0 0 18px; padding: 14px; border: 1px solid rgba(198,157,255,.25); border-radius: 14px; background: linear-gradient(120deg,rgba(91,57,149,.13),rgba(10,20,33,.7)); }
+        .profile-image-preview { width: 100%; aspect-ratio: 2 / 1; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg,#17132a,#251b40); }
+        .profile-image-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+        .profile-image-controls input[type=file] { max-width: 100%; color: #aab9c5; font: .78rem 'Tajawal',sans-serif; }
+        .profile-image-controls button { min-height: 38px; padding: 8px 12px; border: 1px solid rgba(198,157,255,.3); border-radius: 9px; background: linear-gradient(120deg,#7954d6,#6345ab); color: #fff; font: 800 .82rem 'Tajawal',sans-serif; cursor: pointer; }
+        .profile-image-controls button.secondary { border-color: #33485e; background: #142337; color: #dce8ee; }
+        .profile-image-controls button:disabled { opacity: .55; cursor: wait; }
+        .profile-image-description { grid-column: 1 / -1; margin: 0 !important; font-size: .82rem; }
+        .profile-premium-label { display:inline-flex; align-items:center; gap:7px; margin:0 0 12px; padding:7px 11px; border:1px solid rgba(198,157,255,.38); border-radius:999px; color:#e1d3ff; background:rgba(123,83,205,.16); font-size:.78rem; font-weight:900; }
+        .profile-premium-label::before { content:'✦'; color:#ffd77d; text-shadow:0 0 12px #ffc95c; }
+        @media(max-width:620px){.profile-image-box{grid-template-columns:1fr}.profile-image-preview{max-width:360px}}
+        .vip-locked-option { position: relative; display: flex; width: fit-content; max-width: 100%; align-items: center; gap: 12px; margin: 0 0 15px; padding: 11px 14px; border: 1px solid rgba(242,190,91,.28); border-radius: 12px; background: linear-gradient(110deg,rgba(115,78,28,.17),rgba(26,32,43,.9)); color: #e9edf2; cursor: help; }
+        .vip-locked-icon { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border: 1px solid rgba(242,190,91,.25); border-radius: 10px; background: rgba(211,157,57,.12); color: #f5ca72; font-size: 1.1rem; }
+        .vip-locked-copy { display: grid; gap: 2px; }
+        .vip-locked-copy strong { font-size: .88rem; }
+        .vip-locked-copy small { color: #a6afba; font-size: .74rem; }
+        .vip-lock-badge { margin-inline-start: 5px; padding: 3px 7px; border: 1px solid rgba(242,190,91,.24); border-radius: 999px; color: #f5ca72; font: 800 .62rem system-ui,sans-serif; letter-spacing: .04em; }
+        .vip-locked-option::after { position: absolute; z-index: 5; right: 0; bottom: calc(100% + 8px); width: max-content; max-width: min(280px,calc(100vw - 48px)); padding: 8px 11px; border: 1px solid rgba(242,190,91,.25); border-radius: 8px; background: #111b29; box-shadow: 0 8px 24px rgba(0,0,0,.3); color: #f3d18b; content: attr(data-tooltip); font-size: .78rem; line-height: 1.5; opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .16s ease,transform .16s ease; }
+        .vip-locked-option:hover::after, .vip-locked-option:focus-visible::after { opacity: 1; transform: translateY(0); }
+        .vip-locked-option:focus-visible { outline: 2px solid rgba(242,190,91,.6); outline-offset: 3px; }
+        .embed-builder-preview { position: relative; max-width: 620px; min-height: 105px; margin-top: 15px; padding: 16px; overflow: hidden; border: 1px solid #334155; border-inline-start: 4px solid #5865f2; border-radius: 10px; background: #121821; color: #e7e9ec; }
+        .embed-builder-preview h5 { margin: 0 0 7px; font-size: 1rem; }
+        .embed-builder-preview p { margin: 0; color: #c6cbd2; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .embed-builder-preview-thumb { float: right; width: 62px; height: 62px; margin-inline-start: 12px; border-radius: 8px; object-fit: cover; }
+        .embed-builder-preview-image { display: none; width: 100%; max-height: 220px; margin-top: 12px; border-radius: 8px; object-fit: cover; }
+        .embed-builder-preview-image.visible { display: block; }
+        .embed-builder-color { min-height: 42px; padding: 4px !important; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <label class="settings-note" for="dashboard-language" style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:0 auto;max-width:1000px"><span>لغة الموقع</span><select id="dashboard-language" aria-label="لغة الموقع" style="padding:8px;border-radius:8px;background:#0a1421;color:#fff;border:1px solid #33485e"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ko">한국어</option><option value="ja">日本語</option></select></label>
+    <div class="dashboard-brand" aria-label="YS-Bot Control Center"><img src="/ys-bot-avatar.svg" alt="YS-Bot" width="38" height="38"><div class="dashboard-brand-copy"><strong>YS-Bot</strong><small>CONTROL CENTER</small></div><span class="dashboard-brand-status">SECURE PANEL</span></div>
+    <div class="dashboard-container">
+        <div id="loading" class="loading">جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳</div>
+
+        <div id="dashboard-content" style="display: none;">
+            <div class="user-header">
+                <img id="user-avatar" class="user-avatar" src="" alt="Avatar">
+                <div>
+                    <h2 id="user-name" style="margin: 0;"></h2>
+                    <p style="margin: 5px 0 0; color: #94a3b8;">اختر السيرفر الذي ترغب بإدارته وترقيته</p>
+                </div>
+            </div>
+
+            <div class="dashboard-workspace">
+                <nav class="dashboard-side-nav" aria-label="التنقل في لوحة التحكم">
+                    <span class="dashboard-side-nav-label">القائمة</span>
+                    <a href="#personal-settings"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span><span>إعداداتي الشخصية</span></a>
+                    <a href="#guild-list"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg></span><span>سيرفراتي</span></a>
+                    <button id="dashboard-nav-server-settings" type="button" disabled title="اختر سيرفرًا أولًا"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg></span><span>إعدادات السيرفر</span></button>
+                    <div class="dashboard-nav-hint" id="dashboard-nav-hint">اختر سيرفرًا لعرض إعداداته</div>
+                </nav>
+                <main class="dashboard-main">
+            <section class="personal-settings" id="personal-settings" aria-labelledby="personal-settings-title">
+                <h3 id="personal-settings-title">إعداداتي الشخصية</h3>
+                <p>اختر شكل بطاقة إحصاءاتك في أمر <code>/profile</code>. اضغط على معاينة لرؤية التصميم، ثم احفظ اختيارك؛ سيظهر لك في كل السيرفرات.</p>
+                <div id="profile-premium-access" class="profile-premium-label" hidden>ميزة Premium — رفع صورة مخصصة</div>
+                <div class="profile-image-box" aria-label="رفع صورة بطاقة الإحصاءات">
+                    <img id="profile-image-preview" class="profile-image-preview" alt="معاينة صورة بطاقة الإحصاءات" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='180'%3E%3Cdefs%3E%3ClinearGradient id='g'%3E%3Cstop stop-color='%2317132a'/%3E%3Cstop offset='1' stop-color='%23251b40'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='360' height='180' fill='url(%23g)'/%3E%3Ctext x='180' y='96' fill='%23d8c8ff' text-anchor='middle' font-family='Arial' font-size='18'%3EYS-Bot Profile%3C/text%3E%3C/svg%3E">
+                    <div class="profile-image-controls">
+                        <input id="profile-image-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="اختر صورة بطاقة الإحصاءات">
+                        <button id="save-profile-image" type="button">حفظ الصورة المخصصة</button>
+                        <button id="remove-profile-image" class="secondary" type="button">إزالة الصورة</button>
+                    </div>
+                    <span id="profile-image-status" class="settings-status" role="status" aria-live="polite"></span>
+                    <p class="profile-image-description">الصورة تظهر خلف بطاقة إحصاءاتك في <code>/profile</code> فقط. لمشتركي Premium الفعّالين؛ PNG أو JPG أو WebP بحد أقصى 1.5 ميغابايت.</p>
+                </div>
+                <div id="profile-theme-options" class="profile-theme-grid" role="group" aria-label="تصميم بطاقة الإحصاءات"></div>
+                <div class="personal-settings-actions">
+                    <button id="save-profile-theme" class="profile-theme-save" type="button">حفظ التصميم الشخصي</button>
+                    <span id="profile-theme-status" class="settings-status" role="status" aria-live="polite"></span>
+                </div>
+            </section>
+
+            <section id="guild-list" class="guild-list-section" aria-labelledby="guild-list-title">
+                <h3 id="guild-list-title">سيرفراتك التي تديرها:</h3>
+                <div id="guilds-container" class="guilds-grid"></div>
+            </section>
+
+            <section id="server-settings-panel" class="server-settings-panel" aria-labelledby="server-settings-title" hidden>
+                <div class="server-settings-heading">
+                    <h3 id="server-settings-title">إعدادات السيرفر</h3>
+                    <span id="selected-guild-name" class="status-badge enabled"></span>
+                </div>
+                <div class="settings-actions">
+                    <button id="save-guild-settings" class="settings-save" type="button">حفظ الإعدادات</button>
+                    <span id="guild-settings-status" class="settings-status" role="status" aria-live="polite"></span>
+                </div>
+                <p class="settings-note">اختر ما تريد تفعيله. حماية الروابط والسبام تحذف الرسالة المخالفة فقط، وتتطلب صلاحية <b>إدارة الرسائل</b> للبوت. أضف البوت للسيرفر حتى تعمل الحماية.</p>
+                <div class="settings-grid">
+                    <label class="setting-card"><input id="setting-anti-links" type="checkbox"><span><b>منع الروابط</b><small>يحذف الروابط والدعوات من رسائل الأعضاء. المشرفون مستثنون.</small></span></label>
+                    <label class="setting-card"><input id="setting-anti-spam" type="checkbox"><span><b>مكافحة السبام</b><small>يحذف الرسائل ابتداءً من الرسالة الخامسة خلال 8 ثوانٍ. المشرفون مستثنون.</small></span></label>
+                </div>
+                <label class="setting-prefix" for="setting-command-prefix">بادئة الأوامر
+                    <input id="setting-command-prefix" type="text" value="!" maxlength="3" pattern="[!?#.$%&amp;*+-]{1,3}" autocomplete="off" required>
+                    <small class="settings-note">من 1 إلى 3 رموز؛ مثل ! أو ? (أوامر: plan و anticrash).</small>
+                </label>
+                <div class="advanced-settings">
+                    <h4>إعدادات متقدمة — أكثر من 50 خيارًا</h4>
+                    <p class="advanced-settings-intro">الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.</p>
+                    <div id="advanced-settings-groups" class="advanced-groups"></div>
+                </div>
+                <section class="server-backup-tool" aria-labelledby="server-backup-title">
+                    <div class="server-backup-heading"><img class="server-backup-brand-icon" src="ys-bot-avatar.svg" alt="شعار YS"><h4 id="server-backup-title">نسخ واسترجاع هيكل السيرفر</h4></div>
+                    <p class="settings-note">ينسخ البوت الرتب والقنوات والتصنيفات وصلاحيات الرتب وإعدادات YS-Bot، ثم يحفظ نسخة خاصة بهذا السيرفر. الاسترجاع يعيد إعدادات العناصر المطابقة وينشئ المفقود، ولا يحذف الموجود. لا تشمل النسخة الرسائل أو الأعضاء أو توزيع الرتب عليهم أو صلاحيات الأعضاء الفردية داخل القنوات. يتطلب البوت صلاحيتَي إدارة الرتب والقنوات للاسترجاع.</p>
+                    <div class="server-backup-actions">
+                        <button id="create-server-backup" class="server-backup-create" type="button"><svg class="server-backup-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5 12 4l8 4.5v9L12 22l-8-4.5z"/><path d="M4.4 8.7 12 13l7.6-4.3M12 13v8M8 6.2l8 4.5"/><path d="M9.5 15.2h5"/></svg><span>نسخ هيكل السيرفر</span></button>
+                        <select id="server-backup-select" aria-label="اختر نسخة لاسترجاعها"><option value="">اختر نسخة محفوظة</option></select>
+                        <button id="restore-server-backup" class="server-backup-restore" type="button"><svg class="server-backup-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6l2 2M4 16l2 2a7 7 0 0 0 12.4-3"/><path d="m9 12 2 2 4-4"/></svg><span>استرجاع الهيكل</span></button>
+                        <button id="refresh-server-backups" type="button" aria-label="تحديث النسخ المحفوظة"><svg class="server-backup-action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6l2 2M4 16l2 2a7 7 0 0 0 12.4-3"/></svg><span>تحديث النسخ</span></button>
+                    </div>
+                    <div id="server-backup-progress" class="server-backup-progress" hidden>
+                        <div class="server-backup-progress-track" role="progressbar" aria-label="تقدم عملية السيرفر" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
+                        <div class="server-backup-progress-label"><span id="server-backup-progress-message">جارٍ التحضير...</span><strong id="server-backup-progress-number">0%</strong></div>
+                    </div>
+                    <div id="server-backup-success" class="server-backup-success" role="status" aria-live="polite" hidden>
+                        <img src="ys-bot-avatar.svg" alt="روبوت YS-Bot">
+                        <div><strong id="server-backup-success-title">تم نسخ خادم بنجاح</strong><small id="server-backup-success-message"></small></div>
+                        <svg class="server-backup-success-like" viewBox="0 0 32 32" role="img" aria-label="إعجاب YS"><defs><linearGradient id="ysLikeGradient" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#69efd9"/><stop offset="1" stop-color="#6388ff"/></linearGradient></defs><path fill="url(#ysLikeGradient)" d="M12.4 13.1 16 5.6c.5-1.1 1.8-1.5 2.9-1 1 .5 1.4 1.7 1 2.7l-1.4 4.2h6.2c2.1 0 3.5 2 2.8 4l-3.5 9.1a3.2 3.2 0 0 1-3 2H12a2 2 0 0 1-2-2v-9.6c0-.8.5-1.6 1.2-1.9zM4 13h4v14H4a2 2 0 0 1-2-2v-10a2 2 0 0 1 2-2z"/></svg>
+                    </div>
+                    <p id="server-backup-error" class="server-backup-error" role="alert"></p>
+                </section>
+            </section>
+
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedGuildId = null;
+        let dashboardLanguage = localStorage.getItem('ys-bot-language') || 'ar';
+        let selectedProfileTheme = 'classic';
+        let profileImageDataUrl = null;
+        let profilePremiumActive = false;
+        const profileThemes = [
+            ['classic','كلاسيكي','#071421','#101d31','#21d4c2'],['midnight','منتصف الليل','#09091b','#252044','#9b87ff'],['ocean','المحيط','#061526','#07506a','#24b9ee'],['cyber','نيون','#080b19','#102d42','#00f0c8'],['emerald','زمردي','#071810','#164b35','#35d783'],['sunset','غروب','#21101d','#713a36','#ff9c57'],['crimson','قرمزي','#1b0a12','#571b2b','#ff4d70'],['rose','وردي','#1b101b','#59344e','#f17dc2'],['amethyst','جمشت','#120d24','#3c2760','#b18cff'],['forest','غابة','#0c1713','#2c4531','#a4c96a'],['arctic','جليدي','#0b1a2b','#28526b','#80ddff'],['slate','رمادي','#131923','#3b4654','#aab8c7']
+        ];
+        function profileThemePreview(theme) {
+            const [id, name, first, last, accent] = theme;
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="180" viewBox="0 0 360 180"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="${first}"/><stop offset="1" stop-color="${last}"/></linearGradient></defs><rect width="360" height="180" rx="18" fill="url(#g)"/><circle cx="318" cy="18" r="66" fill="${accent}" opacity=".2"/><rect x="12" y="12" width="336" height="156" rx="15" fill="#07111f" fill-opacity=".78" stroke="${accent}" stroke-opacity=".4"/><text x="29" y="39" fill="${accent}" font-family="Arial" font-size="12" font-weight="700">YS-BOT / PROFILE</text><circle cx="55" cy="82" r="23" fill="${accent}"/><circle cx="55" cy="82" r="19" fill="#172638"/><rect x="91" y="64" width="122" height="11" rx="5" fill="#f2f7fc" opacity=".9"/><rect x="91" y="83" width="82" height="7" rx="3" fill="#91a2b8" opacity=".8"/><rect x="29" y="111" width="67" height="42" rx="8" fill="${accent}" opacity=".19"/><rect x="105" y="111" width="67" height="42" rx="8" fill="${accent}" opacity=".15"/><rect x="181" y="111" width="67" height="42" rx="8" fill="${accent}" opacity=".2"/><rect x="257" y="111" width="67" height="42" rx="8" fill="${accent}" opacity=".13"/><text x="42" y="137" fill="#f5fbff" font-family="Arial" font-size="17" font-weight="700">12</text><text x="118" y="137" fill="#f5fbff" font-family="Arial" font-size="17" font-weight="700">48</text><text x="194" y="137" fill="#f5fbff" font-family="Arial" font-size="17" font-weight="700">#3</text><text x="270" y="137" fill="#f5fbff" font-family="Arial" font-size="17" font-weight="700">96</text></svg>`;
+            return { id, name, src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}` };
+        }
+        function renderProfileThemeOptions() {
+            const grid = document.getElementById('profile-theme-options');
+            if (!grid) return;
+            grid.replaceChildren();
+            profileThemes.forEach((theme) => {
+                const preview = profileThemePreview(theme);
+                const button = document.createElement('button');
+                button.className = 'profile-theme-option'; button.type = 'button'; button.dataset.theme = preview.id;
+                button.setAttribute('aria-pressed', String(selectedProfileTheme === preview.id));
+                const image = document.createElement('img'); image.src = preview.src; image.alt = `معاينة تصميم ${preview.name}`;
+                const label = document.createElement('span'); label.textContent = preview.name;
+                button.append(image, label);
+                button.addEventListener('click', () => { selectedProfileTheme = preview.id; renderProfileThemeOptions(); });
+                grid.appendChild(button);
+            });
+        }
+        const dashboardEnglish = {
+            'لغة الموقع':'Website language','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Loading your account and Discord servers... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Choose a server to manage','سيرفراتك التي تديرها:':'Servers you manage:','إعدادات السيرفر':'Server settings','حفظ الإعدادات':'Save settings','إعدادات متقدمة — أكثر من 50 خيارًا':'Advanced settings — 50+ options','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'“Active” options affect bot behavior. “In progress” options are saved but do not affect behavior until implemented.','منع الروابط':'Block links','يحذف الروابط والدعوات من رسائل الأعضاء. المشرفون مستثنون.':'Deletes links and invites from member messages. Administrators are exempt.','مكافحة السبام':'Anti-spam','يحذف الرسائل ابتداءً من الرسالة الخامسة خلال 8 ثوانٍ. المشرفون مستثنون.':'Deletes messages starting at the fifth message within 8 seconds. Administrators are exempt.','بادئة الأوامر':'Command prefix','إعدادات متقدمة':'Advanced settings','الأذكار والقرآن':'Adhkar and Quran','يعمل الآن':'Active','قيد الربط':'In progress','تفعيل التحقق بخطوتين':'Enable two-factor authentication','غير مفعّل':'Disabled','مفعّل':'Enabled','إلغاء التحقق بخطوتين':'Disable two-factor authentication','جاري تحميل الإعدادات...':'Loading settings...','تم تحميل الإعدادات المحفوظة.':'Saved settings loaded.','جاري الحفظ...':'Saving...','انحفظت الإعدادات بنجاح.':'Settings saved successfully.','اختر ما تريد تفعيله. حماية الروابط والسبام تحذف الرسالة المخالفة فقط، وتتطلب صلاحية':'Choose what to enable. Link and spam protection only delete offending messages and require the bot to have permission:','إدارة الرسائل':'Manage Messages','أضف البوت للسيرفر حتى تعمل الحماية.':'Add the bot to your server for protection to work.','من 1 إلى 3 رموز؛ مثل ! أو ? (أوامر: plan و anticrash).':'Use 1–3 symbols, such as ! or ? (commands: plan and anticrash).','إعدادات البوت':'Bot settings','الأوامر والصلاحيات':'Commands and permissions','مكافحة السبام':'Anti-spam','الروابط والاستثناءات':'Links and exceptions','فلاتر الرسائل':'Message filters','سجل الأحداث':'Event log','الترحيب والمغادرة':'Welcome and farewell','التحقق والرتب':'Verification and roles','الإشراف وإعدادات إضافية':'Moderation and more','الحماية من الغارات':'Anti-raid protection','الدعوات والمكافآت':'Invites and rewards','التذاكر والاقتراحات':'Tickets and suggestions','التصويت والمستويات والنسخ الاحتياطي':'Polls, levels and backups'
+        };
+        Object.assign(dashboardEnglish, {
+            'نسخ واسترجاع هيكل السيرفر':'Server structure backup and restore',
+            'ينسخ البوت الرتب والقنوات والتصنيفات وصلاحيات الرتب وإعدادات YS-Bot، ثم يحفظ نسخة خاصة بهذا السيرفر. الاسترجاع يعيد إعدادات العناصر المطابقة وينشئ المفقود، ولا يحذف الموجود. لا تشمل النسخة الرسائل أو الأعضاء أو توزيع الرتب عليهم أو صلاحيات الأعضاء الفردية داخل القنوات. يتطلب البوت صلاحيتَي إدارة الرتب والقنوات للاسترجاع.':'The bot backs up roles, channels, categories, role permissions, and YS-Bot settings for this server. Restore reapplies settings to matching items and recreates missing ones without deleting anything. Messages, members, member role assignments, and individual member channel permissions are excluded. The bot needs Manage Roles and Manage Channels to restore.',
+            'نسخ هيكل السيرفر':'Back up server structure',
+            'اختر نسخة محفوظة':'Choose a saved backup',
+            'استرجاع الهيكل':'Restore structure',
+            'تحديث النسخ':'Refresh backups',
+            'جارٍ التحضير...':'Preparing...',
+            'تم نسخ خادم بنجاح':'Server backup completed',
+            'تم استرجاع هيكل الخادم بنجاح':'Server structure restored'
+        });
+        const dashboardEnglishLabels = {
+            commandCooldownSeconds:'Command cooldown (seconds)',commandsEnabled:'Enable text commands',commandsRoleId:'Command access role ID',commandsAllowedChannelIds:'Allowed command channels',commandLanguage:'Command response language',commandDeleteAfterUse:'Delete command after use',antiSpamLimit:'Messages before action',antiSpamWindowSeconds:'Spam detection window (seconds)',antiSpamAction:'Spam action',antiSpamWarning:'Spam warning text',antiSpamIgnoreAdmins:'Ignore administrators',antiSpamIgnoreChannels:'Channels exempt from spam filter',antiLinksBlockInvites:'Block Discord invites',antiLinksBlockExternal:'Block external links',antiLinksAllowedDomains:'Allowed domains',antiLinksWarning:'Link warning text',antiLinksIgnoreChannels:'Channels exempt from link filter',antiLinksIgnoreRoleIds:'Roles exempt from link filter',capsFilterEnabled:'Enable uppercase filter',capsThresholdPercent:'Uppercase percentage threshold',capsMinimumLength:'Minimum message length',capsAction:'Uppercase filter action',duplicateFilterEnabled:'Enable duplicate message filter',duplicateMessageLimit:'Duplicate message limit',duplicateWindowSeconds:'Duplicate detection window (seconds)',mentionSpamEnabled:'Block mention spam',mentionLimit:'Maximum mentions',mentionSpamAction:'Mention spam action',blockedWordsEnabled:'Enable blocked words filter',blockedWords:'Blocked words',blockedWordsAction:'Blocked words action',modLogChannelId:'Moderation log channel ID',logDeletedMessages:'Log deleted messages',logEditedMessages:'Log edited messages',logMemberJoins:'Log member joins',logMemberLeaves:'Log member departures',logModerationActions:'Log moderation actions',logRoleChanges:'Log role changes',logChannelChanges:'Log channel changes',logBotCommands:'Log bot commands',welcomeEnabled:'Enable welcome message',welcomeChannelId:'Welcome channel ID',welcomeMessage:'Welcome message',welcomeRoleId:'New member auto-role ID',welcomeSendDm:'Send welcome DM',welcomeDmMessage:'Welcome DM text',welcomeIgnoreBots:'Ignore bots in welcome',farewellEnabled:'Enable farewell message',farewellChannelId:'Farewell channel ID',farewellMessage:'Farewell message',verificationEnabled:'Enable member verification',verificationRoleId:'Verification role ID',verificationTimeoutMinutes:'Verification timeout (minutes)',verificationMinAccountAgeDays:'Minimum account age (days)',autoRoleEnabled:'Enable automatic role',autoRoleId:'Automatic role ID',antiRaidEnabled:'Enable anti-raid protection',ticketEnabled:'Enable ticket system',ticketPanelChannelId:'Ticket panel channel ID',ticketPanelTitle:'Ticket panel title',ticketPanelDescription:'Ticket panel description',ticketPanelColor:'Ticket panel color',ticketPanelButtonLabel:'Open ticket button text',ticketPanelButtonStyle:'Open ticket button color',ticketPanelButtonEmoji:'Open ticket button emoji',ticketWelcomeMessage:'Ticket welcome message',ticketCloseMessage:'Ticket close message',suggestionEnabled:'Enable suggestions',suggestionChannelId:'Suggestion channel ID',suggestionReviewChannelId:'Suggestion review channel ID',suggestionEmbedTitle:'Suggestion card title',suggestionConfirmationMessage:'Suggestion confirmation message',pollEnabled:'Enable polls',levelSystemEnabled:'Enable level system',autorunBackupEnabled:'Enable scheduled backups',azkarEnabled:'Enable scheduled Adhkar',azkarChannelId:'Adhkar channel ID',azkarMessage:'Adhkar text',azkarIntervalHours:'Adhkar interval (hours)',quranReminderEnabled:'Enable Quran reminder',quranChannelId:'Quran channel ID',quranMessage:'Verse or reading text',quranIntervalHours:'Quran interval (hours)'
+        };
+        const dashboardLocales = {
+            fr: { 'لغة الموقع':'Langue du site','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Chargement du compte et des serveurs Discord... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Choisissez un serveur à gérer','سيرفراتك التي تديرها:':'Serveurs que vous gérez :','إعدادات السيرفر':'Paramètres du serveur','حفظ الإعدادات':'Enregistrer','إعدادات متقدمة — أكثر من 50 خيارًا':'Paramètres avancés — plus de 50 options','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'Les options « Actif » contrôlent le bot. Les options « En cours » sont enregistrées mais ne sont pas encore appliquées.','منع الروابط':'Bloquer les liens','مكافحة السبام':'Anti-spam','إعدادات متقدمة':'Paramètres avancés','يعمل الآن':'Actif','قيد الربط':'En cours','تفعيل التحقق بخطوتين':'Activer l’authentification à deux facteurs','غير مفعّل':'Désactivé','مفعّل':'Activé','إلغاء التحقق بخطوتين':'Désactiver l’authentification à deux facteurs','جاري تحميل الإعدادات...':'Chargement des paramètres...','تم تحميل الإعدادات المحفوظة.':'Paramètres enregistrés chargés.','جاري الحفظ...':'Enregistrement...','انحفظت الإعدادات بنجاح.':'Paramètres enregistrés.','الأوامر والصلاحيات':'Commandes et permissions','الروابط والاستثناءات':'Liens et exceptions','فلاتر الرسائل':'Filtres de messages','سجل الأحداث':'Journal des événements','الترحيب والمغادرة':'Bienvenue et départ','التحقق والرتب':'Vérification et rôles','الإشراف وإعدادات إضافية':'Modération et autres paramètres','الحماية من الغارات':'Protection anti-raid','الدعوات والمكافآت':'Invitations et récompenses','التذاكر والاقتراحات':'Tickets et suggestions','التصويت والمستويات والنسخ الاحتياطي':'Sondages, niveaux et sauvegardes','إلغاء':'Annuler' },
+            es: { 'لغة الموقع':'Idioma del sitio','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Cargando tu cuenta y servidores de Discord... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Elige un servidor para administrar','سيرفراتك التي تديرها:':'Servidores que administras:','إعدادات السيرفر':'Ajustes del servidor','حفظ الإعدادات':'Guardar ajustes','إعدادات متقدمة — أكثر من 50 خيارًا':'Ajustes avanzados — más de 50 opciones','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'Las opciones «Activo» controlan el bot. Las opciones «En progreso» se guardan, pero aún no se aplican.','منع الروابط':'Bloquear enlaces','مكافحة السبام':'Antispam','إعدادات متقدمة':'Ajustes avanzados','يعمل الآن':'Activo','قيد الربط':'En progreso','تفعيل التحقق بخطوتين':'Activar autenticación en dos pasos','غير مفعّل':'Desactivado','مفعّل':'Activado','إلغاء التحقق بخطوتين':'Desactivar autenticación en dos pasos','جاري تحميل الإعدادات...':'Cargando ajustes...','تم تحميل الإعدادات المحفوظة.':'Ajustes guardados cargados.','جاري الحفظ...':'Guardando...','انحفظت الإعدادات بنجاح.':'Ajustes guardados correctamente.','الأوامر والصلاحيات':'Comandos y permisos','الروابط والاستثناءات':'Enlaces y excepciones','فلاتر الرسائل':'Filtros de mensajes','سجل الأحداث':'Registro de eventos','الترحيب والمغادرة':'Bienvenida y despedida','التحقق والرتب':'Verificación y roles','الإشراف وإعدادات إضافية':'Moderación y otros ajustes','الحماية من الغارات':'Protección anti-raid','الدعوات والمكافآت':'Invitaciones y recompensas','التذاكر والاقتراحات':'Tickets y sugerencias','التصويت والمستويات والنسخ الاحتياطي':'Encuestas, niveles y copias de seguridad','إلغاء':'Cancelar' },
+            de: { 'لغة الموقع':'Seitensprache','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Konto und Discord-Server werden geladen... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Wähle einen Server zur Verwaltung','سيرفراتك التي تديرها:':'Deine verwalteten Server:','إعدادات السيرفر':'Servereinstellungen','حفظ الإعدادات':'Einstellungen speichern','إعدادات متقدمة — أكثر من 50 خيارًا':'Erweiterte Einstellungen — über 50 Optionen','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'„Aktiv“-Optionen steuern den Bot. „In Arbeit“-Optionen werden gespeichert, aber noch nicht angewendet.','منع الروابط':'Links blockieren','مكافحة السبام':'Spam-Schutz','إعدادات متقدمة':'Erweiterte Einstellungen','يعمل الآن':'Aktiv','قيد الربط':'In Arbeit','تفعيل التحقق بخطوتين':'Zwei-Faktor-Authentifizierung aktivieren','غير مفعّل':'Deaktiviert','مفعّل':'Aktiviert','إلغاء التحقق بخطوتين':'Zwei-Faktor-Authentifizierung deaktivieren','جاري تحميل الإعدادات...':'Einstellungen werden geladen...','تم تحميل الإعدادات المحفوظة.':'Gespeicherte Einstellungen geladen.','جاري الحفظ...':'Wird gespeichert...','انحفظت الإعدادات بنجاح.':'Einstellungen erfolgreich gespeichert.','الأوامر والصلاحيات':'Befehle und Berechtigungen','الروابط والاستثناءات':'Links und Ausnahmen','فلاتر الرسائل':'Nachrichtenfilter','سجل الأحداث':'Ereignisprotokoll','الترحيب والمغادرة':'Begrüßung und Verabschiedung','التحقق والرتب':'Verifizierung und Rollen','الإشراف وإعدادات إضافية':'Moderation und weitere Einstellungen','الحماية من الغارات':'Raid-Schutz','الدعوات والمكافآت':'Einladungen und Belohnungen','التذاكر والاقتراحات':'Tickets und Vorschläge','التصويت والمستويات والنسخ الاحتياطي':'Umfragen, Level und Backups','إلغاء':'Abbrechen' },
+            pt: { 'لغة الموقع':'Idioma do site','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Carregando sua conta e servidores do Discord... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Escolha um servidor para gerenciar','سيرفراتك التي تديرها:':'Servidores que você gerencia:','إعدادات السيرفر':'Configurações do servidor','حفظ الإعدادات':'Salvar configurações','إعدادات متقدمة — أكثر من 50 خيارًا':'Configurações avançadas — mais de 50 opções','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'Opções “Ativo” controlam o bot. Opções “Em andamento” são salvas, mas ainda não são aplicadas.','منع الروابط':'Bloquear links','مكافحة السبام':'Ant spam','إعدادات متقدمة':'Configurações avançadas','يعمل الآن':'Ativo','قيد الربط':'Em andamento','تفعيل التحقق بخطوتين':'Ativar autenticação de dois fatores','غير مفعّل':'Desativado','مفعّل':'Ativado','إلغاء التحقق بخطوتين':'Desativar autenticação de dois fatores','جاري تحميل الإعدادات...':'Carregando configurações...','تم تحميل الإعدادات المحفوظة.':'Configurações salvas carregadas.','جاري الحفظ...':'Salvando...','انحفظت الإعدادات بنجاح.':'Configurações salvas com sucesso.','الأوامر والصلاحيات':'Comandos e permissões','الروابط والاستثناءات':'Links e exceções','فلاتر الرسائل':'Filtros de mensagens','سجل الأحداث':'Registro de eventos','الترحيب والمغادرة':'Boas-vindas e despedida','التحقق والرتب':'Verificação e cargos','الإشراف وإعدادات إضافية':'Moderação e outras configurações','الحماية من الغارات':'Proteção contra raids','الدعوات والمكافآت':'Convites e recompensas','التذاكر والاقتراحات':'Tickets e sugestões','التصويت والمستويات والنسخ الاحتياطي':'Enquetes, níveis e backups','إلغاء':'Cancelar' },
+            ko: { 'لغة الموقع':'사이트 언어','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'계정 및 Discord 서버를 불러오는 중... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'관리할 서버를 선택하세요','سيرفراتك التي تديرها:':'관리 중인 서버:','إعدادات السيرفر':'서버 설정','حفظ الإعدادات':'설정 저장','إعدادات متقدمة — أكثر من 50 خيارًا':'고급 설정 — 50개 이상의 옵션','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'“활성” 옵션은 봇 동작에 적용됩니다. “연결 중” 옵션은 저장되지만 아직 적용되지 않습니다.','منع الروابط':'링크 차단','مكافحة السبام':'스팸 방지','إعدادات متقدمة':'고급 설정','يعمل الآن':'활성','قيد الربط':'연결 중','تفعيل التحقق بخطوتين':'2단계 인증 켜기','غير مفعّل':'사용 안 함','مفعّل':'사용 중','إلغاء التحقق بخطوتين':'2단계 인증 끄기','جاري تحميل الإعدادات...':'설정을 불러오는 중...','تم تحميل الإعدادات المحفوظة.':'저장된 설정을 불러왔습니다.','جاري الحفظ...':'저장 중...','انحفظت الإعدادات بنجاح.':'설정을 저장했습니다.','الأوامر والصلاحيات':'명령어 및 권한','الروابط والاستثناءات':'링크 및 예외','فلاتر الرسائل':'메시지 필터','سجل الأحداث':'이벤트 로그','الترحيب والمغادرة':'환영 및 작별','التحقق والرتب':'인증 및 역할','الإشراف وإعدادات إضافية':'관리 및 추가 설정','الحماية من الغارات':'레이드 방지','الدعوات والمكافآت':'초대 및 보상','التذاكر والاقتراحات':'티켓 및 제안','التصويت والمستويات والنسخ الاحتياطي':'투표, 레벨 및 백업','إلغاء':'취소' },
+            ja: { 'لغة الموقع':'サイトの言語','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'アカウントとDiscordサーバーを読み込み中... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'管理するサーバーを選択','سيرفراتك التي تديرها:':'管理しているサーバー:','إعدادات السيرفر':'サーバー設定','حفظ الإعدادات':'設定を保存','إعدادات متقدمة — أكثر من 50 خيارًا':'詳細設定 — 50以上の項目','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'「有効」項目はボットに適用されます。「準備中」項目は保存されますが、まだ適用されません。','منع الروابط':'リンクをブロック','مكافحة السبام':'スパム対策','إعدادات متقدمة':'詳細設定','يعمل الآن':'有効','قيد الربط':'準備中','تفعيل التحقق بخطوتين':'2段階認証を有効化','غير مفعّل':'無効','مفعّل':'有効','إلغاء التحقق بخطوتين':'2段階認証を無効化','جاري تحميل الإعدادات...':'設定を読み込み中...','تم تحميل الإعدادات المحفوظة.':'保存済み設定を読み込みました。','جاري الحفظ...':'保存中...','انحفظت الإعدادات بنجاح.':'設定を保存しました。','الأوامر والصلاحيات':'コマンドと権限','الروابط والاستثناءات':'リンクと例外','فلاتر الرسائل':'メッセージフィルター','سجل الأحداث':'イベントログ','الترحيب والمغادرة':'歓迎と退出','التحقق والرتب':'認証とロール','الإشراف وإعدادات إضافية':'モデレーションとその他の設定','الحماية من الغارات':'レイド対策','الدعوات والمكافآت':'招待と報酬','التذاكر والاقتراحات':'チケットと提案','التصويت والمستويات والنسخ الاحتياطي':'投票、レベル、バックアップ','إلغاء':'キャンセル' }
+        };
+        Object.assign(dashboardEnglish, {
+            'القائمة':'Navigation',
+            'إعداداتي الشخصية':'Personal settings',
+            'سيرفراتي':'My servers',
+            'اختر سيرفرًا لعرض إعداداته':'Choose a server to view its settings',
+            'انتقل مباشرة إلى إعدادات السيرفر المحدد':'Jump to the selected server settings'
+        });
+        document.getElementById('dashboard-nav-server-settings').addEventListener('click', () => document.getElementById('server-settings-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        const dashboardLanguageSelect = document.getElementById('dashboard-language');
+        const dashboardOriginalText = new WeakMap();
+        const dashboardArabicByEnglish = Object.fromEntries(Object.entries(dashboardEnglish).map(([ar, en]) => [en, ar]));
+        function dashboardText(arabic) { if (dashboardLanguage === 'ar') return arabic; return (dashboardLocales[dashboardLanguage] || {})[arabic] || dashboardEnglish[arabic] || arabic; }
+        function dashboardLabel(key, arabic) { if (dashboardLanguage === 'ar') return arabic; const english=dashboardEnglishLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()); return dashboardLocales[dashboardLanguage]?.[arabic] || english; }
+        function applyDashboardLanguage(language) {
+            dashboardLanguage = ['ar','en','fr','es','de','pt','ko','ja'].includes(language) ? language : 'ar';
+            localStorage.setItem('ys-bot-language', dashboardLanguage);
+            dashboardLanguageSelect.value = dashboardLanguage;
+            document.documentElement.lang = dashboardLanguage;
+            document.documentElement.dir = dashboardLanguage === 'ar' ? 'rtl' : 'ltr';
+            document.querySelectorAll('body *').forEach((el) => { for (const node of el.childNodes) if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) { if (!dashboardOriginalText.has(node)) { const current=node.nodeValue; const trimmed=current.trim(); dashboardOriginalText.set(node, dashboardArabicByEnglish[trimmed] ? current.replace(trimmed,dashboardArabicByEnglish[trimmed]) : current); } const original=dashboardOriginalText.get(node); const raw=original.trim(); if (dashboardEnglish[raw]) node.nodeValue=original.replace(raw,dashboardText(raw)); } });
+            const values = document.getElementById('advanced-settings-groups').children.length ? readAdvancedSettings() : {};
+            if (selectedGuildId) renderAdvancedSettings(values);
+            if (selectedGuildId) document.getElementById('server-settings-title').textContent = dashboardText('إعدادات السيرفر');
+        }
+        dashboardLanguageSelect.value = dashboardLanguage;
+        dashboardLanguageSelect.addEventListener('change', e => applyDashboardLanguage(e.target.value));
+        const advancedSettingGroups = [
+            { title: 'الأوامر والصلاحيات', items: [
+                ['commandCooldownSeconds', 'مدة الانتظار بين الأوامر'], ['commandsEnabled', 'تفعيل أوامر النص'], ['commandsRoleId', 'معرّف رتبة استخدام الأوامر'], ['commandsAllowedChannelIds', 'قنوات الأوامر المسموحة'], ['commandLanguage', 'لغة ردود الأوامر'], ['commandDeleteAfterUse', 'حذف الأمر بعد استخدامه']
+            ] },
+            { title: 'مكافحة السبام', items: [
+                ['antiSpamLimit', 'عدد الرسائل قبل الإجراء'], ['antiSpamWindowSeconds', 'مدة احتساب الرسائل بالثواني'], ['antiSpamAction', 'إجراء السبام'], ['antiSpamWarning', 'نص تنبيه السبام'], ['antiSpamIgnoreAdmins', 'استثناء المشرفين'], ['antiSpamIgnoreChannels', 'قنوات مستثناة من السبام']
+            ] },
+            { title: 'الروابط والاستثناءات', items: [
+                ['antiLinksBlockInvites', 'منع دعوات Discord'], ['antiLinksBlockExternal', 'منع الروابط الخارجية'], ['antiLinksAllowedDomains', 'النطاقات المسموحة'], ['antiLinksWarning', 'نص تنبيه الروابط'], ['antiLinksIgnoreChannels', 'قنوات مستثناة من منع الروابط'], ['antiLinksIgnoreRoleIds', 'رتب مستثناة من منع الروابط']
+            ] },
+            { title: 'فلاتر الرسائل', items: [
+                ['capsFilterEnabled', 'فلتر الأحرف الكبيرة'], ['capsThresholdPercent', 'نسبة الأحرف الكبيرة'], ['capsMinimumLength', 'أقل طول لتطبيق فلتر الأحرف'], ['capsAction', 'إجراء الأحرف الكبيرة'], ['duplicateFilterEnabled', 'فلتر الرسائل المكررة'], ['duplicateMessageLimit', 'حد الرسائل المكررة'], ['duplicateWindowSeconds', 'مدة تكرار الرسائل بالثواني'], ['mentionSpamEnabled', 'منع الإشارة الجماعية'], ['mentionLimit', 'أقصى عدد إشارات'], ['mentionSpamAction', 'إجراء الإشارات الجماعية'], ['blockedWordsEnabled', 'فلتر الكلمات المحظورة'], ['blockedWords', 'قائمة الكلمات المحظورة'], ['blockedWordsAction', 'إجراء الكلمات المحظورة']
+            ] },
+            { title: 'سجل الأحداث', items: [
+                ['modLogChannelId', 'معرّف قناة سجل الإدارة'], ['logDeletedMessages', 'تسجيل حذف الرسائل'], ['logEditedMessages', 'تسجيل تعديل الرسائل'], ['logMemberJoins', 'تسجيل دخول الأعضاء'], ['logMemberLeaves', 'تسجيل مغادرة الأعضاء'], ['logModerationActions', 'تسجيل إجراءات الإشراف'], ['logRoleChanges', 'تسجيل تغييرات الرتب'], ['logChannelChanges', 'تسجيل تغييرات القنوات'], ['logBotCommands', 'تسجيل أوامر البوت']
+            ] },
+            { title: 'الترحيب والمغادرة', note: 'رسائل الانضمام والمغادرة وإعطاء الرتب تعتمد على تفعيل Gateway Intent باسم Server Members Intent في Discord Developer Portal.', items: [
+                ['welcomeEnabled', 'تفعيل رسالة الترحيب'], ['welcomeChannelId', 'معرّف قناة الترحيب'], ['welcomeMessage', 'نص الترحيب'], ['welcomeRoleId', 'معرّف الرتبة التلقائية للعضو الجديد'], ['welcomeSendDm', 'إرسال ترحيب بالخاص'], ['welcomeDmMessage', 'نص رسالة الخاص'], ['welcomeIgnoreBots', 'تجاهل البوتات في الترحيب'], ['farewellEnabled', 'تفعيل رسالة المغادرة'], ['farewellChannelId', 'معرّف قناة المغادرة'], ['farewellMessage', 'نص المغادرة']
+            ] },
+            { title: 'التحقق والرتب', note: 'يُعطى العضو رتبة التحقق عند الانضمام، ويزيلها عن نفسه بأمر /verify بعد استيفاء عمر الحساب الأدنى. يتطلب Server Members Intent.', items: [
+                ['verificationEnabled', 'تفعيل التحقق من الأعضاء'], ['verificationRoleId', 'معرّف رتبة التحقق'], ['verificationTimeoutMinutes', 'مهلة التحقق بالدقائق'], ['verificationMinAccountAgeDays', 'عمر الحساب الأدنى بالأيام'], ['autoRoleEnabled', 'تفعيل إعطاء رتبة تلقائية'], ['autoRoleId', 'معرّف الرتبة التلقائية']
+            ] },
+            { title: 'الإشراف وإعدادات إضافية', items: [
+                ['warningEscalationEnabled', 'تفعيل تصعيد التحذيرات'], ['warningLimit', 'عدد التحذيرات قبل التصعيد'], ['warningTimeoutMinutes', 'مدة الإجراء بعد التحذيرات بالدقائق'], ['slowmodeSeconds', 'مدة الوضع البطيء بالثواني'], ['supportChannelId', 'معرّف قناة الدعم'], ['auditRetentionDays', 'مدة الاحتفاظ بالسجل بالأيام']
+            ] },
+            { title: 'الحماية من الغارات', note: 'خيار القفل المؤقت يمنع الإرسال للجميع في القنوات النصية لمدة 5 دقائق ثم يعيد صلاحيات الإرسال السابقة. يتطلب Server Members Intent وصلاحية إدارة القنوات.', items: [
+                ['antiRaidEnabled', 'تفعيل حماية الغارات'], ['antiRaidJoinLimit', 'عدد المنضمين لتفعيل التنبيه'], ['antiRaidWindowSeconds', 'فترة رصد الانضمام بالثواني'], ['antiRaidAction', 'إجراء الحماية'], ['antiRaidAlertChannelId', 'قناة تنبيهات الغارات']
+            ] },
+            { title: 'حماية تخريب السيرفر (Anti-Nuke)', note: 'يرصد تغييرات الإدارة المتكررة ويطبق الإجراء الذي تختاره. يحتاج البوت صلاحية View Audit Log، وصلاحية Timeout/Kick/Ban أو Manage Channels حسب الإجراء. ابدأ بالتنبيه فقط واختبر الإعدادات؛ لا تضف إلا أشخاصًا موثوقين لقوائم السماح.', items: [
+                ['antiNukeEnabled', 'تفعيل حماية التخريب'], ['antiNukeChannelCreateEnabled', 'رصد إنشاء القنوات'], ['antiNukeChannelCreateLimit', 'حد إنشاء القنوات'], ['antiNukeChannelDeleteEnabled', 'رصد حذف القنوات'], ['antiNukeChannelDeleteLimit', 'حد حذف القنوات'], ['antiNukeRoleCreateEnabled', 'رصد إنشاء الرتب'], ['antiNukeRoleCreateLimit', 'حد إنشاء الرتب'], ['antiNukeRoleDeleteEnabled', 'رصد حذف الرتب'], ['antiNukeRoleDeleteLimit', 'حد حذف الرتب'], ['antiNukeRoleUpdateEnabled', 'رصد تعديل الرتب'], ['antiNukeRoleUpdateLimit', 'حد تعديل الرتب'], ['antiNukeBanEnabled', 'رصد حظر الأعضاء'], ['antiNukeBanLimit', 'حد الحظر'], ['antiNukeWebhookCreateEnabled', 'رصد إنشاء Webhook'], ['antiNukeWebhookCreateLimit', 'حد إنشاء Webhook'], ['antiNukeWebhookDeleteEnabled', 'رصد حذف Webhook'], ['antiNukeWebhookDeleteLimit', 'حد حذف Webhook'], ['antiNukeEmojiDeleteEnabled', 'رصد حذف الإيموجي'], ['antiNukeEmojiDeleteLimit', 'حد حذف الإيموجي'], ['antiNukeStickerDeleteEnabled', 'رصد حذف الملصقات'], ['antiNukeStickerDeleteLimit', 'حد حذف الملصقات'], ['antiNukeWindowSeconds', 'نافذة الرصد بالثواني'], ['antiNukeAction', 'الإجراء عند تجاوز الحد'], ['antiNukeTimeoutMinutes', 'مدة المهلة بالدقائق'], ['antiNukeAlertChannelId', 'قناة تنبيهات التخريب'], ['antiNukeAlertRoleId', 'رتبة التنبيه'], ['antiNukeAllowlistedUserIds', 'معرّفات الأعضاء المستثنين'], ['antiNukeAllowlistedRoleIds', 'معرّفات الرتب المستثناة'], ['antiNukeCooldownSeconds', 'فترة منع تكرار الإجراء بالثواني'], ['antiNukeLockdownEnabled', 'قفل القنوات عند التجاوز'], ['antiNukeLockdownDurationMinutes', 'مدة قفل القنوات بالدقائق'], ['antiNukeLogAllEvents', 'تسجيل كل الأحداث المرصودة']
+            ] },
+            { title: 'الدعوات والمكافآت', items: [
+                ['inviteTrackingEnabled', 'تفعيل تتبع الدعوات'], ['inviteRewardRoleId', 'رتبة مكافأة الدعوة'], ['inviteRewardThreshold', 'عدد الدعوات للمكافأة']
+            ] },
+            { title: 'التذاكر والاقتراحات', note: 'إعدادات التذاكر تتحكم بلوحة الفتح والزر والنموذج ورسالة الترحيب والإغلاق والأرشيف. الاقتراحات تستخدم أزرار تصويت قابلة للتخصيص وتُرسل بالأمر /suggest.', items: [
+                ['ticketEnabled', 'تفعيل نظام التذاكر'], ['ticketPanelChannelId', 'قناة زر فتح التذكرة'], ['ticketPanelTitle', 'عنوان لوحة التذاكر'], ['ticketPanelDescription', 'وصف لوحة التذاكر'], ['ticketPanelColor', 'لون لوحة التذاكر'], ['ticketPanelButtonLabel', 'نص زر فتح التذكرة'], ['ticketPanelButtonStyle', 'لون زر فتح التذكرة'], ['ticketPanelButtonEmoji', 'رمز زر فتح التذكرة'], ['ticketAskReason', 'سؤال العضو عن سبب التذكرة'], ['ticketReasonTitle', 'عنوان نموذج سبب التذكرة'], ['ticketReasonPlaceholder', 'نص إرشادي في نموذج التذكرة'], ['ticketMaxOpen', 'أقصى تذاكر مفتوحة للعضو'], ['ticketCategoryId', 'تصنيف قنوات التذاكر'], ['ticketSupportRoleId', 'رتبة فريق الدعم'], ['ticketNotifySupport', 'تنبيه رتبة الدعم عند الفتح'], ['ticketNamePrefix', 'بادئة اسم قناة التذكرة'], ['ticketWelcomeTitle', 'عنوان رسالة التذكرة'], ['ticketWelcomeMessage', 'نص رسالة الترحيب داخل التذكرة'], ['ticketWelcomeColor', 'لون رسالة التذكرة'], ['ticketWelcomeImageUrl', 'صورة رسالة التذكرة'], ['ticketCloseButtonLabel', 'نص زر إغلاق التذكرة'], ['ticketCloseButtonStyle', 'لون زر إغلاق التذكرة'], ['ticketAllowMemberClose', 'السماح لصاحب التذكرة بإغلاقها'], ['ticketCloseMessage', 'رسالة إغلاق التذكرة'], ['ticketCloseDeleteAfterMinutes', 'حذف التذكرة بعد الإغلاق بالدقائق'], ['ticketTranscriptEnabled', 'تفعيل حفظ سجل التذكرة'], ['ticketTranscriptChannelId', 'قناة أرشيف التذاكر'], ['ticketConfirmationMessage', 'رسالة تأكيد فتح التذكرة'], ['suggestionEnabled', 'تفعيل الاقتراحات'], ['suggestionChannelId', 'قناة استقبال الاقتراحات'], ['suggestionReviewChannelId', 'قناة مراجعة الاقتراحات'], ['suggestionEmbedTitle', 'عنوان بطاقة الاقتراح'], ['suggestionEmbedColor', 'لون بطاقة الاقتراح'], ['suggestionEmbedImageUrl', 'صورة بطاقة الاقتراح'], ['suggestionAnonymousEnabled', 'إخفاء هوية صاحب الاقتراح'], ['suggestionMinLength', 'أقل طول للاقتراح'], ['suggestionMaxLength', 'أقصى طول للاقتراح'], ['suggestionUpvoteLabel', 'نص زر الموافقة'], ['suggestionUpvoteEmoji', 'رمز زر الموافقة'], ['suggestionUpvoteStyle', 'لون زر الموافقة'], ['suggestionDownvoteLabel', 'نص زر عدم الموافقة'], ['suggestionDownvoteEmoji', 'رمز زر عدم الموافقة'], ['suggestionDownvoteStyle', 'لون زر عدم الموافقة'], ['suggestionConfirmationMessage', 'رسالة تأكيد الاقتراح'], ['suggestionReviewMessage', 'رسالة نسخة المراجعة']
+            ] },
+            { key: 'embedBuilder', title: 'منشئ الإمبيد', note: 'عدّل محتوى البطاقة وحدد القناة، ثم اضغط «حفظ الإعدادات». يحفظ الموقع التصميم ويرسل الإمبيد مباشرة عبر البوت؛ لا تحتاج إلى أمر Discord.', items: [
+                ['customEmbedChannelId', 'معرّف قناة نشر الإمبيد'], ['customEmbedTitle', 'عنوان الإمبيد'], ['customEmbedDescription', 'رسالة الإمبيد'], ['customEmbedThumbnailUrl', 'رابط الأيقونة المصغرة'], ['customEmbedImageUrl', 'رابط الصورة السفلية'], ['customEmbedColor', 'لون الإمبيد']
+            ] },
+            { title: 'التصويت والمستويات والنسخ الاحتياطي', items: [
+                ['pollEnabled', 'تفعيل التصويت'], ['pollChannelIds', 'القنوات المسموحة للتصويت'], ['levelSystemEnabled', 'تفعيل نظام المستويات'], ['levelAnnouncementChannelId', 'قناة إعلان المستوى'], ['levelUpMessage', 'رسالة الترقية للمستوى'], ['levelCooldownSeconds', 'فترة احتساب الخبرة بالثواني'], ['autorunBackupEnabled', 'تفعيل النسخ الاحتياطي المجدول'], ['autorunBackupIntervalHours', 'فترة النسخ الاحتياطي بالساعات']
+            ] },
+            { title: 'الأذكار والقرآن', note: 'اختر قناة ونصًا تملكه أو راجعته بنفسك؛ يرسل البوت النص دوريًا، ولا يجلب آيات أو أذكارًا تلقائيًا.', items: [
+                ['azkarEnabled', 'تفعيل إرسال الأذكار'], ['azkarChannelId', 'قناة الأذكار'], ['azkarMessage', 'نص الذكر'], ['azkarIntervalHours', 'فترة إرسال الأذكار بالساعات'], ['quranReminderEnabled', 'تفعيل تذكير القرآن'], ['quranChannelId', 'قناة القرآن'], ['quranMessage', 'نص الآية أو التلاوة'], ['quranIntervalHours', 'فترة تذكير القرآن بالساعات']
+            ] }
+        ];
+        const extraBooleanKeys = new Set([
+            'commandsEnabled', 'commandDeleteAfterUse', 'antiSpamIgnoreAdmins', 'antiLinksBlockInvites', 'antiLinksBlockExternal',
+            'capsFilterEnabled', 'duplicateFilterEnabled', 'mentionSpamEnabled', 'blockedWordsEnabled', 'logDeletedMessages',
+            'logEditedMessages', 'logMemberJoins', 'logMemberLeaves', 'logModerationActions', 'logRoleChanges', 'logChannelChanges',
+            'logBotCommands', 'welcomeEnabled', 'welcomeSendDm', 'welcomeIgnoreBots', 'farewellEnabled', 'verificationEnabled',
+            'autoRoleEnabled', 'warningEscalationEnabled', 'antiRaidEnabled', 'inviteTrackingEnabled', 'ticketEnabled',
+            'ticketAskReason', 'ticketTranscriptEnabled', 'ticketNotifySupport', 'ticketAllowMemberClose', 'suggestionAnonymousEnabled',
+            'suggestionEnabled', 'pollEnabled', 'levelSystemEnabled', 'autorunBackupEnabled', 'azkarEnabled', 'quranReminderEnabled',
+            'antiNukeEnabled', 'antiNukeChannelCreateEnabled', 'antiNukeChannelDeleteEnabled', 'antiNukeRoleCreateEnabled', 'antiNukeRoleDeleteEnabled',
+            'antiNukeRoleUpdateEnabled', 'antiNukeBanEnabled', 'antiNukeWebhookCreateEnabled', 'antiNukeWebhookDeleteEnabled',
+            'antiNukeEmojiDeleteEnabled', 'antiNukeStickerDeleteEnabled', 'antiNukeLockdownEnabled', 'antiNukeLogAllEvents'
+        ]);
+        const extraNumberLimits = {
+            commandCooldownSeconds: [0, 60], antiSpamLimit: [2, 30], antiSpamWindowSeconds: [2, 60], capsThresholdPercent: [50, 100],
+            capsMinimumLength: [4, 100], duplicateMessageLimit: [2, 10], duplicateWindowSeconds: [3, 120], mentionLimit: [2, 30],
+            verificationTimeoutMinutes: [1, 1440], verificationMinAccountAgeDays: [0, 365], warningLimit: [2, 10],
+            warningTimeoutMinutes: [1, 10080], slowmodeSeconds: [0, 21600], auditRetentionDays: [1, 365], antiRaidJoinLimit: [2, 100],
+            antiRaidWindowSeconds: [5, 600], inviteRewardThreshold: [1, 100], levelCooldownSeconds: [5, 3600], autorunBackupIntervalHours: [1, 168],
+            ticketMaxOpen: [1, 5], ticketCloseDeleteAfterMinutes: [0, 1440], suggestionMinLength: [1, 500], suggestionMaxLength: [10, 1000], azkarIntervalHours: [1, 168], quranIntervalHours: [1, 168],
+            antiNukeChannelCreateLimit: [1, 20], antiNukeChannelDeleteLimit: [1, 20], antiNukeRoleCreateLimit: [1, 20], antiNukeRoleDeleteLimit: [1, 20], antiNukeRoleUpdateLimit: [1, 20], antiNukeBanLimit: [1, 20], antiNukeWebhookCreateLimit: [1, 20], antiNukeWebhookDeleteLimit: [1, 20], antiNukeEmojiDeleteLimit: [1, 20], antiNukeStickerDeleteLimit: [1, 20], antiNukeWindowSeconds: [1, 600], antiNukeTimeoutMinutes: [1, 1440], antiNukeCooldownSeconds: [0, 3600], antiNukeLockdownDurationMinutes: [1, 60]
+        };
+        const extraChoiceOptions = {
+            commandLanguage: [['ar', 'العربية'], ['en', 'English']],
+            antiSpamAction: [['delete', 'حذف'], ['warn', 'تحذير']],
+            capsAction: [['delete', 'حذف'], ['warn', 'تحذير']],
+            mentionSpamAction: [['delete', 'حذف'], ['warn', 'تحذير']],
+            blockedWordsAction: [['delete', 'حذف'], ['warn', 'تحذير']],
+            antiRaidAction: [['alert', 'تنبيه المشرفين'], ['lockdown', 'قفل مؤقت']],
+            antiNukeAction: [['alert', 'تنبيه فقط'], ['timeout', 'مهلة'], ['kick', 'طرد'], ['ban', 'حظر']],
+            ticketPanelColor: [['teal', 'فيروزي'], ['blue', 'أزرق'], ['purple', 'بنفسجي'], ['green', 'أخضر'], ['red', 'أحمر'], ['gold', 'ذهبي']],
+            ticketWelcomeColor: [['teal', 'فيروزي'], ['blue', 'أزرق'], ['purple', 'بنفسجي'], ['green', 'أخضر'], ['red', 'أحمر'], ['gold', 'ذهبي']],
+            suggestionEmbedColor: [['teal', 'فيروزي'], ['blue', 'أزرق'], ['purple', 'بنفسجي'], ['green', 'أخضر'], ['red', 'أحمر'], ['gold', 'ذهبي']],
+            ticketPanelButtonStyle: [['primary', 'أزرق'], ['secondary', 'رمادي'], ['success', 'أخضر'], ['danger', 'أحمر']],
+            ticketCloseButtonStyle: [['primary', 'أزرق'], ['secondary', 'رمادي'], ['success', 'أخضر'], ['danger', 'أحمر']],
+            suggestionUpvoteStyle: [['primary', 'أزرق'], ['secondary', 'رمادي'], ['success', 'أخضر'], ['danger', 'أحمر']],
+            suggestionDownvoteStyle: [['primary', 'أزرق'], ['secondary', 'رمادي'], ['success', 'أخضر'], ['danger', 'أحمر']]
+        };
+        const extraLongTextKeys = new Set(['commandsAllowedChannelIds', 'antiSpamIgnoreChannels', 'antiLinksAllowedDomains', 'antiLinksIgnoreChannels', 'antiLinksIgnoreRoleIds', 'blockedWords', 'pollChannelIds', 'ticketPanelDescription', 'ticketWelcomeMessage', 'suggestionReviewMessage', 'azkarMessage', 'quranMessage', 'antiNukeAllowlistedUserIds', 'antiNukeAllowlistedRoleIds', 'customEmbedDescription']);
+        const activeAdvancedSettingKeys = new Set(advancedSettingGroups.flatMap((group) => group.items.map(([key]) => key)));
+        const extraTextLimits = { commandsRoleId: 24, commandsAllowedChannelIds: 500, antiSpamWarning: 180, antiSpamIgnoreChannels: 500, antiLinksAllowedDomains: 500, antiLinksWarning: 180, antiLinksIgnoreChannels: 500, antiLinksIgnoreRoleIds: 500, modLogChannelId: 24, welcomeChannelId: 24, welcomeMessage: 500, welcomeRoleId: 24, welcomeDmMessage: 500, farewellChannelId: 24, farewellMessage: 500, verificationRoleId: 24, autoRoleId: 24, blockedWords: 1000, supportChannelId: 24, antiRaidAlertChannelId: 24, antiNukeAlertChannelId: 24, antiNukeAlertRoleId: 24, antiNukeAllowlistedUserIds: 500, antiNukeAllowlistedRoleIds: 500, inviteRewardRoleId: 24, ticketPanelChannelId: 24, ticketCategoryId: 24, ticketSupportRoleId: 24, ticketTranscriptChannelId: 24, ticketPanelTitle: 100, ticketPanelDescription: 1000, ticketPanelButtonLabel: 80, ticketPanelButtonEmoji: 32, ticketReasonTitle: 100, ticketReasonPlaceholder: 100, ticketWelcomeTitle: 100, ticketWelcomeMessage: 1500, ticketWelcomeImageUrl: 500, ticketCloseButtonLabel: 80, ticketCloseMessage: 300, ticketConfirmationMessage: 200, ticketNamePrefix: 24, suggestionChannelId: 24, suggestionReviewChannelId: 24, suggestionEmbedTitle: 100, suggestionEmbedImageUrl: 500, suggestionUpvoteLabel: 40, suggestionDownvoteLabel: 40, suggestionUpvoteEmoji: 32, suggestionDownvoteEmoji: 32, suggestionConfirmationMessage: 200, suggestionReviewMessage: 300, levelAnnouncementChannelId: 24, levelUpMessage: 300, azkarChannelId: 24, azkarMessage: 1500, quranChannelId: 24, quranMessage: 1500, customEmbedChannelId: 24, customEmbedTitle: 256, customEmbedDescription: 4000, customEmbedThumbnailUrl: 500, customEmbedImageUrl: 500 };
+        function settingInstructions(key, labelText) {
+            if (key === 'customEmbedChannelId') return 'مطلوب للإرسال من لوحة التحكم: ضع معرّف القناة النصية التي تريد نشر الإمبيد فيها.';
+            if (key === 'customEmbedTitle') return 'عنوان البطاقة؛ اتركه فارغًا إذا أردت عرض الرسالة وحدها.';
+            if (key === 'customEmbedDescription') return 'اكتب نص الإمبيد (حتى 4000 حرف). عند الحفظ يرسل البوت البطاقة؛ أدخل عنوانًا أو رسالة على الأقل.';
+            if (key === 'customEmbedThumbnailUrl') return 'اختياري: رابط مباشر لصورة HTTPS تظهر كأيقونة صغيرة أعلى البطاقة.';
+            if (key === 'customEmbedImageUrl') return 'اختياري: رابط مباشر لصورة HTTPS تظهر أسفل البطاقة بعرضها.';
+            if (key === 'customEmbedColor') return 'اختر لون الشريط الجانبي للإمبيد من منتقي الألوان.';
+            if (key === 'antiNukeEnabled') return 'فعّل الحماية أولًا، ثم فعّل أنواع الأحداث وحدد حدودًا مناسبة. يحتاج البوت صلاحية View Audit Log؛ ابدأ بوضع التنبيه فقط.';
+            if (key === 'antiNukeAlertChannelId') return 'ضع معرّف قناة نصية يستطيع البوت إرسال التنبيهات فيها. اتركه فارغًا لاستخدام قناة سجل الإشراف إن كانت محددة.';
+            if (key === 'antiNukeAlertRoleId') return 'اختياري: معرّف رتبة المشرفين التي تريد تنبيهها عند تجاوز الحد.';
+            if (key === 'antiNukeAllowlistedUserIds' || key === 'antiNukeAllowlistedRoleIds') return 'اكتب معرّفات موثوقة فقط، وافصل بينها بفواصل. الأعضاء والرتب المستثناة لن تطبق عليهم إجراءات الحماية.';
+            if (key === 'antiNukeAction') return 'التنبيه فقط هو الخيار الآمن للبدء. المهلة والطرد والحظر إجراءات تلقائية وتحتاج صلاحيات البوت المناسبة.';
+            if (key === 'antiNukeLockdownEnabled') return 'يقفل الإرسال في القنوات النصية مؤقتًا عند تجاوز الحد. يحتاج البوت Manage Channels؛ استخدمه بحذر.';
+            if (key === 'azkarEnabled' || key === 'quranReminderEnabled') return 'فعّل الخيار وحدد قناة ونصًا بعد مراجعته، ثم احفظ. يرسل البوت النص كل المدة المحددة؛ أوقف الخيار لحذف الجدولة.';
+            if (key === 'azkarChannelId' || key === 'quranChannelId') return 'ضع معرّف قناة نصية يستطيع البوت إرسال الرسائل فيها.';
+            if (key === 'azkarMessage') return 'اكتب الذكر الذي تريد نشره بعد التأكد من صحة النص. لا يضيف البوت أذكارًا تلقائيًا.';
+            if (key === 'quranMessage') return 'اكتب الآية أو نص التلاوة مع مرجعها بعد مراجعة النص. لا يجلب البوت آيات تلقائيًا.';
+            if (key === 'azkarIntervalHours' || key === 'quranIntervalHours') return 'حدد عدد الساعات بين الرسائل (من ساعة إلى 168 ساعة).';
+            if (key === 'commandPrefix') return 'اكتب بادئة من رمز إلى 3 رموز. مثال: ! ثم استخدم !plan أو !anticrash.';
+            if (key === 'commandsEnabled') return 'فعّل أو أوقف أوامر النص، مثل !plan و!support. أوامر السلاش الخاصة بالخدمات تظل مستقلة.';
+            if (key === 'commandCooldownSeconds') return 'مدة الانتظار بين أوامر النص للشخص نفسه؛ اجعلها 0 لإيقاف الانتظار.';
+            if (key === 'pollEnabled') return 'فعّل واحفظ، ثم استخدم /poll واكتب السؤال. يضيف البوت تصويتي 👍 و👎.';
+            if (key === 'pollChannelIds') return 'اختياري: معرّفات القنوات التي يُسمح فيها بأمر /poll، مفصولة بفواصل. اتركه فارغًا للسماح بكل القنوات.';
+            if (key === 'levelSystemEnabled') return 'فعّل واحفظ. يكسب العضو خبرة عند الكتابة، ويعلن البوت عند ارتفاع مستواه.';
+            if (key === 'levelCooldownSeconds') return 'الوقت الذي يجب أن يمر قبل احتساب خبرة جديدة للعضو.';
+            if (key === 'autorunBackupEnabled') return 'فعّل واحفظ لإنشاء نسخة JSON من إعدادات البوت كل فترة. تُرسل إلى قناة سجل الإدارة أو قناة الدعم.';
+            if (key === 'autorunBackupIntervalHours') return 'حدد عدد الساعات بين نسخ إعدادات البوت الاحتياطية.';
+            if (key === 'antiRaidEnabled') return 'فعّل واحفظ لرصد الانضمامات السريعة. يتطلب Server Members Intent وصلاحية البوت المناسبة.';
+            if (key === 'inviteTrackingEnabled') return 'فعّل واحفظ، ثم استخدم /invites لعرض العدد. يتطلب صلاحية إدارة السيرفر للبوت لجلب الدعوات.';
+            if (key === 'warningEscalationEnabled') return 'فعّل واحفظ؛ بعد الوصول للحد المحدد في التحذيرات، يحاول البوت تطبيق مهلة على العضو.';
+            if (key === 'slowmodeSeconds') return 'يطبّق البوت مدة الوضع البطيء المحددة على القناة عندما يكتب فيها عضو. الصفر يعيد المدة السابقة التي يتذكرها البوت.';
+            if (key === 'verificationEnabled') return 'فعّل واحفظ مع اختيار رتبة التحقق. يأخذها العضو الجديد، ثم يستخدم /verify لإزالتها بعد استيفاء عمر الحساب.';
+            if (key === 'welcomeEnabled') return 'فعّل واحفظ مع معرّف قناة الترحيب. المتغيرات المدعومة: {user} و{mention} و{server} و{memberCount}.';
+            if (key === 'farewellEnabled') return 'فعّل واحفظ مع معرّف قناة المغادرة. يدعم النص {user} و{mention} و{server} و{memberCount}.';
+            if (key === 'supportChannelId') return 'ضع معرّف قناة الدعم؛ تظهر للمستخدمين مع الأمر /support أو بادئة السيرفر + support.';
+            if (key === 'auditRetentionDays') return 'مدة الاحتفاظ بسجل التحذيرات المحلية وسجلات الإدارة المنشورة من البوت.';
+            if (key === 'ticketPanelChannelId') return 'اختياري: ضع معرّف قناة نصية لينشر البوت فيها زر «فتح تذكرة» خلال دقيقة من الحفظ. ويمكن فتحها مباشرة بالأمر /ticket.';
+            if (key === 'ticketCategoryId') return 'اختياري: ضع معرّف تصنيف Discord ليُنشئ البوت التذاكر تحته. يحتاج البوت صلاحية إدارة القنوات.';
+            if (key === 'ticketSupportRoleId') return 'اختياري: ضع معرّف رتبة فريق الدعم كي ترى التذاكر وترد عليها.';
+            if (key === 'ticketTranscriptChannelId') return 'اختياري: ضع معرّف قناة خاصة بالأرشيف؛ عند إغلاق التذكرة يرسل البوت ملفًا نصيًا بالمحادثة.';
+            if (key === 'ticketCloseMessage') return 'اكتب الرسالة التي يرسلها البوت في قناة التذكرة عند إغلاقها.';
+            if (key === 'ticketPanelButtonStyle' || key === 'ticketCloseButtonStyle' || key === 'suggestionUpvoteStyle' || key === 'suggestionDownvoteStyle') return 'اختر لون الزر الذي سيظهر في Discord ثم احفظ الإعدادات.';
+            if (key === 'ticketPanelColor' || key === 'ticketWelcomeColor' || key === 'suggestionEmbedColor') return 'اختر لون الشريط الجانبي للبطاقة ثم احفظ الإعدادات.';
+            if (key === 'ticketPanelDescription' || key === 'ticketWelcomeMessage' || key === 'suggestionReviewMessage') return 'اكتب النص الذي سيظهر. المتغيرات المدعومة للتذكرة: {user} و{mention} و{server} و{reason} و{channel}؛ ولمراجعة الاقتراح: {user} و{server}.';
+            if (key === 'ticketPanelButtonEmoji' || key === 'suggestionUpvoteEmoji' || key === 'suggestionDownvoteEmoji') return 'اختياري: اكتب رمزًا تعبيريًا ليظهر داخل الزر، مثل 🎫 أو ✅.';
+            if (key === 'ticketWelcomeImageUrl' || key === 'suggestionEmbedImageUrl') return 'اختياري: الصق رابط صورة مباشر يبدأ بـ https:// لتظهر في البطاقة.';
+            if (key === 'ticketAskReason') return 'عند التفعيل، يعرض البوت نموذجًا قصيرًا يكتبه العضو قبل إنشاء قناة التذكرة.';
+            if (key === 'ticketMaxOpen') return 'حدد عدد قنوات التذاكر المفتوحة المسموح بها لكل عضو في الوقت نفسه.';
+            if (key === 'ticketCloseDeleteAfterMinutes') return '0 يبقي القناة مغلقة للأرشيف. أدخل عدد الدقائق لحذف القناة تلقائيًا بعد الإغلاق.';
+            if (key === 'ticketTranscriptEnabled') return 'عطّل الخيار لمنع حفظ ملف نصي للمحادثة عند إغلاق التذكرة.';
+            if (key === 'ticketAllowMemberClose') return 'عند التعطيل، يستطيع فريق الدعم فقط استخدام زر إغلاق التذكرة.';
+            if (key === 'ticketNotifySupport') return 'فعّله ليذكر البوت رتبة الدعم في قناة التذكرة الجديدة.';
+            if (key === 'suggestionAnonymousEnabled') return 'عند التفعيل، يخفي البوت اسم صاحب الاقتراح وصورته من بطاقة الاقتراح العامة.';
+            if (key === 'suggestionChannelId') return 'ضع معرّف قناة نشر الاقتراحات. يرسل الأعضاء اقتراحهم بالأمر /suggest وتظهر أزرار التصويت التي تخصصها هنا.';
+            if (key === 'suggestionReviewChannelId') return 'اختياري: قناة فريق المراجعة؛ يرسل البوت نسخة من كل اقتراح إليها أيضًا.';
+            if (key === 'ticketEnabled') return 'فعّل الخيار واحفظ. بعد ذلك استخدم /ticket أو زر اللوحة إن عيّنت قناة له.';
+            if (key === 'suggestionEnabled') return 'فعّل الخيار واحفظ. بعدها يرسل الأعضاء اقتراحاتهم باستخدام /suggest مع نص الاقتراح.';
+            if (/Id$/.test(key) || /Ids$/.test(key) || /ChannelIds$/.test(key)) return 'انسخ معرّف القناة أو الرتبة من Discord بعد تفعيل وضع المطوّر: الإعدادات > متقدم > وضع المطوّر، ثم زر يمين > نسخ المعرّف. للقائمة افصل المعرّفات بفواصل.';
+            if (/Message$/.test(key) || /Warning$/.test(key)) return 'اكتب النص الذي سيظهر للأعضاء ثم اضغط «حفظ الإعدادات». استخدم {user} لاسم العضو، و{server} لاسم السيرفر، و{level} للمستوى عند ملاءمته.';
+            if (key === 'blockedWords') return 'اكتب الكلمات مفصولة بفواصل، مثل: كلمة1، كلمة2. لا تضف كلمات لا تريد منعها.';
+            if (key === 'antiLinksAllowedDomains') return 'اكتب النطاقات المسموحة مفصولة بفواصل، من دون https://، مثل: example.com, discord.com.';
+            if (/Enabled$/.test(key) || /IgnoreAdmins$/.test(key) || /Block/.test(key) || /DeleteAfterUse$/.test(key) || /SendDm$/.test(key) || /IgnoreBots$/.test(key)) return `فعّل الخيار لتشغيله أو أزل العلامة لإيقافه، ثم احفظ. ${activeAdvancedSettingKeys.has(key) ? 'يطبّق البوت هذا الخيار تلقائيًا؛ لا يحتاج أمرًا.' : 'لا يوجد أمر Discord لهذا الخيار حتى الآن؛ تغييره هنا يُحفظ فقط إلى حين ربطه بالبوت.'}`;
+            if (extraChoiceOptions[key]) return `اختر الإجراء المطلوب ثم احفظ. ${activeAdvancedSettingKeys.has(key) ? 'يطبّق البوت الاختيار تلقائيًا؛ لا يحتاج أمرًا.' : 'لا يوجد أمر Discord لهذا الخيار حتى الآن؛ تغييره هنا يُحفظ فقط إلى حين ربطه بالبوت.'}`;
+            if (extraNumberLimits[key]) return `اكتب رقمًا ضمن المجال ${extraNumberLimits[key][0]}–${extraNumberLimits[key][1]} ثم احفظ. ${activeAdvancedSettingKeys.has(key) ? 'التطبيق تلقائي ولا يحتاج أمرًا.' : 'لا يوجد أمر Discord لهذا الخيار حتى الآن؛ تغييره هنا يُحفظ فقط إلى حين ربطه بالبوت.'}`;
+            if (key === 'antiLinksAllowedDomains') return 'اكتب النطاقات المسموحة مفصولة بفواصل، مثل: example.com, discord.com.';
+            return `اضبط «${labelText}» ثم اضغط «حفظ الإعدادات». يقرأ البوت التغيير تلقائيًا خلال ثوانٍ؛ راجع الملاحظة الخاصة بالقسم لمعرفة الصلاحيات المطلوبة.`;
+        }
+        function renderAdvancedSettings(values = {}) {
+            const root = document.getElementById('advanced-settings-groups');
+            root.replaceChildren();
+            advancedSettingGroups.forEach((group) => {
+                const section = document.createElement('details');
+                section.className = 'advanced-group';
+                const heading = document.createElement('summary');
+                heading.textContent = dashboardText(group.title);
+                section.appendChild(heading);
+                if (group.note) {
+                    const note = document.createElement('p');
+                    note.className = 'settings-note';
+                    note.textContent = group.note;
+                    section.appendChild(note);
+                }
+                const grid = document.createElement('div');
+                grid.className = 'advanced-grid';
+                group.items.forEach(([key, labelText]) => {
+                    const label = document.createElement('label');
+                    label.className = 'advanced-field';
+                    const labelTextNode = document.createElement('span');
+                    labelTextNode.textContent = dashboardLabel(key, labelText);
+                    const badge = document.createElement('small');
+                    badge.className = 'settings-coming-soon';
+                    badge.textContent = dashboardText(activeAdvancedSettingKeys.has(key) ? 'يعمل الآن' : 'قيد الربط');
+                    if (activeAdvancedSettingKeys.has(key)) badge.classList.add('current');
+                    label.append(labelTextNode, badge);
+                    let control;
+                    if (key === 'customEmbedColor') {
+                        control = document.createElement('input');
+                        control.type = 'color';
+                        control.className = 'embed-builder-color';
+                        control.value = /^#[\da-f]{6}$/i.test(values[key] || '') ? values[key] : '#5865f2';
+                    } else if (extraBooleanKeys.has(key)) {
+                        control = document.createElement('input');
+                        control.type = 'checkbox';
+                        control.checked = Boolean(values[key]);
+                    } else if (extraNumberLimits[key]) {
+                        control = document.createElement('input');
+                        control.type = 'number';
+                        [control.min, control.max] = extraNumberLimits[key];
+                        control.step = '1';
+                        control.value = values[key] ?? 0;
+                    } else if (extraChoiceOptions[key]) {
+                        control = document.createElement('select');
+                        extraChoiceOptions[key].forEach(([value, text]) => {
+                            const option = document.createElement('option');
+                            option.value = value;
+                            option.textContent = dashboardLanguage === 'en' ? ({'حذف':'Delete','تحذير':'Warn','أزرق':'Blue','رمادي':'Gray','أخضر':'Green','أحمر':'Red','فيروزي':'Teal','بنفسجي':'Purple','ذهبي':'Gold','تنبيه المشرفين':'Alert moderators','قفل مؤقت':'Temporary lockdown','العربية':'Arabic','أزرق':'Blue'}[text] || text) : text;
+                            control.appendChild(option);
+                        });
+                        control.value = values[key] || extraChoiceOptions[key][0][0];
+                    } else {
+                        control = extraLongTextKeys.has(key) ? document.createElement('textarea') : document.createElement('input');
+                        if (control.tagName === 'INPUT') control.type = 'text';
+                        control.maxLength = extraTextLimits[key] || 1000;
+                        control.value = values[key] ?? '';
+                        if (extraLongTextKeys.has(key)) control.placeholder = 'اكتب القيم وافصل بينها بفاصلة';
+                    }
+                    control.dataset.advancedSetting = key;
+                    label.appendChild(control);
+                    const help = document.createElement('small');
+                    help.className = 'advanced-field-help';
+                    help.textContent = dashboardLanguage === 'ar' ? settingInstructions(key, labelText) : dashboardLanguage === 'fr' ? `Configurez ${dashboardLabel(key, labelText).toLowerCase()} puis enregistrez. ${activeAdvancedSettingKeys.has(key) ? 'Le bot applique ce paramètre automatiquement.' : 'Cette option est enregistrée mais pas encore appliquée.'}` : dashboardLanguage === 'es' ? `Configura ${dashboardLabel(key, labelText).toLowerCase()} y guarda. ${activeAdvancedSettingKeys.has(key) ? 'El bot aplica esta opción automáticamente.' : 'Esta opción se guarda, pero aún no se aplica.'}` : dashboardLanguage === 'de' ? `${dashboardLabel(key, labelText)} konfigurieren und speichern. ${activeAdvancedSettingKeys.has(key) ? 'Der Bot wendet diese Option automatisch an.' : 'Diese Option wird gespeichert, aber noch nicht angewendet.'}` : dashboardLanguage === 'pt' ? `Configure ${dashboardLabel(key, labelText).toLowerCase()} e salve. ${activeAdvancedSettingKeys.has(key) ? 'O bot aplica esta opção automaticamente.' : 'Esta opção é salva, mas ainda não é aplicada.'}` : dashboardLanguage === 'ko' ? `${dashboardLabel(key, labelText)}을(를) 설정하고 저장하세요. ${activeAdvancedSettingKeys.has(key) ? '봇이 이 설정을 자동으로 적용합니다.' : '이 옵션은 저장되지만 아직 적용되지 않습니다.'}` : dashboardLanguage === 'ja' ? `${dashboardLabel(key, labelText)}を設定して保存してください。${activeAdvancedSettingKeys.has(key) ? 'この設定はボットに自動適用されます。' : '保存されますが、まだ適用されません。'}` : `Configure ${dashboardLabel(key, labelText).toLowerCase()} and save. ${activeAdvancedSettingKeys.has(key) ? 'The bot applies this setting automatically.' : 'This option is saved but is not connected to bot behavior yet.'}`;
+                    label.appendChild(help);
+                    grid.appendChild(label);
+                });
+                section.appendChild(grid);
+                if (group.key === 'embedBuilder') {
+                    const preview = document.createElement('article');
+                    preview.className = 'embed-builder-preview';
+                    preview.innerHTML = '<img class="embed-builder-preview-thumb" alt="معاينة الأيقونة المصغرة" hidden><h5>معاينة الإمبيد</h5><p></p><img class="embed-builder-preview-image" alt="معاينة الصورة السفلية">';
+                    section.appendChild(preview);
+                    const updatePreview = () => {
+                        const read = (key) => section.querySelector(`[data-advanced-setting="${key}"]`)?.value?.trim() || '';
+                        const title = read('customEmbedTitle');
+                        const description = read('customEmbedDescription');
+                        preview.querySelector('h5').textContent = title || 'معاينة الإمبيد';
+                        preview.querySelector('p').textContent = description || 'سيظهر نص الإمبيد هنا.';
+                        preview.style.borderInlineStartColor = read('customEmbedColor') || '#5865f2';
+                        const setPreviewImage = (img, url, visibleClass = '') => {
+                            let valid = false;
+                            try { valid = new URL(url).protocol === 'https:'; } catch {}
+                            if (valid) { img.src = url; img.hidden = false; if (visibleClass) img.classList.add(visibleClass); }
+                            else { img.removeAttribute('src'); img.hidden = true; if (visibleClass) img.classList.remove(visibleClass); }
+                        };
+                        setPreviewImage(preview.querySelector('.embed-builder-preview-thumb'), read('customEmbedThumbnailUrl'));
+                        setPreviewImage(preview.querySelector('.embed-builder-preview-image'), read('customEmbedImageUrl'), 'visible');
+                    };
+                    section.querySelectorAll('[data-advanced-setting^="customEmbed"]').forEach((control) => control.addEventListener('input', updatePreview));
+                    updatePreview();
+                    const sendStatus = document.createElement('p');
+                    sendStatus.id = 'embed-send-status';
+                    sendStatus.className = 'settings-note';
+                    sendStatus.setAttribute('aria-live', 'polite');
+                    section.appendChild(sendStatus);
+                }
+                root.appendChild(section);
+            });
+        }
+
+        function readAdvancedSettings() {
+            return Object.fromEntries([...document.querySelectorAll('[data-advanced-setting]')].map((control) => {
+                const key = control.dataset.advancedSetting;
+                let value;
+                if (extraBooleanKeys.has(key)) value = control.checked;
+                else if (extraNumberLimits[key]) value = Number(control.value);
+                else value = control.value.trim();
+                return [key, value];
+            }));
+        }
+
+        async function initDashboard() {
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            let accessToken = fragment.get('access_token');
+
+            if (accessToken) {
+                localStorage.setItem('discord_token', accessToken);
+                window.location.hash = '';
+                const ipAdminState = sessionStorage.getItem('ys-bot-ip-admin-state');
+                if (ipAdminState && fragment.get('state') === ipAdminState) {
+                    sessionStorage.removeItem('ys-bot-ip-admin-state');
+                    window.location.replace('/ip-admin.html');
+                    return;
+                }
+            } else {
+                accessToken = localStorage.getItem('discord_token');
+            }
+
+            if (!accessToken) {
+                alert('يرجى تسجيل الدخول أولاً عبر ديسكورد!');
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                const userRes = await fetch('https://discord.com/api/users/@me', {
+                    headers: { authorization: `Bearer ${accessToken}` }
+                });
+                if (!userRes.ok) throw new Error('Unauthorized');
+                const user = await userRes.json();
+                try {
+                    const preferenceRes = await fetch('/api/user-preferences', { headers: { authorization: `Bearer ${accessToken}` } });
+                    if (!preferenceRes.ok) throw new Error('تعذر تحميل إعدادك الشخصي');
+                    const preferences = await preferenceRes.json();
+                    selectedProfileTheme = profileThemes.some(([theme]) => theme === preferences.profileCardTheme) ? preferences.profileCardTheme : 'classic';
+                    profilePremiumActive = Boolean(preferences.premiumActive);
+                    document.getElementById('profile-premium-access').hidden = !profilePremiumActive;
+                    document.getElementById('profile-image-file').disabled = !profilePremiumActive;
+                    document.getElementById('save-profile-image').disabled = !profilePremiumActive;
+                    document.getElementById('remove-profile-image').disabled = !profilePremiumActive;
+                    profileImageDataUrl = preferences.profileCardImage || null;
+                    if (profileImageDataUrl) document.getElementById('profile-image-preview').src = profileImageDataUrl;
+                    if (!profilePremiumActive) document.getElementById('profile-image-status').textContent = 'رفع الصورة المخصصة متاح بعد تفعيل Premium على سيرفر تملكه.';
+                } catch (error) {
+                    document.getElementById('profile-theme-status').textContent = error.message;
+                    document.getElementById('profile-theme-status').style.color = '#fca5a5';
+                }
+                renderProfileThemeOptions();
+                fetch('/api/site/identify', {
+                    method: 'POST',
+                    headers: { authorization: `Bearer ${accessToken}` }
+                }).catch(() => {});
+
+                const guildsRes = await fetch('https://discord.com/api/users/@me/guilds', {
+                    headers: { authorization: `Bearer ${accessToken}` }
+                });
+                const guilds = await guildsRes.json();
+                const adminGuilds = guilds.filter((guild) => (guild.permissions & 0x8) === 0x8 || guild.owner);
+
+                document.getElementById('user-name').textContent = user.username;
+                document.getElementById('user-avatar').src = user.avatar
+                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+                    : 'https://cdn.discordapp.com/embed/avatars/0.png';
+
+                const guildsContainer = document.getElementById('guilds-container');
+                guildsContainer.replaceChildren();
+                adminGuilds.forEach((guild) => {
+                    const card = document.createElement('div');
+                    card.className = 'guild-card';
+
+                    if (guild.icon) {
+                        const icon = document.createElement('img');
+                        icon.className = 'guild-icon';
+                        icon.src = `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`;
+                        icon.alt = '';
+                        card.appendChild(icon);
+                    } else {
+                        const icon = document.createElement('div');
+                        icon.className = 'guild-icon';
+                        icon.textContent = guild.name.charAt(0);
+                        card.appendChild(icon);
+                    }
+
+                    const name = document.createElement('h4');
+                    name.style.margin = '0';
+                    name.textContent = guild.name;
+                    card.appendChild(name);
+
+                    const configure = document.createElement('button');
+                    configure.className = 'btn-configure';
+                    configure.type = 'button';
+                    configure.textContent = dashboardText('إعدادات السيرفر');
+                    configure.addEventListener('click', () => openGuildSettings(guild));
+                    card.appendChild(configure);
+
+                    const upgrade = document.createElement('a');
+                    upgrade.className = 'btn-upgrade';
+                    upgrade.href = '/#pricing';
+                    const planUpgradeLabels = { ar: 'ترقية الخطة', en: 'Upgrade plan', fr: 'Changer de forfait', es: 'Mejorar plan', de: 'Tarif upgraden', pt: 'Melhorar plano', ko: '요금제 업그레이드', ja: 'プランをアップグレード' };
+                    upgrade.textContent = planUpgradeLabels[dashboardLanguage] || planUpgradeLabels.en;
+                    card.appendChild(upgrade);
+                    guildsContainer.appendChild(card);
+                });
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'block';
+                applyDashboardLanguage(dashboardLanguage);
+                const requestedDashboardTarget = sessionStorage.getItem('ys-bot-dashboard-target');
+                if (requestedDashboardTarget === 'personal-settings' || window.location.hash === '#personal-settings') {
+                    sessionStorage.removeItem('ys-bot-dashboard-target');
+                    requestAnimationFrame(() => document.getElementById('personal-settings')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+                }
+
+            } catch (error) {
+                console.error(error);
+                localStorage.removeItem('discord_token');
+                window.location.href = '/';
+            }
+        }
+
+        async function openGuildSettings(guild) {
+            selectedGuildId = guild.id;
+            document.getElementById('server-settings-title').textContent = dashboardText('إعدادات السيرفر');
+            document.getElementById('selected-guild-name').textContent = guild.name;
+            const panel = document.getElementById('server-settings-panel');
+            const status = document.getElementById('guild-settings-status');
+            const saveButton = document.getElementById('save-guild-settings');
+            panel.hidden = false;
+            document.getElementById('dashboard-nav-server-settings').disabled = false;
+            document.getElementById('dashboard-nav-hint').textContent = dashboardText('انتقل مباشرة إلى إعدادات السيرفر المحدد');
+            status.style.color = '#9aabba';
+            status.textContent = dashboardText('جاري تحميل الإعدادات...');
+            saveButton.disabled = true;
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            try {
+                const response = await fetch(`/api/guild-settings/${encodeURIComponent(guild.id)}`, {
+                    headers: { authorization: `Bearer ${localStorage.getItem('discord_token')}` }
+                });
+                const settings = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(settings.error || 'تعذر تحميل الإعدادات');
+                if (selectedGuildId !== guild.id) return;
+                document.getElementById('setting-command-prefix').value = settings.commandPrefix || '!';
+                document.getElementById('setting-anti-spam').checked = Boolean(settings.antiSpam);
+                document.getElementById('setting-anti-links').checked = Boolean(settings.antiLinks);
+                renderAdvancedSettings(settings.advancedSettings || {});
+                await loadServerBackups(guild.id).catch((error) => {
+                    document.getElementById('server-backup-error').textContent = error.message;
+                });
+                status.textContent = dashboardLanguage === 'en' ? 'Saved settings loaded.' : 'تم تحميل الإعدادات المحفوظة.';
+                status.style.color = '#71e0cc';
+            } catch (error) {
+                status.textContent = error.message;
+                status.style.color = '#fca5a5';
+            } finally {
+                saveButton.disabled = false;
+            }
+        }
+
+        function serverBackupHeaders() {
+            return { authorization: `Bearer ${localStorage.getItem('discord_token')}` };
+        }
+
+        async function loadServerBackups(guildId = selectedGuildId) {
+            const select = document.getElementById('server-backup-select');
+            if (!guildId || !select) return;
+            const selected = select.value;
+            const response = await fetch(`/api/guild-settings/${encodeURIComponent(guildId)}/server-backups`, { headers: serverBackupHeaders(), cache: 'no-store' });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result.error || 'تعذر تحميل النسخ المحفوظة.');
+            select.replaceChildren(new Option('اختر نسخة محفوظة', ''));
+            (result.backups || []).forEach((backup) => {
+                const date = new Date(backup.createdAt).toLocaleString(dashboardLanguage === 'en' ? 'en' : 'ar');
+                const label = `${date} — ${backup.channelCount} قناة، ${backup.roleCount} رتبة`;
+                select.add(new Option(label, backup.id));
+            });
+            if ([...select.options].some((option) => option.value === selected)) select.value = selected;
+        }
+
+        async function waitForServerTask(taskId, guildId, taskType) {
+            const panel = document.getElementById('server-backup-progress');
+            const track = panel.querySelector('[role="progressbar"]');
+            const fill = panel.querySelector('.server-backup-progress-track span');
+            const label = document.getElementById('server-backup-progress-message');
+            const number = document.getElementById('server-backup-progress-number');
+            const success = document.getElementById('server-backup-success');
+            const errorBox = document.getElementById('server-backup-error');
+            const percent = (value) => {
+                const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
+                fill.style.width = `${safeValue}%`;
+                track.setAttribute('aria-valuenow', String(safeValue));
+                number.textContent = `${safeValue}%`;
+            };
+            panel.hidden = false;
+            success.hidden = true;
+            errorBox.textContent = '';
+            percent(0);
+            for (let attempt = 0; attempt < 180; attempt += 1) {
+                const response = await fetch(`/api/guild-settings/${encodeURIComponent(guildId)}/server-tasks/${encodeURIComponent(taskId)}`, { headers: serverBackupHeaders(), cache: 'no-store' });
+                const task = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(task.error || 'تعذرت قراءة تقدم العملية.');
+                if (selectedGuildId === guildId) {
+                    percent(task.progress);
+                    label.textContent = task.message || (taskType === 'backup' ? 'جارٍ نسخ هيكل السيرفر...' : 'جارٍ استرجاع هيكل السيرفر...');
+                }
+                if (task.status === 'completed') {
+                    if (selectedGuildId === guildId) {
+                        percent(100);
+                document.getElementById('server-backup-success-title').textContent = dashboardText(taskType === 'backup' ? 'تم نسخ خادم بنجاح' : 'تم استرجاع هيكل الخادم بنجاح');
+                        document.getElementById('server-backup-success-message').textContent = task.message || '';
+                        success.hidden = false;
+                        if (taskType === 'backup') await loadServerBackups(guildId);
+                    }
+                    return;
+                }
+                if (task.status === 'failed') throw new Error(task.message || 'تعذر إكمال العملية.');
+                await new Promise((resolve) => setTimeout(resolve, 1500));
+            }
+            throw new Error('تأخرت العملية. ما زال بإمكانك التحقق من النسخ بعد لحظات.');
+        }
+
+        async function startServerTask(taskType) {
+            if (!selectedGuildId) return;
+            const guildId = selectedGuildId;
+            const backupId = document.getElementById('server-backup-select').value;
+            const createButton = document.getElementById('create-server-backup');
+            const restoreButton = document.getElementById('restore-server-backup');
+            const errorBox = document.getElementById('server-backup-error');
+            if (taskType === 'restore') {
+                if (!backupId) { errorBox.textContent = 'اختر نسخة محفوظة أولًا.'; return; }
+                if (!window.confirm('سيعيد البوت إعدادات الرتب والقنوات المطابقة، وينشئ العناصر المفقودة دون حذف الموجود. لن يستعيد الرسائل أو الأعضاء أو توزيع الرتب عليهم أو صلاحيات الأعضاء الفردية داخل القنوات. هل تريد المتابعة؟')) return;
+            }
+            createButton.disabled = true;
+            restoreButton.disabled = true;
+            errorBox.textContent = '';
+            try {
+                const url = taskType === 'backup'
+                    ? `/api/guild-settings/${encodeURIComponent(guildId)}/server-backups`
+                    : `/api/guild-settings/${encodeURIComponent(guildId)}/server-backups/${encodeURIComponent(backupId)}/restore`;
+                const response = await fetch(url, { method: 'POST', headers: serverBackupHeaders() });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(result.error || 'تعذر بدء العملية.');
+                await waitForServerTask(result.taskId, guildId, taskType);
+            } catch (error) {
+                if (selectedGuildId === guildId) errorBox.textContent = error.message || 'تعذر إكمال العملية.';
+            } finally {
+                createButton.disabled = false;
+                restoreButton.disabled = false;
+            }
+        }
+
+        document.getElementById('create-server-backup').addEventListener('click', () => startServerTask('backup'));
+        document.getElementById('restore-server-backup').addEventListener('click', () => startServerTask('restore'));
+        document.getElementById('refresh-server-backups').addEventListener('click', async () => {
+            const errorBox = document.getElementById('server-backup-error');
+            try { await loadServerBackups(); errorBox.textContent = ''; }
+            catch (error) { errorBox.textContent = error.message; }
+        });
+
+        document.getElementById('save-profile-theme').addEventListener('click', async () => {
+            const button = document.getElementById('save-profile-theme');
+            const status = document.getElementById('profile-theme-status');
+            button.disabled = true;
+            status.style.color = '#9aabba';
+            status.textContent = 'جاري حفظ التصميم...';
+            try {
+                const response = await fetch('/api/user-preferences/profile-card-theme', {
+                    method: 'PUT',
+                    headers: { authorization: `Bearer ${localStorage.getItem('discord_token')}`, 'content-type': 'application/json' },
+                    body: JSON.stringify({ profileCardTheme: selectedProfileTheme })
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(result.error || 'تعذر حفظ التصميم');
+                status.textContent = 'تم حفظ تصميمك الشخصي. سيظهر في بطاقة /profile القادمة.';
+                status.style.color = '#71e0cc';
+            } catch (error) {
+                status.textContent = error.message;
+                status.style.color = '#fca5a5';
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        const profileImageInput = document.getElementById('profile-image-file');
+        profileImageInput.addEventListener('change', async () => {
+            const file = profileImageInput.files?.[0];
+            const status = document.getElementById('profile-image-status');
+            if (!file) return;
+            if (!profilePremiumActive) { status.textContent = 'الميزة لمشتركي Premium فقط.'; return; }
+            if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { status.textContent = 'اختر صورة JPG أو PNG أو WebP.'; profileImageInput.value = ''; return; }
+            try {
+                const bitmap = await createImageBitmap(file);
+                const scale = Math.min(1, 1600 / bitmap.width, 900 / bitmap.height);
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+                canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
+                for (let quality = .84; quality >= .44; quality -= .1) {
+                    profileImageDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    if (profileImageDataUrl.length <= 1_950_000) break;
+                }
+                if (profileImageDataUrl.length > 1_950_000) throw new Error('حجم الصورة بعد ضغطها ما زال كبيرًا؛ جرّب صورة أصغر.');
+                document.getElementById('profile-image-preview').src = profileImageDataUrl;
+                status.textContent = 'معاينة جاهزة. اضغط «حفظ الصورة المخصصة» لتطبيقها على /profile.';
+            } catch { status.textContent = 'تعذر فتح الصورة. اختر ملف صورة صالحًا.'; }
+        });
+        document.getElementById('save-profile-image').addEventListener('click', async () => {
+            const status = document.getElementById('profile-image-status');
+            if (!profilePremiumActive) { status.textContent = 'رفع الصورة المخصصة متاح لمشتركي Premium فقط.'; return; }
+            if (!profileImageDataUrl) { status.textContent = 'اختر صورة أولاً.'; return; }
+            const button = document.getElementById('save-profile-image'); button.disabled = true; status.textContent = 'جارٍ حفظ الصورة...';
+            try {
+                const response = await fetch('/api/user-preferences/profile-card-image', { method:'PUT', headers:{authorization:`Bearer ${localStorage.getItem('discord_token')}`,'content-type':'application/json'}, body:JSON.stringify({imageDataUrl:profileImageDataUrl}) });
+                const result = await response.json().catch(()=>({})); if (!response.ok) throw new Error(result.error || 'تعذر حفظ الصورة.');
+                status.textContent = 'تم حفظ الصورة. ستظهر في بطاقة /profile الخاصة بك.';
+            } catch (error) { status.textContent = error.message; }
+            finally { button.disabled = !profilePremiumActive; }
+        });
+        document.getElementById('remove-profile-image').addEventListener('click', async () => {
+            const status = document.getElementById('profile-image-status');
+            if (!profilePremiumActive) { status.textContent = 'الميزة لمشتركي Premium فقط.'; return; }
+            const button = document.getElementById('remove-profile-image'); button.disabled = true;
+            try {
+                const response = await fetch('/api/user-preferences/profile-card-image', { method:'DELETE', headers:{authorization:`Bearer ${localStorage.getItem('discord_token')}`} });
+                const result = await response.json().catch(()=>({})); if (!response.ok) throw new Error(result.error || 'تعذر إزالة الصورة.');
+                profileImageDataUrl = null; profileImageInput.value = ''; document.getElementById('profile-image-preview').src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27360%27 height=%27180%27%3E%3Crect width=%27360%27 height=%27180%27 fill=%27%2317132a%27/%3E%3Ctext x=%27180%27 y=%2796%27 fill=%27%23d8c8ff%27 text-anchor=%27middle%27 font-family=%27Arial%27 font-size=%2718%27%3EYS-Bot Profile%3C/text%3E%3C/svg%3E';
+                status.textContent = 'تمت إزالة الصورة المخصصة.';
+            } catch (error) { status.textContent = error.message; }
+            finally { button.disabled = !profilePremiumActive; }
+        });
+
+        document.getElementById('save-guild-settings').addEventListener('click', async () => {
+            const status = document.getElementById('guild-settings-status');
+            const saveButton = document.getElementById('save-guild-settings');
+            const commandPrefix = document.getElementById('setting-command-prefix').value.trim();
+            if (!selectedGuildId) return;
+            if (!/^[!?#.$%&*+-]{1,3}$/.test(commandPrefix)) {
+                status.textContent = 'اكتب بادئة من 1 إلى 3 رموز مثل ! أو ?.';
+                status.style.color = '#fca5a5';
+                return;
+            }
+            saveButton.disabled = true;
+            status.textContent = dashboardLanguage === 'en' ? 'Saving...' : 'جاري الحفظ...';
+            status.style.color = '#9aabba';
+            try {
+                const advancedSettings = readAdvancedSettings();
+                const response = await fetch(`/api/guild-settings/${encodeURIComponent(selectedGuildId)}`, {
+                    method: 'PUT',
+                    headers: {
+                        authorization: `Bearer ${localStorage.getItem('discord_token')}`,
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        commandPrefix,
+                        antiSpam: document.getElementById('setting-anti-spam').checked,
+                        antiLinks: document.getElementById('setting-anti-links').checked,
+                        advancedSettings
+                    })
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(result.error || 'تعذر حفظ الإعدادات');
+                status.textContent = dashboardLanguage === 'en' ? 'Settings saved successfully.' : 'انحفظت الإعدادات بنجاح.';
+                status.style.color = '#71e0cc';
+                const hasEmbedContent = Boolean(advancedSettings.customEmbedTitle?.trim() || advancedSettings.customEmbedDescription?.trim());
+                const embedStatus = document.getElementById('embed-send-status');
+                if (hasEmbedContent && embedStatus) {
+                    if (!/^\d{17,20}$/.test(String(advancedSettings.customEmbedChannelId || '').trim())) {
+                        embedStatus.textContent = 'تم الحفظ. ضع معرّف قناة صحيحًا حتى يرسل البوت الإمبيد.';
+                        embedStatus.style.color = '#fbbf24';
+                    } else {
+                        embedStatus.textContent = 'تم الحفظ؛ جارٍ إرسال الإمبيد عبر البوت...';
+                        embedStatus.style.color = '#9aabba';
+                        const queueResponse = await fetch(`/api/guild-settings/${encodeURIComponent(selectedGuildId)}/embed-send`, {
+                            method: 'POST',
+                            headers: { authorization: `Bearer ${localStorage.getItem('discord_token')}` }
+                        });
+                        const queued = await queueResponse.json().catch(() => ({}));
+                        if (!queueResponse.ok) throw new Error(queued.error || 'تم الحفظ لكن تعذر إرسال الإمبيد إلى البوت.');
+                        let finalStatus = null;
+                        for (let attempt = 0; attempt < 20; attempt += 1) {
+                            await new Promise((resolve) => setTimeout(resolve, 1000));
+                            const checkResponse = await fetch(`/api/guild-settings/${encodeURIComponent(selectedGuildId)}/embed-send/${encodeURIComponent(queued.requestId)}`, {
+                                headers: { authorization: `Bearer ${localStorage.getItem('discord_token')}` },
+                                cache: 'no-store'
+                            });
+                            const check = await checkResponse.json().catch(() => ({}));
+                            if (!checkResponse.ok) throw new Error(check.error || 'تم إرسال الطلب لكن تعذرت قراءة نتيجته.');
+                            if (check.status === 'sent' || check.status === 'failed') { finalStatus = check; break; }
+                        }
+                        embedStatus.textContent = finalStatus
+                            ? (finalStatus.result || (finalStatus.status === 'sent' ? 'تم إرسال الإمبيد بنجاح.' : 'تعذر إرسال الإمبيد.'))
+                            : 'تم حفظ التصميم واستلم البوت طلب الإرسال؛ انتظر لحظات ثم تحقق من القناة.';
+                        embedStatus.style.color = finalStatus?.status === 'failed' ? '#fca5a5' : '#71e0cc';
+                    }
+                } else if (embedStatus) {
+                    embedStatus.textContent = 'أضف عنوانًا أو رسالة، ثم اضغط حفظ لإرسال الإمبيد.';
+                    embedStatus.style.color = '#9aabba';
+                }
+            } catch (error) {
+                status.textContent = error.message;
+                status.style.color = '#fca5a5';
+            } finally {
+                saveButton.disabled = false;
+            }
+        });
+
+        applyDashboardLanguage(dashboardLanguage);
+        renderProfileThemeOptions();
+        initDashboard();
+    </script>
+    <script src="button-effects.js" defer></script>
+</body>
+</html>

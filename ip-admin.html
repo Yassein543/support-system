@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>إدارة الحظر | YS-Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root { color-scheme: dark; --page:#0f172a; --surface:#172338; --line:#2a3a52; --text:#edf4fb; --muted:#9baec4; --blue:#38bdf8; --red:#fb7185; --green:#34d399; }
+        * { box-sizing:border-box; }
+        body { margin:0; min-height:100vh; background:var(--page); color:var(--text); font-family:'Tajawal',sans-serif; line-height:1.55; }
+        button,input { font:inherit; }
+        .shell { width:min(1120px,100%); margin:auto; padding:26px 22px 60px; }
+        .topbar { display:flex; align-items:center; justify-content:space-between; gap:20px; padding-bottom:20px; border-bottom:1px solid var(--line); }
+        .brand { color:var(--text); font-size:22px; font-weight:900; text-decoration:none; }
+        .topbar a:last-child { color:#bae6fd; text-decoration:none; }
+        .intro { margin:36px 0 24px; }
+        h1 { margin:0; font-size:34px; line-height:1.2; }
+        .intro p,.muted { color:var(--muted); }
+        .stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+        .stat,.panel { border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+        .stat { padding:16px 18px; }
+        .stat span { display:block; color:var(--muted); font-size:14px; }
+        .stat strong { display:block; margin-top:4px; color:var(--blue); font-size:28px; }
+        .panel { margin-top:16px; padding:20px; }
+        .panel h2 { margin:0 0 5px; font-size:21px; }
+        .panel-intro { margin:0 0 16px; color:var(--muted); }
+        .toolbar,.ban-form { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+        input { min-height:42px; padding:8px 11px; border:1px solid var(--line); border-radius:7px; background:#0d1728; color:var(--text); }
+        input:focus-visible,button:focus-visible,a:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+        .toolbar input { flex:1; min-width:220px; }
+        .ban-form input:first-child { width:190px; }
+        .ban-form input:nth-child(2) { flex:1; min-width:200px; }
+        button { min-height:40px; padding:8px 14px; border:1px solid transparent; border-radius:7px; color:white; font-weight:700; cursor:pointer; }
+        button:disabled { opacity:.55; cursor:not-allowed; }
+        .primary { background:#0284c7; }
+        .danger { background:#9f2941; }
+        .quiet { background:#26364d; border-color:#34465f; }
+        .table-wrap { overflow:auto; }
+        table { width:100%; border-collapse:collapse; text-align:right; }
+        th,td { padding:12px 10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+        th { color:var(--muted); font-size:13px; font-weight:700; white-space:nowrap; }
+        td { font-size:14px; }
+        td code { color:#bae6fd; font-family:ui-monospace,Consolas,monospace; font-size:13px; }
+        .empty { padding:24px 8px; color:var(--muted); text-align:center; }
+        .status { min-height:24px; margin:12px 0 0; color:var(--muted); }
+        .status[data-tone="error"] { color:#fda4af; }
+        .status[data-tone="success"] { color:#6ee7b7; }
+        .login-panel { width:min(520px,100%); margin:12vh auto 0; padding:30px; text-align:center; }
+        .login-panel[hidden],.admin-content[hidden] { display:none; }
+        .login-panel p { color:var(--muted); }
+        @media(max-width:680px) {
+            .shell { padding:18px 14px 40px; }
+            .topbar { align-items:flex-start; }
+            h1 { font-size:29px; }
+            .stats { gap:9px; }
+            .stat,.panel { padding:15px; }
+            .table-wrap { margin-inline:-15px; padding-inline:15px; }
+            table { min-width:720px; }
+            .ban-form { align-items:stretch; flex-direction:column; }
+            .ban-form input:first-child,.ban-form input:nth-child(2) { width:100%; }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <header class="topbar">
+            <a class="brand" href="/">YS-Bot</a>
+            <a href="/">العودة للموقع</a>
+        </header>
+
+        <section id="login-panel" class="panel login-panel" hidden>
+            <h1>إدارة المستخدمين والحظر</h1>
+            <p id="login-message">سجّل الدخول بحساب Discord الإداري المصرّح له.</p>
+            <button id="discord-login" class="primary" type="button">تسجيل الدخول عبر Discord</button>
+        </section>
+
+        <section id="admin-content" class="admin-content" hidden>
+            <div class="intro">
+                <h1>إدارة المستخدمين والحظر</h1>
+                <p>المستخدمون هنا هم من استخدموا أوامر البوت أو سجلوا الدخول إلى الموقع.</p>
+            </div>
+
+            <div class="stats">
+                <div class="stat"><span>مستخدمو البوت المسجلون</span><strong id="user-count">0</strong></div>
+                <div class="stat"><span>عناوين IP المحظورة</span><strong id="ban-count">0</strong></div>
+            </div>
+
+            <section class="panel">
+                <h2>حظر عنوان IP</h2>
+                <p class="panel-intro">الحظر دائم حتى إزالته. قد يؤثر على مستخدمين آخرين يشاركون نفس الشبكة.</p>
+                <form class="ban-form" id="ban-form">
+                    <input id="ban-ip" name="ip" type="text" maxlength="45" placeholder="عنوان IPv4 أو IPv6" required>
+                    <input id="ban-reason" name="reason" type="text" maxlength="240" placeholder="سبب الحظر (اختياري)">
+                    <button class="danger" type="submit">حظر IP نهائيًا</button>
+                </form>
+                <p class="status" id="action-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="panel">
+                <h2>مستخدمو البوت</h2>
+                <p class="panel-intro">يظهر عنوان IP بعد تسجيل المستخدم إلى الموقع عبر Discord.</p>
+                <div class="toolbar"><input id="user-search" type="search" placeholder="ابحث بالاسم أو IP أو Discord ID"><button id="refresh-button" class="quiet" type="button">تحديث</button><span id="refresh-status" class="status" role="status" aria-live="polite"></span></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>المستخدم</th><th>Discord ID</th><th>آخر IP للموقع</th><th>أوامر البوت</th><th>آخر نشاط</th><th>إجراء</th></tr></thead>
+                        <tbody id="users-body"></tbody>
+                    </table>
+                </div>
+                <p class="empty" id="users-empty" hidden>لا يوجد مستخدمون مسجلون بعد.</p>
+            </section>
+
+            <section class="panel">
+                <h2>عناوين IP المحظورة</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>IP</th><th>السبب</th><th>المسؤول</th><th>تاريخ الحظر</th><th>إجراء</th></tr></thead>
+                        <tbody id="bans-body"></tbody>
+                    </table>
+                </div>
+                <p class="empty" id="bans-empty" hidden>لا توجد عناوين IP محظورة.</p>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        const elements = {
+            loginPanel: document.getElementById('login-panel'),
+            loginMessage: document.getElementById('login-message'),
+            loginButton: document.getElementById('discord-login'),
+            admin: document.getElementById('admin-content'),
+            usersBody: document.getElementById('users-body'),
+            bansBody: document.getElementById('bans-body'),
+            usersEmpty: document.getElementById('users-empty'),
+            bansEmpty: document.getElementById('bans-empty'),
+            userSearch: document.getElementById('user-search'),
+            refreshButton: document.getElementById('refresh-button'),
+            refreshStatus: document.getElementById('refresh-status'),
+            userCount: document.getElementById('user-count'),
+            banCount: document.getElementById('ban-count'),
+            banForm: document.getElementById('ban-form'),
+            banIp: document.getElementById('ban-ip'),
+            banReason: document.getElementById('ban-reason'),
+            actionStatus: document.getElementById('action-status')
+        };
+        let token = '';
+        let overview = { users: [], bans: [] };
+
+        function setStatus(message, tone = '') {
+            elements.actionStatus.textContent = message;
+            elements.actionStatus.dataset.tone = tone;
+        }
+
+        function showLogin(message) {
+            elements.loginPanel.hidden = false;
+            elements.admin.hidden = true;
+            elements.loginMessage.textContent = message;
+        }
+
+        function createCell(text, useCode = false) {
+            const cell = document.createElement('td');
+            if (useCode) {
+                const code = document.createElement('code');
+                code.textContent = text || 'غير معروف';
+                cell.appendChild(code);
+            } else {
+                cell.textContent = text || '—';
+            }
+            return cell;
+        }
+
+        function formatDate(value) {
+            if (!value) return '—';
+            return new Intl.DateTimeFormat('ar', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+        }
+
+        function renderUsers() {
+            const query = elements.userSearch.value.trim().toLocaleLowerCase();
+            const bans = new Set(overview.bans.map((ban) => ban.ip));
+            const users = overview.users.filter((user) => [user.username, user.discordUserId, user.ip].join(' ').toLocaleLowerCase().includes(query));
+            elements.usersBody.replaceChildren();
+            elements.usersEmpty.hidden = users.length > 0;
+
+            for (const user of users) {
+                const row = document.createElement('tr');
+                row.append(createCell(user.username), createCell(user.discordUserId, true), createCell(user.ip, true));
+                row.append(createCell(String(user.commandCount || 0)), createCell(formatDate(user.lastSeenAt)));
+                const actionCell = document.createElement('td');
+                const button = document.createElement('button');
+                button.className = bans.has(user.ip) ? 'quiet' : 'danger';
+                button.type = 'button';
+                button.textContent = !user.ip ? 'لا يوجد IP' : bans.has(user.ip) ? 'محظور' : 'حظر هذا IP';
+                button.disabled = !user.ip || bans.has(user.ip);
+                button.addEventListener('click', () => banAddress(user.ip, `حظر المستخدم ${user.username}`));
+                actionCell.appendChild(button);
+                row.appendChild(actionCell);
+                elements.usersBody.appendChild(row);
+            }
+        }
+
+        function renderBans() {
+            elements.bansBody.replaceChildren();
+            elements.bansEmpty.hidden = overview.bans.length > 0;
+            for (const ban of overview.bans) {
+                const row = document.createElement('tr');
+                row.append(createCell(ban.ip, true), createCell(ban.reason), createCell(ban.bannedBy, true), createCell(formatDate(ban.createdAt)));
+                const actionCell = document.createElement('td');
+                const button = document.createElement('button');
+                button.className = 'quiet';
+                button.type = 'button';
+                button.textContent = 'إلغاء الحظر';
+                button.addEventListener('click', () => unbanAddress(ban.ip));
+                actionCell.appendChild(button);
+                row.appendChild(actionCell);
+                elements.bansBody.appendChild(row);
+            }
+        }
+
+        function renderOverview() {
+            elements.userCount.textContent = String(overview.users.length);
+            elements.banCount.textContent = String(overview.bans.length);
+            renderUsers();
+            renderBans();
+        }
+
+        async function adminRequest(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                headers: { authorization: `Bearer ${token}`, ...(options.headers || {}) }
+            });
+            const result = await response.json();
+            if (!response.ok) throw Object.assign(new Error(result.error || 'تعذر إكمال الطلب'), { status: response.status });
+            return result;
+        }
+
+        async function loadOverview() {
+            elements.refreshButton.disabled = true;
+            elements.refreshStatus.textContent = 'جاري تحديث البيانات...';
+            try {
+                overview = await adminRequest('/api/admin/overview');
+                elements.loginPanel.hidden = true;
+                elements.admin.hidden = false;
+                renderOverview();
+                elements.refreshStatus.textContent = `تم التحديث ${new Intl.DateTimeFormat('ar', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date())}`;
+            } catch (error) {
+                if (error.status === 401) {
+                    localStorage.removeItem('discord_token');
+                    token = '';
+                    showLogin('انتهت جلسة Discord. سجّل الدخول مجددًا.');
+                } else if (error.status === 403) {
+                    showLogin('هذا الحساب غير مصرح له بإدارة قائمة الحظر.');
+                } else {
+                    showLogin(error.message);
+                }
+                elements.refreshStatus.textContent = error.message;
+                elements.refreshStatus.dataset.tone = 'error';
+            } finally {
+                elements.refreshButton.disabled = false;
+            }
+        }
+
+        async function banAddress(ip, reason) {
+            if (!ip || !window.confirm(`هل تريد حظر ${ip} نهائيًا؟ قد يتأثر مستخدمون آخرون على نفس الشبكة.`)) return;
+            setStatus('جاري تنفيذ الحظر...');
+            try {
+                await adminRequest('/api/admin/ip-bans', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ ip, reason: reason || elements.banReason.value })
+                });
+                setStatus('تم حظر عنوان IP.', 'success');
+                await loadOverview();
+            } catch (error) {
+                setStatus(error.message, 'error');
+            }
+        }
+
+        async function unbanAddress(ip) {
+            if (!window.confirm(`إزالة الحظر عن ${ip}؟`)) return;
+            setStatus('جاري إلغاء الحظر...');
+            try {
+                await adminRequest('/api/admin/ip-bans', {
+                    method: 'DELETE',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ ip })
+                });
+                setStatus('تم إلغاء الحظر.', 'success');
+                await loadOverview();
+            } catch (error) {
+                setStatus(error.message, 'error');
+            }
+        }
+
+        elements.loginButton.addEventListener('click', () => {
+            const stateBytes = crypto.getRandomValues(new Uint8Array(24));
+            const state = [...stateBytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+            sessionStorage.setItem('ys-bot-ip-admin-state', state);
+            const redirectUri = 'https://ys-bot.vercel.app/dashboard.html';
+            const params = new URLSearchParams({
+                client_id: '1546870264749494272',
+                redirect_uri: redirectUri,
+                response_type: 'token',
+                scope: 'identify',
+                state
+            });
+            window.location.assign(`https://discord.com/oauth2/authorize?${params}`);
+        });
+
+        elements.banForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            banAddress(elements.banIp.value.trim(), elements.banReason.value.trim());
+        });
+        elements.userSearch.addEventListener('input', renderUsers);
+        elements.refreshButton.addEventListener('click', loadOverview);
+
+        token = localStorage.getItem('discord_token') || '';
+        if (!token) showLogin('سجّل الدخول بحساب Discord الإداري المصرّح له.');
+        else loadOverview();
+    </script>
+    <script src="button-effects.js" defer></script>
+</body>
+</html>

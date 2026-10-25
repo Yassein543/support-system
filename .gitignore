@@ -1,0 +1,23 @@
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Local runtime data
+bot-state.json
+bot-state.json*
+bot-runtime*.log
+.bot-runtime*.log
+cfg
+
+# Dependencies
+node_modules/
+
+# Deployment
+.vercel/
+.neon/
+
+# Python cache
+__pycache__/
+*.pyc
+.neon

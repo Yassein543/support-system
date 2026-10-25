@@ -1,0 +1,14 @@
+{
+  "USER_ID_HERE": {
+    "accounts": [
+      {
+        "site_name": "Google",
+        "secret_key": "JBSWY3DPEHPK3PXP"
+      },
+      {
+        "site_name": "Discord",
+        "secret_key": "ORXW233SMVWGK4TT"
+      }
+    ]
+  }
+}

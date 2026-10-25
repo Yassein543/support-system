@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">YS-Bot</title>
+  <desc id="desc">شعار درع تقني مع وجه روبوت وأحرف YS بألوان التركواز والأزرق على خلفية كحلية.</desc>
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientTransform="matrix(0 510 -510 0 256 0)" gradientUnits="userSpaceOnUse"><stop stop-color="#172b41"/><stop offset="1" stop-color="#07111e"/></radialGradient>
+    <linearGradient id="shield" x1="108" x2="407" y1="87" y2="434" gradientUnits="userSpaceOnUse"><stop stop-color="#48e0cb"/><stop offset=".52" stop-color="#27a99e"/><stop offset="1" stop-color="#527deb"/></linearGradient>
+    <linearGradient id="face" x1="169" x2="343" y1="169" y2="321" gradientUnits="userSpaceOnUse"><stop stop-color="#1a3348"/><stop offset="1" stop-color="#0d1b2a"/></linearGradient>
+    <linearGradient id="letters" x1="161" x2="350" y1="281" y2="370" gradientUnits="userSpaceOnUse"><stop stop-color="#a9fff0"/><stop offset="1" stop-color="#7faaff"/></linearGradient>
+    <filter id="glow" x="42" y="39" width="428" height="439" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="shadow" x="89" y="59" width="334" height="408" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000" flood-opacity=".45"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <circle cx="256" cy="250" r="178" fill="#25c9b5" fill-opacity=".14" filter="url(#glow)"/>
+  <circle cx="256" cy="256" r="211" stroke="#7895ad" stroke-opacity=".11" stroke-width="2"/>
+  <circle cx="256" cy="256" r="190" stroke="#54d9c7" stroke-opacity=".12" stroke-width="1.5" stroke-dasharray="3 13"/>
+  <g filter="url(#shadow)">
+    <path d="M256 78 382 127v111c0 91-51 155-126 202-75-47-126-111-126-202V127l126-49Z" fill="#0e1b29" stroke="url(#shield)" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M256 96 365 138v99c0 79-42 135-109 180-67-45-109-101-109-180v-99l109-42Z" fill="url(#face)" stroke="#6be7d5" stroke-opacity=".3" stroke-width="2"/>
+    <path d="M188 206c0-18 14-32 32-32h72c18 0 32 14 32 32v42c0 18-14 32-32 32h-72c-18 0-32-14-32-32v-42Z" fill="#0a1724" stroke="#5cdcc9" stroke-opacity=".72" stroke-width="4"/>
+    <path d="M213 222c0-8 6-14 14-14s14 6 14 14v10c0 8-6 14-14 14s-14-6-14-14v-10ZM271 222c0-8 6-14 14-14s14 6 14 14v10c0 8-6 14-14 14s-14-6-14-14v-10Z" fill="#71efdc"/>
+    <path d="M223 260h66" stroke="#427f8c" stroke-width="4" stroke-linecap="round"/>
+    <path d="M255 174v-17m-18 0h36" stroke="#64dfcd" stroke-width="5" stroke-linecap="round"/>
+    <path d="m177 316 26-21h106l26 21v12H177v-12Z" fill="#102335" stroke="#48758c" stroke-width="2"/>
+    <text x="256" y="368" fill="url(#letters)" font-family="Arial, Helvetica, sans-serif" font-size="57" font-weight="800" letter-spacing="3" text-anchor="middle">YS</text>
+    <path d="M224 385h64" stroke="#46cbb9" stroke-opacity=".8" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <circle cx="112" cy="177" r="5" fill="#5be1ce"/><circle cx="401" cy="196" r="4" fill="#79aaff"/><circle cx="135" cy="347" r="3" fill="#78a9f4"/><circle cx="380" cy="355" r="5" fill="#4bd5c2"/>
+</svg>

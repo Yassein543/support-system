@@ -1,0 +1,24 @@
+{
+  "USER_ID_12345": {
+    "plan": "VIP",
+    "expiresAt": "2027-01-01",
+    "two_factor_accounts": [
+      {
+        "site_name": "Google",
+        "secret_key": "JBSWY3DPEHPK3PXP"
+      },
+      {
+        "site_name": "Discord",
+        "secret_key": "ORXW233SMVWGK4TT"
+      }
+    ]
+  },
+  "1420480316987936788": {
+    "accounts": [
+      {
+        "site_name": "جوجل",
+        "secret_key": "cvdgwuudzfrdgtogk4f7b62hyj7bqbeb"
+      }
+    ]
+  }
+}
