@@ -326,6 +326,26 @@ async function getSubscription(guildId) {
     return data[guildId] ? data[guildId].plan : 'Free';
 }
 
+function buildProtectionStatusEmbed(guildSettings, language = 'ar') {
+    const english = language === 'en';
+    const advanced = guildSettings?.advancedSettings || {};
+    const states = english ? [
+        `Anti-spam: ${guildSettings?.antiSpam ? 'On' : 'Off'}`,
+        `Link protection: ${guildSettings?.antiLinks ? 'On' : 'Off'}`,
+        `Anti-raid: ${advanced.antiRaidEnabled ? 'On' : 'Off'}`,
+        `Anti-nuke: ${advanced.antiNukeEnabled ? 'On' : 'Off'}`
+    ] : [
+        `مكافحة السبام: ${guildSettings?.antiSpam ? 'مفعّلة' : 'متوقفة'}`,
+        `حماية الروابط: ${guildSettings?.antiLinks ? 'مفعّلة' : 'متوقفة'}`,
+        `حماية الغارات: ${advanced.antiRaidEnabled ? 'مفعّلة' : 'متوقفة'}`,
+        `حماية التخريب: ${advanced.antiNukeEnabled ? 'مفعّلة' : 'متوقفة'}`
+    ];
+    return new EmbedBuilder().setColor(0x35cdb7)
+        .setTitle(english ? 'Server protection status' : 'حالة أنظمة الحماية')
+        .setDescription(`${states.join('\n')}\n\n${english ? 'To change these settings, use the server dashboard.' : 'لتغييرها، افتح إعدادات السيرفر في لوحة التحكم.'}`)
+        .setFooter({ text: 'YS-Bot' });
+}
+
 // تسجيل أوامر السلاش أوتوماتيكياً فور تشغيل البوت
 client.on('ready', async () => {
     console.log(`🤖 YS-Bot جاهز ويعمل باسم: ${client.user.tag}`);
@@ -390,8 +410,7 @@ client.on('ready', async () => {
             .setDescription('عرض خطة اشتراك هذا السيرفر'),
         new SlashCommandBuilder()
             .setName('anticrash')
-            .setDescription('عرض حالة الحماية وإعدادها لهذا السيرفر')
-            .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+            .setDescription('عرض حالة أنظمة الحماية لهذا السيرفر')
     ];
 
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
@@ -1219,17 +1238,8 @@ client.on('interactionCreate', async (interaction) => {
 
     if (interaction.commandName === 'anticrash') {
         if (!interaction.guild) return interaction.reply({ content: 'استخدم /anticrash داخل السيرفر.', ephemeral: true });
-        const plan = await getSubscription(interaction.guild.id);
-        if (!['Basic', 'VIP', 'Premium'].includes(plan)) return interaction.reply({ content: messages.upgradeRequired, ephemeral: true });
-        const advanced = guildSettings?.advancedSettings || {};
-        const features = [
-            `مكافحة السبام: ${guildSettings?.antiSpam ? 'مفعّل' : 'متوقف'}`,
-            `حماية الغارات: ${advanced.antiRaidEnabled ? 'مفعّلة' : 'متوقفة'}`,
-            `حماية التخريب: ${advanced.antiNukeEnabled ? 'مفعّلة' : 'متوقفة'}`
-        ];
-        const embed = new EmbedBuilder().setColor(0x35cdb7).setTitle('حالة حماية السيرفر')
-            .setDescription(`${features.join('\n')}\n\nلتغيير الإعدادات، افتح لوحة تحكم السيرفر واحفظ التعديلات.`);
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        const language = guildSettings?.advancedSettings?.commandLanguage || 'ar';
+        return interaction.reply({ embeds: [buildProtectionStatusEmbed(guildSettings, language)], ephemeral: true });
     }
 
     // حظر تشغيل الأوامر السرية داخل السيرفرات وقصرها على الخاص
@@ -1586,12 +1596,10 @@ client.on('guildMemberAdd', async (member) => {
         }
     }
 
-    if (advanced.welcomeRoleId) {
-        const role = member.guild.roles.cache.get(advanced.welcomeRoleId);
-        if (role) await member.roles.add(role, 'Welcome role configured in YS-Bot dashboard').catch(() => {});
-    }
-    if (advanced.autoRoleEnabled && advanced.autoRoleId) {
-        const role = member.guild.roles.cache.get(advanced.autoRoleId);
+    // Prefer the single current auto-role setting; keep the old welcomeRoleId as a fallback for existing servers.
+    const autoRoleId = advanced.autoRoleEnabled && advanced.autoRoleId ? advanced.autoRoleId : advanced.welcomeRoleId;
+    if (autoRoleId) {
+        const role = member.guild.roles.cache.get(autoRoleId);
         if (role) await member.roles.add(role, 'Auto role configured in YS-Bot dashboard').catch(() => {});
     }
     if (advanced.verificationEnabled && advanced.verificationRoleId) {
@@ -1602,7 +1610,7 @@ client.on('guildMemberAdd', async (member) => {
             const timer = setTimeout(async () => {
                 const pending = await member.guild.members.fetch(member.id).catch(() => null);
                 if (pending?.roles.cache.has(role.id) && pending.moderatable) {
-                    await pending.timeout(10 * 60 * 1000, 'Verification timeout expired').catch(() => {});
+                    await pending.timeout(Number(advanced.verificationTimeoutMinutes || 10) * 60 * 1000, 'Verification timeout expired').catch(() => {});
                     await sendGuildLog(member.guild, settings, `تم تقييد <@${member.id}> لانتهاء مهلة التحقق.`, 0xf59e0b);
                 }
                 verificationTimers.delete(key);
@@ -1948,11 +1956,7 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'anticrash') {
-        const plan = await getSubscription(message.guild.id);
-        if (plan !== 'Basic' && plan !== 'VIP' && plan !== 'Premium') {
-            return message.reply({ content: messages.upgradeRequired });
-        }
-        const sent = await message.reply({ content: messages.antiCrashEnabled });
+        const sent = await message.reply({ embeds: [buildProtectionStatusEmbed(settings, advanced.commandLanguage)] });
         if (advanced.commandDeleteAfterUse) await message.delete().catch(() => {});
         return sent;
     }

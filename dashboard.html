@@ -487,8 +487,8 @@
         dashboardLanguageSelect.value = dashboardLanguage;
         dashboardLanguageSelect.addEventListener('change', e => applyDashboardLanguage(e.target.value));
         const advancedSettingGroups = [
-            { title: 'الأوامر والصلاحيات', items: [
-                ['commandCooldownSeconds', 'مدة الانتظار بين الأوامر'], ['commandsEnabled', 'تفعيل أوامر النص'], ['commandsRoleId', 'معرّف رتبة استخدام الأوامر'], ['commandsAllowedChannelIds', 'قنوات الأوامر المسموحة'], ['commandLanguage', 'لغة ردود الأوامر'], ['commandDeleteAfterUse', 'حذف الأمر بعد استخدامه']
+            { title: 'الأوامر والصلاحيات', note: 'التفعيل والصلاحيات والقنوات والانتظار وحذف رسالة الأمر تخص أوامر البادئة القديمة مثل !help و!plan. إعداد اللغة يؤثر أيضًا على ردود بعض أوامر السلاش مثل /help و/plan و/anticrash.', items: [
+                ['commandCooldownSeconds', 'مدة انتظار أوامر البادئة بالثواني'], ['commandsEnabled', 'تفعيل أوامر البادئة'], ['commandsRoleId', 'معرّف رتبة أوامر البادئة'], ['commandsAllowedChannelIds', 'قنوات أوامر البادئة المسموحة'], ['commandLanguage', 'لغة ردود البوت'], ['commandDeleteAfterUse', 'حذف رسالة أمر البادئة بعد الاستخدام']
             ] },
             { title: 'مكافحة السبام', items: [
                 ['antiSpamLimit', 'عدد الرسائل قبل الإجراء'], ['antiSpamWindowSeconds', 'مدة احتساب الرسائل بالثواني'], ['antiSpamAction', 'إجراء السبام'], ['antiSpamWarning', 'نص تنبيه السبام'], ['antiSpamIgnoreAdmins', 'استثناء المشرفين'], ['antiSpamIgnoreChannels', 'قنوات مستثناة من السبام']
@@ -502,8 +502,8 @@
             { title: 'سجل الأحداث', items: [
                 ['modLogChannelId', 'معرّف قناة سجل الإدارة'], ['logDeletedMessages', 'تسجيل حذف الرسائل'], ['logEditedMessages', 'تسجيل تعديل الرسائل'], ['logMemberJoins', 'تسجيل دخول الأعضاء'], ['logMemberLeaves', 'تسجيل مغادرة الأعضاء'], ['logModerationActions', 'تسجيل إجراءات الإشراف'], ['logRoleChanges', 'تسجيل تغييرات الرتب'], ['logChannelChanges', 'تسجيل تغييرات القنوات'], ['logBotCommands', 'تسجيل أوامر البوت']
             ] },
-            { title: 'الترحيب والمغادرة', note: 'رسائل الانضمام والمغادرة وإعطاء الرتب تعتمد على تفعيل Gateway Intent باسم Server Members Intent في Discord Developer Portal.', items: [
-                ['welcomeEnabled', 'تفعيل رسالة الترحيب'], ['welcomeChannelId', 'معرّف قناة الترحيب'], ['welcomeMessage', 'نص الترحيب'], ['welcomeRoleId', 'معرّف الرتبة التلقائية للعضو الجديد'], ['welcomeSendDm', 'إرسال ترحيب بالخاص'], ['welcomeDmMessage', 'نص رسالة الخاص'], ['welcomeIgnoreBots', 'تجاهل البوتات في الترحيب'], ['farewellEnabled', 'تفعيل رسالة المغادرة'], ['farewellChannelId', 'معرّف قناة المغادرة'], ['farewellMessage', 'نص المغادرة']
+            { title: 'الترحيب والمغادرة', note: 'رسائل الانضمام والمغادرة تعتمد على تفعيل Server Members Intent في Discord Developer Portal. لإعطاء رتبة تلقائية استخدم خيار الرتبة الموحد في «التحقق والرتب».', items: [
+                ['welcomeEnabled', 'تفعيل رسالة الترحيب'], ['welcomeChannelId', 'معرّف قناة الترحيب'], ['welcomeMessage', 'نص الترحيب'], ['welcomeSendDm', 'إرسال ترحيب بالخاص'], ['welcomeDmMessage', 'نص رسالة الخاص'], ['welcomeIgnoreBots', 'تجاهل البوتات في الترحيب'], ['farewellEnabled', 'تفعيل رسالة المغادرة'], ['farewellChannelId', 'معرّف قناة المغادرة'], ['farewellMessage', 'نص المغادرة']
             ] },
             { title: 'التحقق والرتب', note: 'يُعطى العضو رتبة التحقق عند الانضمام، ويزيلها عن نفسه بأمر /verify بعد استيفاء عمر الحساب الأدنى. يتطلب Server Members Intent.', items: [
                 ['verificationEnabled', 'تفعيل التحقق من الأعضاء'], ['verificationRoleId', 'معرّف رتبة التحقق'], ['verificationTimeoutMinutes', 'مهلة التحقق بالدقائق'], ['verificationMinAccountAgeDays', 'عمر الحساب الأدنى بالأيام'], ['autoRoleEnabled', 'تفعيل إعطاء رتبة تلقائية'], ['autoRoleId', 'معرّف الرتبة التلقائية']
@@ -511,7 +511,7 @@
             { title: 'الإشراف وإعدادات إضافية', items: [
                 ['warningEscalationEnabled', 'تفعيل تصعيد التحذيرات'], ['warningLimit', 'عدد التحذيرات قبل التصعيد'], ['warningTimeoutMinutes', 'مدة الإجراء بعد التحذيرات بالدقائق'], ['slowmodeSeconds', 'مدة الوضع البطيء بالثواني'], ['supportChannelId', 'معرّف قناة الدعم'], ['auditRetentionDays', 'مدة الاحتفاظ بالسجل بالأيام']
             ] },
-            { title: 'الحماية من الغارات', note: 'خيار القفل المؤقت يمنع الإرسال للجميع في القنوات النصية لمدة 5 دقائق ثم يعيد صلاحيات الإرسال السابقة. يتطلب Server Members Intent وصلاحية إدارة القنوات.', items: [
+            { title: 'الحماية من الغارات', note: 'خيار القفل المؤقت يمنع الإرسال للجميع في القنوات النصية للمدة التي اخترتها ضمن إعدادات VIP، ثم يعيد صلاحيات الإرسال السابقة. يتطلب Server Members Intent وصلاحية إدارة القنوات.', items: [
                 ['antiRaidEnabled', 'تفعيل حماية الغارات'], ['antiRaidJoinLimit', 'عدد المنضمين لتفعيل التنبيه'], ['antiRaidWindowSeconds', 'فترة رصد الانضمام بالثواني'], ['antiRaidAction', 'إجراء الحماية'], ['antiRaidAlertChannelId', 'قناة تنبيهات الغارات']
             ] },
             { title: 'إضافات الخطط المدفوعة', note: 'هذه إعدادات إضافية فقط: إعدادات اللوحة المعتادة تبقى متاحة للجميع. Basic يضيف إسكات السبام وحماية الحسابات الحديثة، وVIP يضيف تخصيص قفل الغارة واستثناء قنواته وتنبيه رتبة.', items: [
