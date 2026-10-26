@@ -1,11 +1,4 @@
 const { neon } = require('@neondatabase/serverless');
-const fs = require('node:fs');
-const path = require('node:path');
-
-const emojiDirectory = path.join(__dirname, '..', 'emojis');
-const slashEmojiChoices = ['none', ...fs.readdirSync(emojiDirectory)
-    .filter((name) => /^ys-[a-z0-9-]+\.svg$/.test(name))
-    .map((name) => name.slice(0, -4))];
 
 let sql;
 let ready;
@@ -16,7 +9,6 @@ const EXTRA_SETTING_SCHEMA = {
     commandsRoleId: { type: 'text', default: '', maxLength: 24 },
     commandsAllowedChannelIds: { type: 'text', default: '', maxLength: 500 },
     commandLanguage: { type: 'choice', default: 'ar', values: ['ar', 'en'] },
-    slashCommandEmoji: { type: 'choice', default: 'none', values: slashEmojiChoices },
     commandDeleteAfterUse: { type: 'boolean', default: false },
     antiSpamLimit: { type: 'number', default: 5, min: 2, max: 30 },
     antiSpamWindowSeconds: { type: 'number', default: 8, min: 2, max: 60 },

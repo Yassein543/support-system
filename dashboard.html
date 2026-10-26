@@ -123,7 +123,6 @@
         .advanced-field { display: grid; align-content: start; gap: 7px; color: #dce8ee; font-size: .86rem; font-weight: 700; }
         .advanced-field:has(input[type="checkbox"]) { display: flex; flex-wrap: wrap; align-items: center; min-height: 45px; gap: 9px; }
         .advanced-field input:not([type="checkbox"]), .advanced-field select, .advanced-field textarea { box-sizing: border-box; width: 100%; min-height: 39px; padding: 9px 10px; border: 1px solid #33485e; border-radius: 8px; outline: none; background: #0a1421; color: #fff; font: 500 .86rem 'Tajawal',sans-serif; }
-        .command-emoji-preview { width: 54px; height: 54px; object-fit: contain; align-self: start; border-radius: 50%; background: #0a1421; }
         .advanced-field input[type="checkbox"] { width: 18px; height: 18px; accent-color: #1bb49f; }
         .advanced-field textarea { min-height: 70px; resize: vertical; }
         .advanced-field-help { grid-column: 1 / -1; color: #91a3b2; font-size: .76rem; font-weight: 400; line-height: 1.65; }
@@ -489,7 +488,7 @@
         dashboardLanguageSelect.addEventListener('change', e => applyDashboardLanguage(e.target.value));
         const advancedSettingGroups = [
             { title: 'الأوامر والصلاحيات', items: [
-                ['commandCooldownSeconds', 'مدة الانتظار بين الأوامر'], ['commandsEnabled', 'تفعيل أوامر النص'], ['commandsRoleId', 'معرّف رتبة استخدام الأوامر'], ['commandsAllowedChannelIds', 'قنوات الأوامر المسموحة'], ['commandLanguage', 'لغة ردود الأوامر'], ['slashCommandEmoji', 'إيموجي ردود أوامر السلاش'], ['commandDeleteAfterUse', 'حذف الأمر بعد استخدامه']
+                ['commandCooldownSeconds', 'مدة الانتظار بين الأوامر'], ['commandsEnabled', 'تفعيل أوامر النص'], ['commandsRoleId', 'معرّف رتبة استخدام الأوامر'], ['commandsAllowedChannelIds', 'قنوات الأوامر المسموحة'], ['commandLanguage', 'لغة ردود الأوامر'], ['commandDeleteAfterUse', 'حذف الأمر بعد استخدامه']
             ] },
             { title: 'مكافحة السبام', items: [
                 ['antiSpamLimit', 'عدد الرسائل قبل الإجراء'], ['antiSpamWindowSeconds', 'مدة احتساب الرسائل بالثواني'], ['antiSpamAction', 'إجراء السبام'], ['antiSpamWarning', 'نص تنبيه السبام'], ['antiSpamIgnoreAdmins', 'استثناء المشرفين'], ['antiSpamIgnoreChannels', 'قنوات مستثناة من السبام']
@@ -568,10 +567,6 @@
             antiNukeChannelCreateLimit: [1, 20], antiNukeChannelDeleteLimit: [1, 20], antiNukeRoleCreateLimit: [1, 20], antiNukeRoleDeleteLimit: [1, 20], antiNukeRoleUpdateLimit: [1, 20], antiNukeBanLimit: [1, 20], antiNukeWebhookCreateLimit: [1, 20], antiNukeWebhookDeleteLimit: [1, 20], antiNukeEmojiDeleteLimit: [1, 20], antiNukeStickerDeleteLimit: [1, 20], antiNukeWindowSeconds: [1, 600], antiNukeTimeoutMinutes: [1, 1440], antiNukeCooldownSeconds: [0, 3600], antiNukeLockdownDurationMinutes: [1, 60]
         };
         const extraChoiceOptions = {
-            slashCommandEmoji: [
-                ['none','بدون إيموجي'],['ys-logo','شعار YS'],['ys-check','نجاح'],['ys-error','خطأ'],['ys-warning','تنبيه'],['ys-loading','تحميل'],['ys-lock','قفل'],['ys-premium','Premium'],['ys-online','متصل'],
-                ['ys-info','معلومة'],['ys-question','سؤال'],['ys-sparkles','لمعة'],['ys-robot','روبوت'],['ys-server','سيرفر'],['ys-dashboard','لوحة التحكم'],['ys-settings','إعدادات'],['ys-user','مستخدم'],['ys-users','أعضاء'],['ys-message','رسالة'],['ys-mail','بريد'],['ys-bell','إشعار'],['ys-calendar','تقويم'],['ys-clock','وقت'],['ys-link','رابط'],['ys-image','صورة'],['ys-file','ملف'],['ys-download','تنزيل'],['ys-upload','رفع'],['ys-search','بحث'],['ys-filter','فلتر'],['ys-chart','رسم بياني'],['ys-stats','إحصاءات'],['ys-shield','حماية'],['ys-shield-check','حماية ناجحة'],['ys-shield-alert','تحذير أمني'],['ys-key','مفتاح'],['ys-eye','عرض'],['ys-ban','حظر'],['ys-kick','طرد'],['ys-timeout','مهلة'],['ys-mute','كتم'],['ys-unmute','إلغاء الكتم'],['ys-raid','حماية الغارات'],['ys-nuke','حماية التخريب'],['ys-anti-spam','مكافحة السبام'],['ys-backup','نسخ احتياطي'],['ys-restore','استعادة'],['ys-ticket','تذكرة'],['ys-ticket-open','فتح تذكرة'],['ys-suggestion','اقتراح'],['ys-poll','تصويت'],['ys-level','مستوى'],['ys-trophy','إنجاز'],['ys-quran','قرآن'],['ys-prayer','صلاة'],['ys-mosque','مسجد'],['ys-moon','هلال ونجمة'],['ys-dhikr','ذكر'],['ys-wallet','محفظة'],['ys-coin','رصيد'],['ys-credit-card','بطاقة دفع'],['ys-receipt','فاتورة'],['ys-support','دعم'],['ys-heart','قلب'],['ys-star','نجمة']
-            ],
             autoReplyMatchMode: [['exact', 'تطابق كامل'], ['includes', 'تحتوي على'], ['startsWith', 'تبدأ بـ']],
             antiRaidYoungAccountAction: [['alert', 'تنبيه فقط'], ['kick', 'طرد'], ['ban', 'حظر']],
             scheduledAnnouncementColor: [['teal', 'فيروزي'], ['blue', 'أزرق'], ['purple', 'بنفسجي'], ['green', 'أخضر'], ['red', 'أحمر'], ['gold', 'ذهبي']],
@@ -598,8 +593,6 @@
         const activeAdvancedSettingKeys = new Set(advancedSettingGroups.flatMap((group) => group.items.map(([key]) => key)));
         const extraTextLimits = { autoReplyRules: 4000, antiRaidLockdownExcludeChannelIds: 500, antiRaidAlertRoleId: 24, autoReplyIgnoreChannelIds: 500, scheduledAnnouncementChannelId: 24, scheduledAnnouncementMessage: 1500, scheduledAnnouncementTitle: 100, scheduledAnnouncementImageUrl: 500, commandsRoleId: 24, commandsAllowedChannelIds: 500, antiSpamWarning: 180, antiSpamIgnoreChannels: 500, antiLinksAllowedDomains: 500, antiLinksWarning: 180, antiLinksIgnoreChannels: 500, antiLinksIgnoreRoleIds: 500, modLogChannelId: 24, welcomeChannelId: 24, welcomeMessage: 500, welcomeRoleId: 24, welcomeDmMessage: 500, welcomeEmbedTitle: 256, welcomeEmbedImageUrl: 500, welcomeEmbedFooter: 200, farewellChannelId: 24, farewellMessage: 500, farewellEmbedTitle: 256, farewellEmbedImageUrl: 500, farewellEmbedFooter: 200, verificationRoleId: 24, autoRoleId: 24, blockedWords: 1000, supportChannelId: 24, antiRaidAlertChannelId: 24, antiNukeAlertChannelId: 24, antiNukeAlertRoleId: 24, antiNukeAllowlistedUserIds: 500, antiNukeAllowlistedRoleIds: 500, inviteRewardRoleId: 24, ticketPanelChannelId: 24, ticketCategoryId: 24, ticketSupportRoleId: 24, ticketTranscriptChannelId: 24, ticketPanelTitle: 100, ticketPanelDescription: 1000, ticketPanelButtonLabel: 80, ticketPanelButtonEmoji: 32, ticketReasonTitle: 100, ticketReasonPlaceholder: 100, ticketWelcomeTitle: 100, ticketWelcomeMessage: 1500, ticketWelcomeImageUrl: 500, ticketCloseButtonLabel: 80, ticketCloseMessage: 300, ticketConfirmationMessage: 200, ticketNamePrefix: 24, suggestionChannelId: 24, suggestionReviewChannelId: 24, suggestionEmbedTitle: 100, suggestionEmbedImageUrl: 500, suggestionUpvoteLabel: 40, suggestionDownvoteLabel: 40, suggestionUpvoteEmoji: 32, suggestionDownvoteEmoji: 32, suggestionConfirmationMessage: 200, suggestionReviewMessage: 300, levelAnnouncementChannelId: 24, levelUpMessage: 300, azkarChannelId: 24, azkarMessage: 1500, quranChannelId: 24, quranMessage: 1500, customEmbedChannelId: 24, customEmbedTitle: 256, customEmbedDescription: 4000, customEmbedThumbnailUrl: 500, customEmbedImageUrl: 500 };
         function settingInstructions(key, labelText) {
-            if (key === 'slashCommandEmoji') return 'اختر أحد إيموجيات YS التي صممتها. يحوّلها البوت إلى صورة صغيرة ويرفقها مع ردود أوامر السلاش؛ لا تحتاج إلى رفعها لإيموجيات السيرفر.';
-            if (key === 'slashCommandEmoji') return 'اختر أحد إيموجيات YS التي صممتها. يحوّلها البوت إلى صورة صغيرة ويرفقها مع ردود أوامر السلاش؛ لا تحتاج إلى رفعها لإيموجيات السيرفر.';
             if (key === 'antiSpamTimeoutEnabled') return 'ميزة Basic إضافية: عند بلوغ حد السبام يحاول البوت إسكات العضو مؤقتًا. يحتاج صلاحية Timeout Members؛ إذا لم تتوفر، يرجع للإجراء العادي المحدد أعلاه.';
             if (key === 'antiSpamTimeoutMinutes') return 'ميزة Basic إضافية: مدة الإسكات من دقيقة إلى 24 ساعة. غيّر المدة فقط إذا فعّلت خيار الإسكات التلقائي.';
             if (key === 'antiRaidMinAccountAgeDays') return 'ميزة Basic إضافية: ضع 0 لإيقاف فحص عمر الحساب. عند وضع رقم، تُفحص الحسابات الأصغر منه إذا كانت حماية الغارات مفعّلة.';
@@ -800,32 +793,6 @@
                     control.dataset.advancedSetting = key;
                     control.disabled = isLocked;
                     label.appendChild(control);
-                    if (key === 'slashCommandEmoji') {
-                        const preview = document.createElement('img');
-                        preview.className = 'command-emoji-preview';
-                        preview.alt = 'معاينة الإيموجي المختار';
-                        preview.hidden = control.value === 'none';
-                        if (!preview.hidden) preview.src = `/emojis/${encodeURIComponent(control.value)}.svg`;
-                        control.addEventListener('change', () => {
-                            preview.hidden = control.value === 'none';
-                            preview.removeAttribute('src');
-                            if (!preview.hidden) preview.src = `/emojis/${encodeURIComponent(control.value)}.svg`;
-                        });
-                        label.appendChild(preview);
-                    }
-                    if (key === 'slashCommandEmoji') {
-                        const preview = document.createElement('img');
-                        preview.className = 'command-emoji-preview';
-                        preview.alt = 'معاينة الإيموجي المختار';
-                        preview.hidden = control.value === 'none';
-                        if (!preview.hidden) preview.src = `/emojis/${encodeURIComponent(control.value)}.svg`;
-                        control.addEventListener('change', () => {
-                            preview.hidden = control.value === 'none';
-                            preview.removeAttribute('src');
-                            if (!preview.hidden) preview.src = `/emojis/${encodeURIComponent(control.value)}.svg`;
-                        });
-                        label.appendChild(preview);
-                    }
                     const help = document.createElement('small');
                     help.className = 'advanced-field-help';
                     help.textContent = dashboardLanguage === 'ar' ? settingInstructions(key, labelText) : dashboardLanguage === 'fr' ? `Configurez ${dashboardLabel(key, labelText).toLowerCase()} puis enregistrez. ${activeAdvancedSettingKeys.has(key) ? 'Le bot applique ce paramètre automatiquement.' : 'Cette option est enregistrée mais pas encore appliquée.'}` : dashboardLanguage === 'es' ? `Configura ${dashboardLabel(key, labelText).toLowerCase()} y guarda. ${activeAdvancedSettingKeys.has(key) ? 'El bot aplica esta opción automáticamente.' : 'Esta opción se guarda, pero aún no se aplica.'}` : dashboardLanguage === 'de' ? `${dashboardLabel(key, labelText)} konfigurieren und speichern. ${activeAdvancedSettingKeys.has(key) ? 'Der Bot wendet diese Option automatisch an.' : 'Diese Option wird gespeichert, aber noch nicht angewendet.'}` : dashboardLanguage === 'pt' ? `Configure ${dashboardLabel(key, labelText).toLowerCase()} e salve. ${activeAdvancedSettingKeys.has(key) ? 'O bot aplica esta opção automaticamente.' : 'Esta opção é salva, mas ainda não é aplicada.'}` : dashboardLanguage === 'ko' ? `${dashboardLabel(key, labelText)}을(를) 설정하고 저장하세요. ${activeAdvancedSettingKeys.has(key) ? '봇이 이 설정을 자동으로 적용합니다.' : '이 옵션은 저장되지만 아직 적용되지 않습니다.'}` : dashboardLanguage === 'ja' ? `${dashboardLabel(key, labelText)}を設定して保存してください。${activeAdvancedSettingKeys.has(key) ? 'この設定はボットに自動適用されます。' : '保存されますが、まだ適用されません。'}` : `Configure ${dashboardLabel(key, labelText).toLowerCase()} and save. ${activeAdvancedSettingKeys.has(key) ? 'The bot applies this setting automatically.' : 'This option is saved but is not connected to bot behavior yet.'}`;

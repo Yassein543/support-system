@@ -1102,6 +1102,11 @@ async function getReplyMessages(userId, forcedLanguage) {
 }
 
 const slashEmojiBufferCache = new Map();
+const SLASH_COMMAND_EMOJI = Object.freeze({
+    help: 'ys-info', plan: 'ys-premium', anticrash: 'ys-shield', profile: 'ys-stats',
+    ticket: 'ys-ticket-open', suggest: 'ys-suggestion', poll: 'ys-poll', warn: 'ys-warning',
+    verify: 'ys-shield-check', support: 'ys-support', invites: 'ys-users', embed: 'ys-message'
+});
 async function getSlashEmojiBuffer(emojiName) {
     if (!/^ys-[a-z0-9-]{1,64}$/.test(String(emojiName || ''))) return null;
     if (slashEmojiBufferCache.has(emojiName)) return slashEmojiBufferCache.get(emojiName);
@@ -1115,9 +1120,9 @@ async function getSlashEmojiBuffer(emojiName) {
     return buffer;
 }
 
-function addSlashReplyEmoji(interaction, advancedSettings) {
-    const emojiName = advancedSettings?.slashCommandEmoji;
-    if (!emojiName || emojiName === 'none') return;
+function addSlashReplyEmoji(interaction) {
+    const emojiName = SLASH_COMMAND_EMOJI[interaction.commandName];
+    if (!emojiName) return;
     const decoratedMethods = ['reply', 'editReply', 'followUp'];
     for (const methodName of decoratedMethods) {
         const original = interaction[methodName]?.bind(interaction);
@@ -1137,6 +1142,10 @@ function addSlashReplyEmoji(interaction, advancedSettings) {
                 const first = EmbedBuilder.from(embeds[0]);
                 if (!first.data.thumbnail) first.setThumbnail(`attachment://${attachmentName}`);
                 embeds[0] = first;
+            } else if (typeof options.content === 'string' && options.content.length <= 4096) {
+                const description = options.content;
+                delete options.content;
+                embeds.push(new EmbedBuilder().setColor(0x35cdb7).setDescription(description).setThumbnail(`attachment://${attachmentName}`));
             } else {
                 embeds.push(new EmbedBuilder().setColor(0x35cdb7).setThumbnail(`attachment://${attachmentName}`));
             }
@@ -1175,7 +1184,7 @@ client.on('interactionCreate', async (interaction) => {
     }
     const messages = await getReplyMessages(interaction.user.id, guildSettings?.advancedSettings?.commandLanguage);
 
-    if (guildSettings?.advancedSettings) addSlashReplyEmoji(interaction, guildSettings.advancedSettings);
+    if (guildSettings?.advancedSettings) addSlashReplyEmoji(interaction);
 
     if (interaction.commandName === 'profile') return showUserProfile(interaction);
     if (interaction.commandName === 'ticket') return createTicket(interaction);
