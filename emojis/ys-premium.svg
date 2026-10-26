@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Premium">
+  <defs><linearGradient id="gold" x1="23" y1="18" x2="108" y2="111" gradientUnits="userSpaceOnUse"><stop stop-color="#fff0a6"/><stop offset=".48" stop-color="#f7c95d"/><stop offset="1" stop-color="#cb8b35"/></linearGradient></defs>
+  <circle cx="64" cy="64" r="56" fill="#211a2e" stroke="#c99bfa" stroke-opacity=".52" stroke-width="3"/>
+  <path d="m64 15 11 30 32-3-20 24 11 30-34-17-34 17 11-30-20-24 32 3 11-30Z" fill="url(#gold)" stroke="#fff0b3" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="64" cy="64" r="9" fill="#fff8db"/>
+</svg>

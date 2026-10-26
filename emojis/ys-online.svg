@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="متصل">
+  <defs><radialGradient id="g" cx=".35" cy=".28" r=".8"><stop stop-color="#a1ffe8"/><stop offset=".48" stop-color="#45e1b0"/><stop offset="1" stop-color="#169b75"/></radialGradient></defs>
+  <circle cx="64" cy="64" r="50" fill="#0b1c27" stroke="#54e6ba" stroke-opacity=".35" stroke-width="4"/>
+  <circle cx="64" cy="64" r="34" fill="url(#g)"/>
+  <circle cx="64" cy="64" r="15" fill="#effff9" fill-opacity=".22"/>
+</svg>

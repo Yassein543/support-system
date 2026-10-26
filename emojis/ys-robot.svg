@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="روبوت">
+  <defs>
+    <linearGradient id="ring" x1="20" y1="15" x2="108" y2="113" gradientUnits="userSpaceOnUse"><stop stop-color="#70f1da"/><stop offset="1" stop-color="#557cff"/></linearGradient>
+    <radialGradient id="glow" cx=".3" cy=".24" r=".8"><stop stop-color="#1eb9a7"/><stop offset="1" stop-color="#4774ed"/></radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ring)" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="46" fill="url(#glow)" opacity=".13"/>
+  <g fill="none" stroke="#e8fffb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M64 25V17m-6 0h12"/><rect x="32" y="29" width="64" height="49" rx="15"/><path d="M24 48h8m64 0h8"/><circle cx="48" cy="49" r="4" fill="#6af0d7" stroke="none"/><circle cx="80" cy="49" r="4" fill="#6af0d7" stroke="none"/><path d="M48 66q16 9 32 0M42 83h44l8 25H34l8-25Z"/><rect x="54" y="89" width="20" height="11" rx="3" fill="#6af0d7" fill-opacity=".45"/><path d="M34 88H24V72m70 16h10V72M48 108v7m32-7v7"/></g>
+</svg>

@@ -5,10 +5,10 @@ const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const fs = require('fs');
 const { exec } = require('child_process');
 const path = require('path');
-const { SUPPORTED_LANGUAGES, PROFILE_CARD_THEMES, getBotLanguage: getBotLanguageFromDb, getProfileCardTheme: getProfileCardThemeFromDb, getProfileCardImage: getProfileCardImageFromDb } = require('./user-preferences');
-const { recordBotCommandUser: recordBotCommandUserInDb, getBotUserStats: getBotUserStatsFromDb } = require('./ip-ban-service');
-const { DEFAULT_SETTINGS, getGuildSettings } = require('./guild-settings');
-const { isPremiumOwnerActive } = require('./subscription-service');
+const { SUPPORTED_LANGUAGES, PROFILE_CARD_THEMES, getBotLanguage: getBotLanguageFromDb, getProfileCardTheme: getProfileCardThemeFromDb, getProfileCardImage: getProfileCardImageFromDb } = require('./services/user-preferences');
+const { recordBotCommandUser: recordBotCommandUserInDb, getBotUserStats: getBotUserStatsFromDb } = require('./services/ip-ban-service');
+const { DEFAULT_SETTINGS, getGuildSettings } = require('./services/guild-settings');
+const { isPremiumOwnerActive } = require('./services/subscription-service');
 
 const botMessages = {
     ar: {
@@ -381,6 +381,16 @@ client.on('ready', async () => {
         new SlashCommandBuilder()
             .setName('embed')
             .setDescription('إرسال الإمبيد المخصص من إعدادات لوحة التحكم')
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+        new SlashCommandBuilder()
+            .setName('help')
+            .setDescription('عرض أوامر YS-Bot المتاحة'),
+        new SlashCommandBuilder()
+            .setName('plan')
+            .setDescription('عرض خطة اشتراك هذا السيرفر'),
+        new SlashCommandBuilder()
+            .setName('anticrash')
+            .setDescription('عرض حالة الحماية وإعدادها لهذا السيرفر')
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     ];
 
@@ -408,6 +418,7 @@ let guildSettingsWarningShown = false;
 let guildSettingsBridgeConnected = false;
 const guildSettingsCache = new Map();
 const recentMessages = new Map();
+const autoReplyCooldowns = new Map();
 const spamNoticeTimes = new Map();
 const linkNoticeTimes = new Map();
 
@@ -1090,6 +1101,52 @@ async function getReplyMessages(userId, forcedLanguage) {
     }
 }
 
+const slashEmojiBufferCache = new Map();
+async function getSlashEmojiBuffer(emojiName) {
+    if (!/^ys-[a-z0-9-]{1,64}$/.test(String(emojiName || ''))) return null;
+    if (slashEmojiBufferCache.has(emojiName)) return slashEmojiBufferCache.get(emojiName);
+    const emojiPath = path.join(__dirname, 'emojis', `${emojiName}.svg`);
+    if (!fs.existsSync(emojiPath)) return null;
+    const image = await loadImage(fs.readFileSync(emojiPath));
+    const canvas = createCanvas(128, 128);
+    canvas.getContext('2d').drawImage(image, 0, 0, 128, 128);
+    const buffer = canvas.toBuffer('image/png');
+    slashEmojiBufferCache.set(emojiName, buffer);
+    return buffer;
+}
+
+function addSlashReplyEmoji(interaction, advancedSettings) {
+    const emojiName = advancedSettings?.slashCommandEmoji;
+    if (!emojiName || emojiName === 'none') return;
+    const decoratedMethods = ['reply', 'editReply', 'followUp'];
+    for (const methodName of decoratedMethods) {
+        const original = interaction[methodName]?.bind(interaction);
+        if (!original) continue;
+        interaction[methodName] = async (payload, ...rest) => {
+            let image;
+            try { image = await getSlashEmojiBuffer(emojiName); }
+            catch (error) {
+                console.error(`Could not render slash reply emoji ${emojiName}:`, error.message);
+                return original(payload, ...rest);
+            }
+            if (!image) return original(payload, ...rest);
+            const options = typeof payload === 'string' ? { content: payload } : { ...payload };
+            const embeds = [...(options.embeds || [])];
+            const attachmentName = 'ys-command-emoji.png';
+            if (embeds.length) {
+                const first = EmbedBuilder.from(embeds[0]);
+                if (!first.data.thumbnail) first.setThumbnail(`attachment://${attachmentName}`);
+                embeds[0] = first;
+            } else {
+                embeds.push(new EmbedBuilder().setColor(0x35cdb7).setThumbnail(`attachment://${attachmentName}`));
+            }
+            options.embeds = embeds;
+            options.files = [...(options.files || []), new AttachmentBuilder(image, { name: attachmentName })];
+            return original(options, ...rest);
+        };
+    }
+}
+
 // معالجة أوامر السلاش (Interaction)
 client.on('interactionCreate', async (interaction) => {
     if (interaction.isButton()) {
@@ -1102,7 +1159,6 @@ client.on('interactionCreate', async (interaction) => {
         return createTicket(interaction, interaction.fields.getTextInputValue('reason').trim());
     }
     if (!interaction.isChatInputCommand()) return;
-    if (interaction.commandName === 'embed') return sendConfiguredEmbed(interaction);
 
     let guildSettings = null;
     if (interaction.guild) {
@@ -1117,7 +1173,9 @@ client.on('interactionCreate', async (interaction) => {
             await sendGuildLog(interaction.guild, guildSettings, `<@${interaction.user.id}> استخدم الأمر /${interaction.commandName}.`);
         }
     }
-    const messages = await getReplyMessages(interaction.user.id);
+    const messages = await getReplyMessages(interaction.user.id, guildSettings?.advancedSettings?.commandLanguage);
+
+    if (guildSettings?.advancedSettings) addSlashReplyEmoji(interaction, guildSettings.advancedSettings);
 
     if (interaction.commandName === 'profile') return showUserProfile(interaction);
     if (interaction.commandName === 'ticket') return createTicket(interaction);
@@ -1127,6 +1185,43 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.commandName === 'verify') return verifyMember(interaction);
     if (interaction.commandName === 'support') return showSupportChannel(interaction);
     if (interaction.commandName === 'invites') return showInviteCount(interaction);
+    if (interaction.commandName === 'embed') return sendConfiguredEmbed(interaction);
+
+    if (interaction.commandName === 'help') {
+        const english = guildSettings?.advancedSettings?.commandLanguage === 'en';
+        const embed = new EmbedBuilder()
+            .setColor(0x35cdb7)
+            .setTitle(english ? 'YS-Bot commands' : 'أوامر YS-Bot')
+            .setDescription(english
+                ? '`/profile` member stats · `/ticket` open support ticket · `/suggest` submit suggestion · `/poll` create poll · `/warn` warn a member · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send the configured embed.'
+                : '`/profile` إحصاءات عضو · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
+            .setFooter({ text: english ? 'YS-Bot • Use / to browse commands' : 'YS-Bot • اكتب / لاستعراض الأوامر' });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (interaction.commandName === 'plan') {
+        if (!interaction.guild) return interaction.reply({ content: 'استخدم /plan داخل السيرفر.', ephemeral: true });
+        const plan = await getSubscription(interaction.guild.id);
+        const status = botMessages[guildSettings?.advancedSettings?.commandLanguage || 'ar'] || botMessages.ar;
+        const embed = new EmbedBuilder().setColor(plan === 'Premium' ? 0x8b5cf6 : plan === 'VIP' ? 0xffd700 : plan === 'Basic' ? 0x00b894 : 0x68768a)
+            .setTitle(status.planTitle).setDescription(status.planDescription(plan)).setFooter({ text: status.planFooter });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (interaction.commandName === 'anticrash') {
+        if (!interaction.guild) return interaction.reply({ content: 'استخدم /anticrash داخل السيرفر.', ephemeral: true });
+        const plan = await getSubscription(interaction.guild.id);
+        if (!['Basic', 'VIP', 'Premium'].includes(plan)) return interaction.reply({ content: messages.upgradeRequired, ephemeral: true });
+        const advanced = guildSettings?.advancedSettings || {};
+        const features = [
+            `مكافحة السبام: ${guildSettings?.antiSpam ? 'مفعّل' : 'متوقف'}`,
+            `حماية الغارات: ${advanced.antiRaidEnabled ? 'مفعّلة' : 'متوقفة'}`,
+            `حماية التخريب: ${advanced.antiNukeEnabled ? 'مفعّلة' : 'متوقفة'}`
+        ];
+        const embed = new EmbedBuilder().setColor(0x35cdb7).setTitle('حالة حماية السيرفر')
+            .setDescription(`${features.join('\n')}\n\nلتغيير الإعدادات، افتح لوحة تحكم السيرفر واحفظ التعديلات.`);
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
 
     // حظر تشغيل الأوامر السرية داخل السيرفرات وقصرها على الخاص
     if (interaction.commandName === 'add-2fa' || interaction.commandName === 'get-2fa') {
@@ -1255,6 +1350,37 @@ async function runGuildAutomations() {
             if (sent) data.religiousReminders[reminder.key] = now;
         }
 
+        if (advanced.scheduledAnnouncementEnabled) {
+            const channelId = String(advanced.scheduledAnnouncementChannelId || '').trim();
+            const messageText = String(advanced.scheduledAnnouncementMessage || '').trim();
+            const interval = Number(advanced.scheduledAnnouncementIntervalHours || 24) * 3600000;
+            const lastSentAt = Number(data.religiousReminders.scheduledAnnouncement || 0);
+            if (channelId && messageText && !lastSentAt) {
+                data.religiousReminders.scheduledAnnouncement = now;
+                saveBotState();
+            } else if (channelId && messageText && now - lastSentAt >= interval) {
+                const destination = await guild.channels.fetch(channelId).catch(() => null);
+                if (destination?.isTextBased() && typeof destination.send === 'function') {
+                    const embed = new EmbedBuilder()
+                        .setColor(COLOR_VALUES[advanced.scheduledAnnouncementColor] || COLOR_VALUES.teal)
+                        .setDescription(messageText.slice(0, 4000))
+                        .setTimestamp();
+                    const title = String(advanced.scheduledAnnouncementTitle || '').trim();
+                    if (title) embed.setTitle(title.slice(0, 100));
+                    const image = safeImageUrl(advanced.scheduledAnnouncementImageUrl);
+                    if (image) embed.setImage(image);
+                    const sent = await destination.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch((error) => {
+                        console.error(`Could not send scheduled announcement in guild ${guild.id}:`, error.message);
+                        return null;
+                    });
+                    if (sent) {
+                        data.religiousReminders.scheduledAnnouncement = now;
+                        saveBotState();
+                    }
+                }
+            }
+        }
+
         if (!advanced.autorunBackupEnabled) continue;
         const interval = Number(advanced.autorunBackupIntervalHours || 24) * 3600000;
         if (now - Number(data.backups.lastAt || 0) < interval) continue;
@@ -1279,27 +1405,49 @@ async function runGuildAutomations() {
 
 async function handleRaidJoin(member, settings) {
     const advanced = settings.advancedSettings || {};
-    if (!advanced.antiRaidEnabled) return;
+    if (!advanced.antiRaidEnabled) return false;
+    const minimumAccountAgeDays = Math.max(0, Math.min(365, Number(advanced.antiRaidMinAccountAgeDays) || 0));
+    const accountAgeDays = member.user?.createdTimestamp ? (Date.now() - member.user.createdTimestamp) / 86400000 : Infinity;
+    if (minimumAccountAgeDays > 0 && accountAgeDays < minimumAccountAgeDays) {
+        const action = ['kick', 'ban'].includes(advanced.antiRaidYoungAccountAction) ? advanced.antiRaidYoungAccountAction : 'alert';
+        const alertId = advanced.antiRaidAlertChannelId || advanced.modLogChannelId;
+        const alertChannel = alertId ? await member.guild.channels.fetch(alertId).catch(() => null) : null;
+        const roleId = advanced.antiRaidAlertRoleId && member.guild.roles.cache.has(advanced.antiRaidAlertRoleId) ? advanced.antiRaidAlertRoleId : '';
+        const rolePrefix = roleId ? `<@&${roleId}> ` : '';
+        const alertText = `${rolePrefix}⚠️ انضم حساب حديث عمره أقل من ${minimumAccountAgeDays} يومًا إلى السيرفر: ${member.user.tag}. الإجراء: ${action === 'alert' ? 'تنبيه فقط' : action === 'kick' ? 'طرد' : 'حظر'}.`;
+        if (alertChannel?.isTextBased()) await alertChannel.send({ content: alertText, allowedMentions: { parse: [], roles: roleId ? [roleId] : [] } }).catch(() => {});
+        await sendGuildLog(member.guild, settings, alertText.replace(rolePrefix, ''), 0xf59e0b);
+        if (action === 'kick' && member.kickable) {
+            const removed = await member.kick(`YS-Bot: Discord account younger than ${minimumAccountAgeDays} days`).then(() => true).catch(() => false);
+            if (removed) return true;
+        } else if (action === 'ban' && member.bannable) {
+            const removed = await member.ban({ reason: `YS-Bot: Discord account younger than ${minimumAccountAgeDays} days`, deleteMessageSeconds: 0 }).then(() => true).catch(() => false);
+            if (removed) return true;
+        }
+    }
     const now = Date.now();
     const recent = (memberJoinTimes.get(member.guild.id) || []).filter((time) => now - time < Number(advanced.antiRaidWindowSeconds || 30) * 1000);
     recent.push(now);
     memberJoinTimes.set(member.guild.id, recent);
-    if (recent.length < Number(advanced.antiRaidJoinLimit || 10)) return;
-    if (now - (raidTriggeredAt.get(member.guild.id) || 0) < 5 * 60 * 1000) return;
+    if (recent.length < Number(advanced.antiRaidJoinLimit || 10)) return false;
+    if (now - (raidTriggeredAt.get(member.guild.id) || 0) < 5 * 60 * 1000) return false;
     raidTriggeredAt.set(member.guild.id, now);
 
     const alertId = advanced.antiRaidAlertChannelId || advanced.modLogChannelId;
     const alertChannel = alertId ? await member.guild.channels.fetch(alertId).catch(() => null) : null;
     if (alertChannel?.isTextBased()) {
-        await alertChannel.send(`⚠️ تم رصد ${recent.length} انضمام خلال ${advanced.antiRaidWindowSeconds || 30} ثانية.`).catch(() => {});
+        const roleId = advanced.antiRaidAlertRoleId && member.guild.roles.cache.has(advanced.antiRaidAlertRoleId) ? advanced.antiRaidAlertRoleId : '';
+        const rolePrefix = roleId ? `<@&${roleId}> ` : '';
+        await alertChannel.send({ content: `${rolePrefix}⚠️ تم رصد ${recent.length} انضمام خلال ${advanced.antiRaidWindowSeconds || 30} ثانية.`, allowedMentions: { parse: [], roles: roleId ? [roleId] : [] } }).catch(() => {});
     }
     await sendGuildLog(member.guild, settings, `تم بلوغ حد الحماية من الغارات: ${recent.length} أعضاء خلال ${advanced.antiRaidWindowSeconds || 30} ثانية.`, 0xef4444);
-    if (advanced.antiRaidAction !== 'lockdown') return;
+    if (advanced.antiRaidAction !== 'lockdown') return false;
 
     const everyoneId = member.guild.roles.everyone.id;
+    const excludedChannelIds = new Set((advanced.antiRaidLockdownExcludeChannelIds || '').split(/[\s,]+/).filter(Boolean));
     const changes = [];
     for (const channel of member.guild.channels.cache.values()) {
-        if (![ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(channel.type)) continue;
+        if (![ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(channel.type) || excludedChannelIds.has(channel.id)) continue;
         const overwrite = channel.permissionOverwrites.cache.get(everyoneId);
         const oldSend = overwrite?.deny.has(PermissionFlagsBits.SendMessages) ? false : overwrite?.allow.has(PermissionFlagsBits.SendMessages) ? true : null;
         const ok = await channel.permissionOverwrites.edit(everyoneId, { SendMessages: false }, { reason: 'Temporary anti-raid lockdown' }).then(() => true).catch(() => false);
@@ -1310,7 +1458,8 @@ async function handleRaidJoin(member, settings) {
             if (hadOverwrite) await channel.permissionOverwrites.edit(everyoneId, { SendMessages: oldSend }, { reason: 'End temporary anti-raid lockdown' }).catch(() => {});
             else await channel.permissionOverwrites.delete(everyoneId, 'End temporary anti-raid lockdown').catch(() => {});
         }
-    }, 5 * 60 * 1000);
+    }, Math.max(1, Math.min(60, Number(advanced.antiRaidLockdownDurationMinutes) || 5)) * 60 * 1000);
+    return false;
 }
 
 const antiNukeAuditEvents = {
@@ -1406,7 +1555,8 @@ client.on('guildAuditLogEntryCreate', async (entry, guild) => {
 client.on('guildMemberAdd', async (member) => {
     const settings = await loadGuildSettings(member.guild.id);
     const advanced = settings.advancedSettings || {};
-    await handleRaidJoin(member, settings);
+    const removedByYoungAccountProtection = await handleRaidJoin(member, settings);
+    if (removedByYoungAccountProtection) return;
 
     if (advanced.inviteTrackingEnabled) {
         const current = await member.guild.invites.fetch().catch(() => null);
@@ -1567,10 +1717,14 @@ client.on('messageCreate', async (message) => {
         timestamps.push(now);
         recentMessages.set(key, timestamps);
         if (timestamps.length >= limit) {
-            if (advanced.antiSpamAction !== 'warn' && canDeleteMessages && message.deletable) await message.delete().catch(() => {});
+            const timeoutMinutes = Math.max(1, Math.min(1440, Number(advanced.antiSpamTimeoutMinutes) || 5));
+            const timeoutApplied = Boolean(advanced.antiSpamTimeoutEnabled && message.member?.moderatable)
+                && await message.member.timeout(timeoutMinutes * 60 * 1000, 'YS-Bot anti-spam protection').then(() => true).catch(() => false);
+            if (!timeoutApplied && advanced.antiSpamAction !== 'warn' && canDeleteMessages && message.deletable) await message.delete().catch(() => {});
             if (now - (spamNoticeTimes.get(key) || 0) > 15000) {
                 spamNoticeTimes.set(key, now);
-                message.channel.send(`⚠️ ${message.author} ${advanced.antiSpamWarning || 'تم رصد رسائل متكررة بسرعة.'}`)
+                const actionMessage = timeoutApplied ? `تم إسكات العضو لمدة ${timeoutMinutes} دقيقة بسبب تكرار الرسائل.` : (advanced.antiSpamWarning || 'تم رصد رسائل متكررة بسرعة.');
+                message.channel.send(`⚠️ ${message.author} ${actionMessage}`)
                     .then((notice) => setTimeout(() => notice.delete().catch(() => {}), 5000))
                     .catch(() => {});
             }
@@ -1615,6 +1769,78 @@ client.on('messageCreate', async (message) => {
         if (blocked.some((word) => plainText.toLocaleLowerCase().includes(word.toLocaleLowerCase()))) {
             await postWarning(message, settings, 'رسالتك تحتوي على كلمة محظورة.', advanced.blockedWordsAction || 'delete');
             return;
+        }
+    }
+
+    if (advanced.emojiSpamEnabled) {
+        const unicodeEmojiCount = [...plainText.matchAll(/\p{Extended_Pictographic}/gu)].length;
+        const customEmojiCount = [...plainText.matchAll(/<a?:[\w~]+:\d{17,20}>/g)].length;
+        if (unicodeEmojiCount + customEmojiCount >= Number(advanced.emojiLimit || 12)) {
+            await postWarning(message, settings, 'رسالتك تحتوي على عدد كبير من الإيموجي.', advanced.emojiSpamAction || 'delete');
+            return;
+        }
+    }
+
+    if (advanced.lineSpamEnabled && plainText.split(/\r?\n/).length >= Number(advanced.lineSpamLimit || 8)) {
+        await postWarning(message, settings, 'رسالتك تحتوي على أسطر كثيرة.', advanced.lineSpamAction || 'delete');
+        return;
+    }
+
+    if (advanced.repeatedCharacterFilterEnabled) {
+        const repeated = plainText.match(/([\p{L}\p{N}])\1+/giu) || [];
+        const longestRun = repeated.reduce((longest, run) => Math.max(longest, [...run].length), 0);
+        if (longestRun >= Number(advanced.repeatedCharacterLimit || 12)) {
+            await postWarning(message, settings, 'تجنب تكرار الحرف أو الرقم مرات كثيرة متتالية.', advanced.repeatedCharacterAction || 'delete');
+            return;
+        }
+    }
+
+    if (advanced.zalgoFilterEnabled) {
+        const combiningMarks = [...plainText.matchAll(/\p{M}/gu)].length;
+        if (combiningMarks >= Number(advanced.zalgoMarkLimit || 8)) {
+            await postWarning(message, settings, 'الرموز أو العلامات المشوهة غير مسموحة.', advanced.zalgoFilterAction || 'delete');
+            return;
+        }
+    }
+
+    if (advanced.autoReplyEnabled && plainText) {
+        const ignoredChannels = String(advanced.autoReplyIgnoreChannelIds || '').split(/[\s,]+/).filter(Boolean);
+        const cooldownKey = `${message.guild.id}:${message.author.id}`;
+        const cooldownMs = Number(advanced.autoReplyCooldownSeconds || 0) * 1000;
+        const lastReplyAt = autoReplyCooldowns.get(cooldownKey) || 0;
+        if (!ignoredChannels.includes(message.channel.id) && (!cooldownMs || Date.now() - lastReplyAt >= cooldownMs)) {
+            const caseSensitive = Boolean(advanced.autoReplyCaseSensitive);
+            const incoming = caseSensitive ? plainText : plainText.toLocaleLowerCase();
+            const mode = advanced.autoReplyMatchMode || 'includes';
+            const match = String(advanced.autoReplyRules || '').split(/\r?\n/).slice(0, 100).map((line) => {
+                const separator = line.indexOf('=>');
+                return separator < 0 ? null : { trigger: line.slice(0, separator).trim(), response: line.slice(separator + 2).trim() };
+            }).find((rule) => {
+                if (!rule?.trigger || !rule.response) return false;
+                const trigger = caseSensitive ? rule.trigger : rule.trigger.toLocaleLowerCase();
+                if (mode === 'exact') return incoming === trigger;
+                if (mode === 'startsWith') return incoming.startsWith(trigger);
+                return incoming.includes(trigger);
+            });
+            if (match) {
+                const response = match.response
+                    .replaceAll('{user}', message.author.username)
+                    .replaceAll('{mention}', `<@${message.author.id}>`)
+                    .replaceAll('{server}', message.guild.name)
+                    .replaceAll('{memberCount}', String(message.guild.memberCount));
+                const includesMention = response.includes(`<@${message.author.id}>`);
+                const sent = await message.channel.send({
+                    content: response.slice(0, 2000),
+                    allowedMentions: includesMention ? { users: [message.author.id], parse: [] } : { parse: [] }
+                }).catch((error) => {
+                    console.error(`Could not send automatic reply in guild ${message.guild.id}:`, error.message);
+                    return null;
+                });
+                if (sent) {
+                    autoReplyCooldowns.set(cooldownKey, Date.now());
+                    if (autoReplyCooldowns.size > 5000) autoReplyCooldowns.delete(autoReplyCooldowns.keys().next().value);
+                }
+            }
         }
     }
 

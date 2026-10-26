@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="تعذر الإكمال">
+  <defs><linearGradient id="g" x1="18" y1="17" x2="108" y2="111" gradientUnits="userSpaceOnUse"><stop stop-color="#ff8797"/><stop offset="1" stop-color="#e33f68"/></linearGradient></defs>
+  <circle cx="64" cy="64" r="56" fill="#21121c" stroke="#ff8797" stroke-opacity=".38" stroke-width="3"/>
+  <circle cx="64" cy="64" r="42" fill="url(#g)"/>
+  <path d="m49 49 30 30m0-30L49 79" fill="none" stroke="#fff8fa" stroke-width="9" stroke-linecap="round"/>
+</svg>

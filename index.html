@@ -7,9 +7,9 @@
     <title>YS-Bot</title>
     <link rel="icon" type="image/svg+xml" href="https://ys-bot.vercel.app/ys-bot-avatar.svg">
     <meta property="og:image" content="https://ys-bot.vercel.app/ys-bot-avatar.svg">
-    <link rel="stylesheet" href="style.css?v=support-email-verify-1">
+    <link rel="stylesheet" href="style.css?v=subscription-cancel-1">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="https://www.paypal.com/sdk/js?client-id=BAAPPCUWiE8FrWxqp0iuHBbeKhtyT1jJGLysHlzu2TxTk6qV4qOaWLl7ZK9ymn53GbDIvD9pK01JSl8pKI&amp;currency=USD"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=BAAPPCUWiE8FrWxqp0iuHBbeKhtyT1jJGLysHlzu2TxTk6qV4qOaWLl7ZK9ymn53GbDIvD9pK01JSl8pKI&amp;currency=USD&amp;components=buttons,funding-eligibility&amp;enable-funding=card"></script>
     
     <style>
         .language-switcher {
@@ -59,10 +59,12 @@
                 color: #f8fafc;
                 box-shadow: 0 30px 100px rgba(0, 0, 0, 0.5);
         }
+        .welcome-onboarding-card.is-celebrating { border-color: rgba(71,215,194,.55); box-shadow: 0 30px 100px rgba(0,0,0,.5),0 0 36px rgba(71,215,194,.14); }
         .welcome-onboarding-brand { color: #7dd3fc; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; }
         .welcome-onboarding-card h1 { margin: 8px 0; font-size: clamp(1.5rem, 5vw, 2rem); }
         .welcome-onboarding-card > p { margin: 0; color: #b7c5d6; line-height: 1.75; }
         .welcome-onboarding-progress { display: flex; gap: 8px; margin: 24px 0; }
+        .welcome-onboarding-progress[hidden] { display: none; }
         .welcome-onboarding-progress span { height: 5px; flex: 1; border-radius: 5px; background: #334155; }
         .welcome-onboarding-progress span.is-complete { background: #38bdf8; }
         .welcome-onboarding-step { min-height: 176px; }
@@ -88,6 +90,9 @@
         }
         .welcome-onboarding-actions button { border-color: transparent; background: linear-gradient(135deg, #0ea5e9, #2563eb); color: #fff; }
         .welcome-onboarding-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .welcome-onboarding-card.is-celebrating .welcome-onboarding-actions { justify-content: center; }
+        .welcome-onboarding-card.is-celebrating .welcome-onboarding-actions a { display: none; }
+        .welcome-onboarding-card.is-celebrating .welcome-onboarding-actions button { min-width: 190px; background: linear-gradient(135deg,#1bb49f,#128c83); }
         @media (max-width: 480px) {
                 .welcome-onboarding { padding: 12px; }
                 .welcome-onboarding-card { border-radius: 19px; }
@@ -1028,6 +1033,10 @@
 
     <header class="hero" id="home">
         <div class="top-actions" role="group" aria-label="اختصارات الموقع">
+            <a class="top-action wallet-shortcut" href="/wallet.html" aria-label="رصيدي وشحن المحفظة" title="رصيدي وشحن المحفظة">
+                <span class="wallet-shortcut-copy"><small>رصيدي</small><strong id="wallet-balance-top">$0.00</strong></span>
+                <span class="wallet-shortcut-plus" aria-hidden="true">+</span>
+            </a>
             <button class="top-action menu-toggle" id="menu-toggle" type="button" aria-label="فتح القائمة" aria-expanded="false" aria-controls="site-menu">
                 <span></span><span></span><span></span>
             </button>
@@ -1052,6 +1061,8 @@
                 <h3 class="menu-section-heading" data-i18n="menuGroupNavigation">التنقل</h3>
                 <a class="site-menu-link" href="#home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1V10Z"/></svg><span data-i18n="menuHome">الرئيسية</span></a>
                 <a class="site-menu-link" href="#pricing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h4"/></svg><span data-i18n="viewPlans">عرض خطط الاشتراك</span></a>
+                <a class="site-menu-link" href="#subscription-status-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="4"/><path d="m16.5 16 1 1 2-2"/></svg><span>إدارة اشتراكك</span></a>
+                <button class="site-menu-link menu-cancel-subscription" id="subscription-cancel-button" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg><span>إلغاء الاشتراك الحالي</span></button>
                 <a class="site-menu-link" href="#quick-start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/></svg><span data-i18n="quickStartNav">طريقة البدء</span></a>
                 <h3 class="menu-section-heading" data-i18n="menuGroupAccount">الحساب</h3>
                 <a class="site-menu-link" href="https://www.paypal.com/myaccount/activities/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5M8 12h8M8 16h5"/></svg><span data-i18n="billingHistory">الفواتير والمعاملات</span></a>
@@ -1346,16 +1357,27 @@
                     </div>
                 </div>
             </section>
+            <dialog class="subscription-cancel-dialog" id="subscription-cancel-dialog" aria-labelledby="subscription-cancel-title">
+                <div class="subscription-cancel-dialog-content">
+                    <span class="subscription-cancel-eyebrow">إدارة العضوية</span>
+                    <h3 id="subscription-cancel-title">إلغاء اشتراك هذا السيرفر؟</h3>
+                    <p>الإلغاء فوري، وستتوقف مزايا الخطة عن السيرفر المحدد بعد التأكيد. الاشتراك المدفوع لا يتجدد تلقائيًا؛ هذا الإجراء ينهي المزايا الحالية.</p>
+                    <p class="subscription-cancel-dialog-status" id="subscription-cancel-dialog-status" role="status" aria-live="polite"></p>
+                    <div class="subscription-cancel-dialog-actions">
+                        <button class="subscription-cancel-keep" id="subscription-cancel-keep" type="button">الاحتفاظ بالاشتراك</button>
+                        <button class="subscription-cancel-confirm" id="subscription-cancel-confirm" type="button">تأكيد الإلغاء الفوري</button>
+                    </div>
+                </div>
+            </dialog>
             <div class="pricing-grid">
 
                 <div class="card">
                     <h3 data-i18n="freePlan">المجانية (Free)</h3>
                     <div class="price">$0 <span data-i18n="free">/ مجاناً</span></div>
                     <ul>
-                        <li>سرعة الفحص: معالجة عادية (Standard Rate Limit).</li>
-                        <li>درجة حماية الروابط: حظر روابط Discord الخارجية فقط.</li>
-                        <li>درجة حماية السلب والتكرار (Anti-Spam): كتم العضو بعد 5 رسائل متكررة.</li>
-                        <li>حد الحماية التفصيلية: حظر كلمة واحدة فقط بحد أقصى أو 5 كلمات ممنوعة.</li>
+                        <li data-plan-feature="free1">✔ كل إعدادات لوحة التحكم الحالية متاحة للجميع.</li>
+                        <li data-plan-feature="free2">✔ الحماية والفلاتر والترحيب والتذاكر والنسخ والإمبيد.</li>
+                        <li data-plan-feature="free3">✔ تفعيل الإعدادات وحفظها من لوحة التحكم.</li>
                     </ul>
                     <a class="btn btn-secondary" href="https://discord.com/oauth2/authorize?client_id=1546870264749494272&permissions=84992&scope=bot%20applications.commands" target="_blank" rel="noopener noreferrer" data-i18n="addFree">إضافة البوت مجاناً</a>
                 </div>
@@ -1365,25 +1387,26 @@
                     <h3 data-i18n="basicPlan">الأساسية (Basic)</h3>
                     <div class="price"><span data-plan-price="basic">$2.99</span> <span data-i18n="monthly">/ شهرياً</span></div>
                     <ul>
-                        <li>تطوير سرعة التفاعل: معالجة أسرع للتهديدات (Faster Processing).</li>
-                        <li>درجة حماية Anti-Raid: طرد الحسابات التي يقل عمرها عن 3 أيام تلقائيًا أثناء الهجمات.</li>
-                        <li>ترقية حماية الرتب والقنوات (Anti-Nuke Starter): منع المشرفين من حذف أكثر من 3 قنوات أو رتب خلال 10 دقائق، وتجريدهم من الصلاحيات عند تجاوز الحد.</li>
-                        <li>تأمين الروابط: منع جميع أنواع الروابط، بما فيها IP Loggers والتصيّد.</li>
+                        <li data-plan-feature="basic1">✔ كل إعدادات لوحة التحكم متاحة مثل الخطة المجانية.</li>
+                        <li data-plan-feature="basic2">✔ ميزة إضافية: إسكات تلقائي مؤقت عند تكرار السبام.</li>
+                        <li data-plan-feature="basic3">✔ اختر مدة الإسكات من دقيقة إلى 24 ساعة.</li>
+                        <li data-plan-feature="basic4">✔ رصد الحسابات الجديدة أثناء الغارات وتحديد الإجراء.</li>
                     </ul>
                     <div id="paypal-button-basic"></div>
+                    <button class="btn wallet-buy-button" id="wallet-buy-basic" type="button">شراء باستخدام رصيدي</button>
                 </div>
 
                 <div class="card vip">
                     <h3 data-i18n="vipPlan">الاحترافية (VIP)</h3>
                     <div class="price"><span data-plan-price="vip">$7.99</span> <span data-i18n="monthly">/ شهرياً</span></div>
                     <ul>
-                        <li>قريبًا: تخصيص بطاقة إحصاءات /profile ورفع صورة خاصة لمشتركي VIP.</li>
-                        <li>سرعة استجابة برمجية فائقة (0ms Real-time Defense): خوادم معالجة مخصصة لمنع التخريب في أجزاء من الثانية.</li>
-                        <li>ترقية نظام Anti-Nuke الشامل: منع أي تعديل أو حذف للرتب أو طرد جماعي من أي مشرف إلا بتأكيد ثنائي أو إذن المالك المباشر.</li>
-                        <li>ترقية الكابتشا الذكية (Smart Captcha Verification): فحص الحسابات بالصور والرموز قبل دخول السيرفر لمنع بوتات Raid.</li>
-                        <li>نظام استعادة السيرفر (Auto-Backup &amp; Restore): نسخة احتياطية يومية للرتب والقنوات واسترجاعها بضغطة زر.</li>
+                        <li data-plan-feature="vip1">✔ كل ما في Basic، مع بقاء بقية إعدادات اللوحة متاحة للجميع.</li>
+                        <li data-plan-feature="vip2">✔ ميزة إضافية: تخصيص مدة قفل الغارة المؤقت.</li>
+                        <li data-plan-feature="vip3">✔ استثناء قنوات محددة من القفل وتنبيه رتبة المشرفين.</li>
+                        <li data-plan-feature="vip4">✔ اختر مدة القفل من دقيقة إلى 60 دقيقة.</li>
                     </ul>
                     <div id="paypal-button-vip"></div>
+                    <button class="btn wallet-buy-button" id="wallet-buy-vip" type="button">شراء باستخدام رصيدي</button>
                 </div>
 
                 <div class="card premium-plan">
@@ -1396,6 +1419,7 @@
                         <li data-premium-offer="feature2">شارة Premium مميزة في حالة عضوية السيرفر.</li>
                         <li data-premium-offer="feature3">تجربة مجانية كاملة لمدة 30 يومًا، بدون تجديد تلقائي.</li>
                         <li data-premium-offer="feature4">المطالبة بالعرض مرة واحدة لكل حساب وسيرفر.</li>
+                        <li data-plan-feature="premiumImage">ميزة Premium: ارفع صورة مخصصة لبطاقة إحصاءاتك في /profile.</li>
                     </ul>
                     <button class="btn premium-claim-button" id="premium-offer-button" data-premium-offer="claim" type="button">فعّل عرض Premium المجاني</button>
                 </div>
@@ -1464,6 +1488,10 @@
         const subscriptionStatusMessage = document.getElementById('subscription-status-message');
         const subscriptionMembershipBadge = document.getElementById('subscription-membership-badge');
         const subscriptionMembershipLabel = document.getElementById('subscription-membership-label');
+        const subscriptionCancelButton = document.getElementById('subscription-cancel-button');
+        const subscriptionCancelDialog = document.getElementById('subscription-cancel-dialog');
+        const subscriptionCancelDialogStatus = document.getElementById('subscription-cancel-dialog-status');
+        const subscriptionCancelConfirm = document.getElementById('subscription-cancel-confirm');
         const premiumOfferButton = document.getElementById('premium-offer-button');
         const premiumOfferCountdown = document.getElementById('premium-offer-countdown');
         let premiumOfferEndsAt = null;
@@ -1501,6 +1529,63 @@
         function setSubscriptionMessage(message) {
             if (subscriptionStatusMessage) subscriptionStatusMessage.textContent = message;
         }
+        const walletBalanceTop = document.getElementById('wallet-balance-top');
+        function formatWalletBalance(cents) {
+            return new Intl.NumberFormat(localStorage.getItem('ys-bot-language') || 'ar', {
+                style: 'currency', currency: 'USD', minimumFractionDigits: 2
+            }).format(Number(cents || 0) / 100);
+        }
+        function updateWalletBalance(cents) {
+            const formatted = formatWalletBalance(cents);
+            if (walletBalanceTop) walletBalanceTop.textContent = formatted;
+        }
+        async function loadWalletBalance(quiet = false) {
+            if (!localStorage.getItem('discord_token')) {
+                updateWalletBalance(0);
+                return;
+            }
+            try {
+                const response = await subscriptionApi('/api/wallet/balance');
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(result.error || 'تعذر تحميل رصيدك الآن.');
+                updateWalletBalance(result.balanceCents);
+            } catch {
+                if (walletBalanceTop) walletBalanceTop.textContent = '—';
+            }
+        }
+        async function buyPlanWithWallet(plan) {
+            if (!localStorage.getItem('discord_token')) {
+                setSubscriptionMessage('سجّل دخولك عبر Discord قبل الشراء بالرصيد.');
+                return;
+            }
+            if (!subscriptionGuildSelect.value) {
+                setSubscriptionMessage('اختَر سيرفرًا تديره قبل شراء الخطة.');
+                return;
+            }
+            const button = document.getElementById(`wallet-buy-${plan.toLowerCase()}`);
+            button.disabled = true;
+            setSubscriptionMessage('جاري التحقق من رصيدك وتفعيل الخطة…');
+            try {
+                const response = await subscriptionApi('/api/subscriptions/purchase-with-wallet', {
+                    plan: plan === 'basic' ? 'Basic' : 'VIP', period: billingPeriod,
+                    guildId: subscriptionGuildSelect.value, requestId: crypto.randomUUID()
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    if (Number.isFinite(result.balanceCents)) updateWalletBalance(result.balanceCents);
+                    throw new Error(result.error || 'تعذر شراء الخطة من الرصيد.');
+                }
+                updateWalletBalance(result.balanceCents);
+                await refreshSubscriptionStatus();
+                setSubscriptionMessage(`تم تفعيل ${result.plan} لهذا السيرفر حتى ${formatSubscriptionExpiry(result.expiresAt)} باستخدام رصيد المحفظة.`);
+            } catch (error) {
+                setSubscriptionMessage(error.message || 'تعذر إتمام الشراء الآن.');
+            } finally {
+                button.disabled = false;
+            }
+        }
+        document.getElementById('wallet-buy-basic').addEventListener('click', () => buyPlanWithWallet('basic'));
+        document.getElementById('wallet-buy-vip').addEventListener('click', () => buyPlanWithWallet('vip'));
         async function subscriptionApi(url, body) {
             const token = localStorage.getItem('discord_token');
             if (!token) throw new Error('سجّل الدخول عبر Discord أولًا.');
@@ -1524,16 +1609,48 @@
                 if (!response.ok) throw new Error(status.error || 'تعذر تحميل حالة العضوية.');
                 subscriptionMembershipBadge.dataset.state = status.active ? 'active' : 'free';
                 subscriptionMembershipBadge.dataset.plan = status.active ? status.plan : 'Free';
+                subscriptionCancelButton.hidden = !(status.active && status.canCancel);
                 subscriptionMembershipLabel.textContent = status.active
                     ? `مشترك ${status.plan === 'Premium' ? '✦ Premium' : status.plan} · فعّال حتى ${formatSubscriptionExpiry(status.expiresAt)}`
                     : 'الخطة المجانية · لا يوجد اشتراك فعّال';
             } catch (error) {
                 subscriptionMembershipBadge.dataset.state = 'free';
                 subscriptionMembershipBadge.dataset.plan = 'Free';
+                subscriptionCancelButton.hidden = true;
                 subscriptionMembershipLabel.textContent = 'تعذر تحميل حالة الاشتراك';
                 setSubscriptionMessage(error.message || 'تعذر تحميل حالة العضوية.');
             }
         }
+        subscriptionCancelButton.addEventListener('click', () => {
+            setMenuOpen(false);
+            subscriptionCancelDialogStatus.textContent = '';
+            subscriptionCancelConfirm.disabled = false;
+            subscriptionCancelDialog.showModal();
+        });
+        document.getElementById('subscription-cancel-keep').addEventListener('click', () => subscriptionCancelDialog.close());
+        subscriptionCancelDialog.addEventListener('click', (event) => {
+            if (event.target === subscriptionCancelDialog) subscriptionCancelDialog.close();
+        });
+        subscriptionCancelConfirm.addEventListener('click', async () => {
+            if (!subscriptionGuildSelect.value || !localStorage.getItem('discord_token')) {
+                subscriptionCancelDialogStatus.textContent = 'سجّل الدخول واختر السيرفر أولًا.';
+                return;
+            }
+            subscriptionCancelConfirm.disabled = true;
+            subscriptionCancelDialogStatus.textContent = 'جاري إلغاء الاشتراك…';
+            try {
+                const response = await subscriptionApi('/api/subscriptions/cancel', { guildId: subscriptionGuildSelect.value });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(result.error || 'تعذر إلغاء الاشتراك.');
+                subscriptionCancelDialog.close();
+                await refreshSubscriptionStatus();
+                setSubscriptionMessage('تم إلغاء الاشتراك، وتحولت حالة السيرفر إلى الخطة المجانية.');
+            } catch (error) {
+                subscriptionCancelDialogStatus.textContent = error.message || 'تعذر إلغاء الاشتراك الآن.';
+            } finally {
+                subscriptionCancelConfirm.disabled = false;
+            }
+        });
         async function loadSubscriptionGuilds() {
             if (!localStorage.getItem('discord_token')) return;
             try {
@@ -1615,9 +1732,10 @@
             refreshSubscriptionStatus();
         });
         document.addEventListener('DOMContentLoaded', loadSubscriptionGuilds);
+        document.addEventListener('DOMContentLoaded', () => loadWalletBalance());
         document.addEventListener('DOMContentLoaded', loadPremiumOfferDeadline);
         renderPremiumOfferLanguage(localStorage.getItem('ys-bot-language') || 'ar');
-        window.addEventListener('storage', (event) => { if (event.key === 'discord_token') loadSubscriptionGuilds(); });
+        window.addEventListener('storage', (event) => { if (event.key === 'discord_token') { loadSubscriptionGuilds(); loadWalletBalance(); } });
 
         renderPlanButton('basic', '#paypal-button-basic', 'blue');
         renderPlanButton('vip', '#paypal-button-vip', 'gold');
@@ -2069,6 +2187,27 @@
             botLanguageStatus.textContent = key ? languageText[key] : '';
         }
 
+        const planFeatureCopy = {
+            ar: {
+                free1:'✔ جميع إعدادات لوحة التحكم الحالية متاحة للجميع.', free2:'✔ الحماية والفلاتر والترحيب والتذاكر والنسخ والإمبيد.', free3:'✔ فعّل الإعدادات واحفظها من لوحة التحكم.',
+                basic1:'✔ كل إعدادات لوحة التحكم الحالية متاحة كما هي في الخطة المجانية.', basic2:'✔ ميزة Basic إضافية: إسكات تلقائي مؤقت عند تكرار السبام.', basic3:'✔ تحديد مدة الإسكات من دقيقة إلى 24 ساعة.', basic4:'✔ رصد الحسابات الجديدة أثناء الغارات واختيار الإجراء المناسب.',
+                vip1:'✔ كل ما في Basic، وبقية إعدادات اللوحة تظل متاحة للجميع.', vip2:'✔ ميزة VIP إضافية: تخصيص مدة قفل الغارة المؤقت.', vip3:'✔ استثناء قنوات من القفل وتنبيه رتبة المشرفين.', vip4:'✔ تحديد مدة القفل من دقيقة إلى 60 دقيقة.', premiumImage:'✔ ميزة Premium: ارفع صورة مخصصة لبطاقة إحصاءاتك في /profile.'
+            },
+            en: {
+                free1:'✔ All current dashboard settings are available to everyone.', free2:'✔ Configure protection, filters, welcome, tickets, backups, and embeds.', free3:'✔ Enable and save settings from the dashboard.',
+                basic1:'✔ All current dashboard settings remain available, just like Free.', basic2:'✔ Basic extra: automatically timeout repeat spammers.', basic3:'✔ Choose a timeout from 1 minute up to 24 hours.', basic4:'✔ Detect new accounts during raids and choose the response.',
+                vip1:'✔ Everything in Basic; existing dashboard settings stay open to everyone.', vip2:'✔ VIP extra: customize the temporary anti-raid lockdown duration.', vip3:'✔ Exempt selected channels and alert a moderator role.', vip4:'✔ Choose a lockdown from 1 to 60 minutes.', premiumImage:'✔ Premium: upload a custom image for your /profile statistics card.'
+            }
+        };
+
+        function renderPlanFeatureLanguage(language) {
+            const copy = planFeatureCopy[language] || planFeatureCopy.en;
+            document.querySelectorAll('[data-plan-feature]').forEach((item) => {
+                const text = copy[item.dataset.planFeature];
+                if (text) item.textContent = text;
+            });
+        }
+
         function setLanguage(language) {
             const languageText = translations[language] || translations.ar;
             document.documentElement.lang = language;
@@ -2085,6 +2224,7 @@
                 const translated = languageText[element.dataset.i18nAriaLabel];
                 if (translated) element.setAttribute('aria-label', translated);
             });
+            renderPlanFeatureLanguage(language);
             const supportUsernameText = supportUsernameTranslations[language] || supportUsernameTranslations.ar;
             supportDiscordUsernameLabel.textContent = supportUsernameText.label;
             supportDiscordUsername.placeholder = supportUsernameText.placeholder;
@@ -2116,8 +2256,8 @@
         }
 
         const onboardingCopy = {
-            ar: { welcome: 'أهلًا بك في YS-Bot', intro: 'خلّينا نجهّزك بسرعة. أكمل الخطوات الثلاث لبدء استخدام الموقع.', step: 'الخطوة {n} من 3', addTitle: 'أضف البوت إلى سيرفرك', addText: 'افتح Discord وأضف YS-Bot إلى السيرفر الذي تريد إدارته.', addAction: 'فتح رابط إضافة البوت', addNext: 'تمت الإضافة، التالي', loginTitle: 'سجّل الدخول عبر Discord', loginText: 'سجّل الدخول حتى نعرض السيرفرات التي تستطيع إدارتها.', loginAction: 'تسجيل الدخول عبر Discord', loginNext: 'تم تسجيل الدخول، التالي', dashboardTitle: 'افتح لوحة التحكم', dashboardText: 'انتقل إلى لوحة التحكم لتختار سيرفرك وتضبط إعدادات البوت.', dashboardAction: 'فتح لوحة التحكم', finish: 'إنهاء وبدء الاستخدام' },
-            en: { welcome: 'Welcome to YS-Bot', intro: 'Let’s get you set up. Complete these three steps to start using the site.', step: 'Step {n} of 3', addTitle: 'Add the bot to your server', addText: 'Open Discord and add YS-Bot to the server you want to manage.', addAction: 'Open bot invite', addNext: 'Added it, continue', loginTitle: 'Sign in with Discord', loginText: 'Sign in so we can show the servers you can manage.', loginAction: 'Sign in with Discord', loginNext: 'Signed in, continue', dashboardTitle: 'Open the dashboard', dashboardText: 'Go to the dashboard to select your server and configure the bot.', dashboardAction: 'Open dashboard', finish: 'Finish and start using the site' },
+            ar: { welcome: 'أهلًا بك في YS-Bot', intro: 'خلّينا نجهّزك بسرعة. أكمل الخطوات الثلاث لبدء استخدام الموقع.', step: 'الخطوة {n} من 3', addTitle: 'أضف البوت إلى سيرفرك', addText: 'افتح Discord وأضف YS-Bot إلى السيرفر الذي تريد إدارته.', addAction: 'فتح رابط إضافة البوت', addNext: 'تمت الإضافة، التالي', loginTitle: 'سجّل الدخول عبر Discord', loginText: 'سجّل الدخول حتى نعرض السيرفرات التي تستطيع إدارتها.', loginAction: 'تسجيل الدخول عبر Discord', loginNext: 'تم تسجيل الدخول، التالي', dashboardTitle: 'افتح لوحة التحكم', dashboardText: 'انتقل إلى لوحة التحكم لتختار سيرفرك وتضبط إعدادات البوت.', dashboardAction: 'فتح لوحة التحكم', finish: 'إنهاء وبدء الاستخدام', completeTitle: 'ممتاز! خلّصت الخطوات 🎉', completeText: 'الروبوت فرحان إنك صرت جاهز. ابدأ استخدام YS-Bot!', completeButton: 'يلا نبدأ' },
+            en: { welcome: 'Welcome to YS-Bot', intro: 'Let’s get you set up. Complete these three steps to start using the site.', step: 'Step {n} of 3', addTitle: 'Add the bot to your server', addText: 'Open Discord and add YS-Bot to the server you want to manage.', addAction: 'Open bot invite', addNext: 'Added it, continue', loginTitle: 'Sign in with Discord', loginText: 'Sign in so we can show the servers you can manage.', loginAction: 'Sign in with Discord', loginNext: 'Signed in, continue', dashboardTitle: 'Open the dashboard', dashboardText: 'Go to the dashboard to select your server and configure the bot.', dashboardAction: 'Open dashboard', finish: 'Finish and start using the site', completeTitle: 'Excellent! You did it 🎉', completeText: 'The YS-Bot robot is excited that you are ready. Enjoy the site!', completeButton: 'Let’s go' },
             fr: { welcome: 'Bienvenue sur YS-Bot', intro: 'Préparons votre compte. Suivez ces trois étapes pour commencer.', step: 'Étape {n} sur 3', addTitle: 'Ajoutez le bot à votre serveur', addText: 'Ouvrez Discord et ajoutez YS-Bot au serveur à gérer.', addAction: 'Ouvrir le lien du bot', addNext: 'Ajout effectué, continuer', loginTitle: 'Connectez-vous avec Discord', loginText: 'Connectez-vous pour afficher les serveurs que vous pouvez gérer.', loginAction: 'Se connecter avec Discord', loginNext: 'Connecté, continuer', dashboardTitle: 'Ouvrez le tableau de bord', dashboardText: 'Choisissez votre serveur et configurez le bot.', dashboardAction: 'Ouvrir le tableau de bord', finish: 'Terminer et commencer' },
             es: { welcome: 'Te damos la bienvenida a YS-Bot', intro: 'Completa estos tres pasos para empezar a usar el sitio.', step: 'Paso {n} de 3', addTitle: 'Añade el bot a tu servidor', addText: 'Abre Discord y añade YS-Bot al servidor que quieras administrar.', addAction: 'Abrir invitación del bot', addNext: 'Ya lo añadí, continuar', loginTitle: 'Inicia sesión con Discord', loginText: 'Inicia sesión para ver los servidores que puedes administrar.', loginAction: 'Iniciar sesión con Discord', loginNext: 'Sesión iniciada, continuar', dashboardTitle: 'Abre el panel de control', dashboardText: 'Elige tu servidor y configura el bot.', dashboardAction: 'Abrir panel de control', finish: 'Terminar y empezar' },
             de: { welcome: 'Willkommen bei YS-Bot', intro: 'Schließe diese drei Schritte ab, um die Website zu nutzen.', step: 'Schritt {n} von 3', addTitle: 'Füge den Bot zu deinem Server hinzu', addText: 'Öffne Discord und füge YS-Bot zum gewünschten Server hinzu.', addAction: 'Bot-Einladung öffnen', addNext: 'Hinzugefügt, weiter', loginTitle: 'Mit Discord anmelden', loginText: 'Melde dich an, damit wir deine verwaltbaren Server anzeigen können.', loginAction: 'Mit Discord anmelden', loginNext: 'Angemeldet, weiter', dashboardTitle: 'Dashboard öffnen', dashboardText: 'Wähle deinen Server aus und richte den Bot ein.', dashboardAction: 'Dashboard öffnen', finish: 'Fertig und Website starten' },
@@ -2132,7 +2272,7 @@
         const onboardingContinue = document.getElementById('onboarding-continue');
         const onboardingProgress = [...document.querySelectorAll('.welcome-onboarding-progress span')];
         let welcomeOnboardingStep = Number(localStorage.getItem(onboardingStepStorageKey) || 0);
-        let dashboardOpenedFromOnboarding = false;
+        let dashboardOpenedFromOnboarding = welcomeOnboardingStep >= 3;
 
         function renderWelcomeOnboarding() {
             if (!welcomeOnboarding) return;
@@ -2151,22 +2291,27 @@
 
             const language = localStorage.getItem('ys-bot-language') || 'ar';
             const words = onboardingCopy[language] || onboardingCopy.ar;
-            const step = Math.max(0, Math.min(2, welcomeOnboardingStep));
-            document.getElementById('onboarding-title').textContent = words.welcome;
-            document.getElementById('onboarding-description').textContent = words.intro;
-            document.getElementById('onboarding-step-count').textContent = words.step.replace('{n}', String(step + 1));
-            document.getElementById('onboarding-step-title').textContent = words[['addTitle', 'loginTitle', 'dashboardTitle'][step]];
-            document.getElementById('onboarding-step-description').textContent = words[['addText', 'loginText', 'dashboardText'][step]];
-            onboardingAction.textContent = words[['addAction', 'loginAction', 'dashboardAction'][step]];
-            onboardingAction.href = [
+            const step = Math.max(0, Math.min(3, welcomeOnboardingStep));
+            const isComplete = step === 3;
+            const card = welcomeOnboarding.querySelector('.welcome-onboarding-card');
+            card.classList.toggle('is-celebrating', isComplete);
+            document.querySelector('.welcome-onboarding-brand').textContent = isComplete ? 'YS-BOT · READY' : 'YS-BOT · GETTING STARTED';
+            document.getElementById('onboarding-title').textContent = isComplete ? (words.completeTitle || onboardingCopy.en.completeTitle) : words.welcome;
+            document.getElementById('onboarding-description').textContent = isComplete ? '' : words.intro;
+            document.getElementById('onboarding-step-count').textContent = isComplete ? '' : words.step.replace('{n}', String(step + 1));
+            document.getElementById('onboarding-step-title').textContent = isComplete ? '' : words[['addTitle', 'loginTitle', 'dashboardTitle'][step]];
+            document.getElementById('onboarding-step-description').textContent = isComplete ? (words.completeText || onboardingCopy.en.completeText) : words[['addText', 'loginText', 'dashboardText'][step]];
+            onboardingAction.textContent = isComplete ? '' : words[['addAction', 'loginAction', 'dashboardAction'][step]];
+            onboardingAction.href = isComplete ? '#' : [
                 'https://discord.com/oauth2/authorize?client_id=1546870264749494272&permissions=84992&scope=bot%20applications.commands',
                 'https://discord.com/oauth2/authorize?client_id=1546870264749494272&redirect_uri=https%3A%2F%2Fys-bot.vercel.app%2Fdashboard.html&response_type=token&scope=identify%20guilds',
                 'https://ys-bot.vercel.app/dashboard.html'
             ][step];
-            onboardingContinue.textContent = words[['addNext', 'loginNext', 'finish'][step]];
+            onboardingContinue.textContent = isComplete ? (words.completeButton || onboardingCopy.en.completeButton) : words[['addNext', 'loginNext', 'finish'][step]];
             const isLocalPreview = window.location.protocol === 'file:';
-            onboardingContinue.disabled = step === 1 && !localStorage.getItem('discord_token') && !isLocalPreview || step === 2 && !dashboardOpenedFromOnboarding;
-            onboardingProgress.forEach((bar, index) => bar.classList.toggle('is-complete', index <= step));
+            onboardingContinue.disabled = !isComplete && (step === 1 && !localStorage.getItem('discord_token') && !isLocalPreview || step === 2 && !dashboardOpenedFromOnboarding);
+            onboardingProgress.forEach((bar, index) => bar.classList.toggle('is-complete', index <= Math.min(step, 2)));
+            document.querySelector('.welcome-onboarding-progress').hidden = isComplete;
             if (step === 0) onboardingAction.setAttribute('aria-label', words.addAction);
             else onboardingAction.removeAttribute('aria-label');
             if (!wasOpen) onboardingAction.focus({ preventScroll: true });
@@ -2179,6 +2324,13 @@
             }
         });
         onboardingContinue.addEventListener('click', () => {
+            if (welcomeOnboardingStep === 3) {
+                localStorage.setItem(onboardingStorageKey, 'true');
+                localStorage.removeItem(onboardingStepStorageKey);
+                renderWelcomeOnboarding();
+                document.querySelector('.menu-toggle')?.focus({ preventScroll: true });
+                return;
+            }
             if (welcomeOnboardingStep === 1 && !localStorage.getItem('discord_token') && window.location.protocol !== 'file:') return;
             if (welcomeOnboardingStep < 2) {
                 welcomeOnboardingStep += 1;
@@ -2188,10 +2340,9 @@
                 return;
             }
             if (!dashboardOpenedFromOnboarding) return;
-            localStorage.setItem(onboardingStorageKey, 'true');
-            localStorage.removeItem(onboardingStepStorageKey);
+            welcomeOnboardingStep = 3;
+            localStorage.setItem(onboardingStepStorageKey, '3');
             renderWelcomeOnboarding();
-            document.querySelector('.menu-toggle')?.focus({ preventScroll: true });
         });
         window.addEventListener('storage', (event) => {
             if (event.key === 'discord_token' || event.key === onboardingStorageKey || event.key === onboardingStepStorageKey) renderWelcomeOnboarding();

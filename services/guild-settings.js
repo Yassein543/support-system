@@ -1,4 +1,11 @@
 const { neon } = require('@neondatabase/serverless');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const emojiDirectory = path.join(__dirname, '..', 'emojis');
+const slashEmojiChoices = ['none', ...fs.readdirSync(emojiDirectory)
+    .filter((name) => /^ys-[a-z0-9-]+\.svg$/.test(name))
+    .map((name) => name.slice(0, -4))];
 
 let sql;
 let ready;
@@ -9,10 +16,13 @@ const EXTRA_SETTING_SCHEMA = {
     commandsRoleId: { type: 'text', default: '', maxLength: 24 },
     commandsAllowedChannelIds: { type: 'text', default: '', maxLength: 500 },
     commandLanguage: { type: 'choice', default: 'ar', values: ['ar', 'en'] },
+    slashCommandEmoji: { type: 'choice', default: 'none', values: slashEmojiChoices },
     commandDeleteAfterUse: { type: 'boolean', default: false },
     antiSpamLimit: { type: 'number', default: 5, min: 2, max: 30 },
     antiSpamWindowSeconds: { type: 'number', default: 8, min: 2, max: 60 },
     antiSpamAction: { type: 'choice', default: 'delete', values: ['delete', 'warn'] },
+    antiSpamTimeoutEnabled: { type: 'boolean', default: false },
+    antiSpamTimeoutMinutes: { type: 'number', default: 5, min: 1, max: 1440 },
     antiSpamWarning: { type: 'text', default: 'خفف سرعة إرسال الرسائل.', maxLength: 180 },
     antiSpamIgnoreAdmins: { type: 'boolean', default: true },
     antiSpamIgnoreChannels: { type: 'text', default: '', maxLength: 500 },
@@ -35,6 +45,31 @@ const EXTRA_SETTING_SCHEMA = {
     blockedWordsEnabled: { type: 'boolean', default: false },
     blockedWords: { type: 'text', default: '', maxLength: 1000 },
     blockedWordsAction: { type: 'choice', default: 'delete', values: ['delete', 'warn'] },
+    emojiSpamEnabled: { type: 'boolean', default: false },
+    emojiLimit: { type: 'number', default: 12, min: 3, max: 50 },
+    emojiSpamAction: { type: 'choice', default: 'delete', values: ['delete', 'warn'] },
+    lineSpamEnabled: { type: 'boolean', default: false },
+    lineSpamLimit: { type: 'number', default: 8, min: 3, max: 30 },
+    lineSpamAction: { type: 'choice', default: 'delete', values: ['delete', 'warn'] },
+    repeatedCharacterFilterEnabled: { type: 'boolean', default: false },
+    repeatedCharacterLimit: { type: 'number', default: 12, min: 4, max: 50 },
+    repeatedCharacterAction: { type: 'choice', default: 'delete', values: ['delete', 'warn'] },
+    zalgoFilterEnabled: { type: 'boolean', default: false },
+    zalgoMarkLimit: { type: 'number', default: 8, min: 2, max: 40 },
+    zalgoFilterAction: { type: 'choice', default: 'delete', values: ['delete', 'warn'] },
+    autoReplyEnabled: { type: 'boolean', default: false },
+    autoReplyRules: { type: 'text', default: '', maxLength: 4000 },
+    autoReplyMatchMode: { type: 'choice', default: 'includes', values: ['exact', 'includes', 'startsWith'] },
+    autoReplyIgnoreChannelIds: { type: 'text', default: '', maxLength: 500 },
+    autoReplyCooldownSeconds: { type: 'number', default: 3, min: 0, max: 3600 },
+    autoReplyCaseSensitive: { type: 'boolean', default: false },
+    scheduledAnnouncementEnabled: { type: 'boolean', default: false },
+    scheduledAnnouncementChannelId: { type: 'text', default: '', maxLength: 24 },
+    scheduledAnnouncementMessage: { type: 'text', default: '', maxLength: 1500 },
+    scheduledAnnouncementIntervalHours: { type: 'number', default: 24, min: 1, max: 720 },
+    scheduledAnnouncementTitle: { type: 'text', default: '', maxLength: 100 },
+    scheduledAnnouncementColor: { type: 'choice', default: 'teal', values: ['teal', 'blue', 'purple', 'green', 'red', 'gold'] },
+    scheduledAnnouncementImageUrl: { type: 'text', default: '', maxLength: 500 },
     modLogChannelId: { type: 'text', default: '', maxLength: 24 },
     logDeletedMessages: { type: 'boolean', default: false },
     logEditedMessages: { type: 'boolean', default: false },
@@ -70,6 +105,11 @@ const EXTRA_SETTING_SCHEMA = {
     antiRaidJoinLimit: { type: 'number', default: 10, min: 2, max: 100 },
     antiRaidWindowSeconds: { type: 'number', default: 30, min: 5, max: 600 },
     antiRaidAction: { type: 'choice', default: 'alert', values: ['alert', 'lockdown'] },
+    antiRaidLockdownDurationMinutes: { type: 'number', default: 5, min: 1, max: 60 },
+    antiRaidLockdownExcludeChannelIds: { type: 'text', default: '', maxLength: 500 },
+    antiRaidAlertRoleId: { type: 'text', default: '', maxLength: 24 },
+    antiRaidMinAccountAgeDays: { type: 'number', default: 0, min: 0, max: 365 },
+    antiRaidYoungAccountAction: { type: 'choice', default: 'alert', values: ['alert', 'kick', 'ban'] },
     antiRaidAlertChannelId: { type: 'text', default: '', maxLength: 24 },
     antiNukeEnabled: { type: 'boolean', default: false },
     antiNukeChannelCreateEnabled: { type: 'boolean', default: false },

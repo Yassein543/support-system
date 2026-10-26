@@ -3,7 +3,8 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
 
-const SECRETS_FILE = path.join(__dirname, '2fa-secrets.json');
+// Keep local 2FA secrets beside the project entry points so an existing file is not orphaned.
+const SECRETS_FILE = path.join(__dirname, '..', '2fa-secrets.json');
 
 function loadSecrets() {
     try {

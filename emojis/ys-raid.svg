@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="حماية الغارات">
+  <defs>
+    <linearGradient id="ring" x1="20" y1="15" x2="108" y2="113" gradientUnits="userSpaceOnUse"><stop stop-color="#70f1da"/><stop offset="1" stop-color="#557cff"/></linearGradient>
+    <radialGradient id="glow" cx=".3" cy=".24" r=".8"><stop stop-color="#1eb9a7"/><stop offset="1" stop-color="#4774ed"/></radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ring)" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="46" fill="url(#glow)" opacity=".13"/>
+  <g fill="none" stroke="#e8fffb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M64 18 101 32v25c0 22-13 38-37 51-24-13-37-29-37-51V32l37-14Z"/><circle cx="64" cy="50" r="8" fill="#6af0d7" fill-opacity=".8"/><circle cx="48" cy="56" r="6" fill="#6af0d7" fill-opacity=".55"/><circle cx="80" cy="56" r="6" fill="#6af0d7" fill-opacity=".55"/><path d="M48 77c1-10 6-15 16-15s15 5 16 15m-42 2c1-9 5-13 12-14m40 14c-1-9-5-13-12-14"/></g>
+</svg>

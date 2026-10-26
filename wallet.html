@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#091321">
+    <title>المحفظة | YS-Bot</title>
+    <link rel="icon" type="image/svg+xml" href="/ys-bot-avatar.svg">
+    <link rel="stylesheet" href="/style.css?v=wallet-credit-2">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://www.paypal.com/sdk/js?client-id=BAAPPCUWiE8FrWxqp0iuHBbeKhtyT1jJGLysHlzu2TxTk6qV4qOaWLl7ZK9ymn53GbDIvD9pK01JSl8pKI&amp;currency=USD&amp;components=buttons,funding-eligibility&amp;enable-funding=card"></script>
+    <style>
+        :root { color-scheme:dark; }
+        body { min-height:100vh; background:radial-gradient(ellipse at 50% -10%,rgba(33,150,143,.19),transparent 48%),#08111d; font-family:'Tajawal',system-ui,sans-serif; }
+        .wallet-page { min-height:100vh; padding:20px 22px 72px; }
+        .wallet-nav { width:min(1120px,100%); margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:18px; }
+        .wallet-brand { display:flex; align-items:center; gap:11px; color:#edf7f8; text-decoration:none; font-size:1.05rem; font-weight:900; }
+        .wallet-brand img { width:42px; height:42px; border-radius:14px; }
+        .wallet-back { padding:10px 15px; border:1px solid rgba(159,185,204,.18); border-radius:12px; color:#d1e0e7; background:rgba(15,29,43,.86); text-decoration:none; font-weight:700; transition:.2s; }
+        .wallet-back:hover { border-color:rgba(75,216,195,.5); color:#8de6d8; }
+        .wallet-main { width:min(1040px,100%); margin:clamp(32px,7vh,78px) auto 0; }
+        .wallet-heading { margin-bottom:24px; text-align:center; }
+        .wallet-heading-kicker { color:#6edcc9; font:800 .72rem/1.2 system-ui,sans-serif; letter-spacing:.16em; }
+        .wallet-heading h1 { margin:10px 0 8px; color:#f1f7fa; font-size:clamp(2rem,5vw,3rem); font-weight:900; }
+        .wallet-heading p { max-width:600px; margin:0 auto; color:#9db0bf; line-height:1.8; }
+        .wallet-overview { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:23px; padding:24px 28px; border:1px solid rgba(77,213,194,.25); border-radius:22px; background:radial-gradient(ellipse at 0% 50%,rgba(29,166,150,.17),transparent 52%),linear-gradient(135deg,#132538,#0d1927); box-shadow:0 22px 60px rgba(0,0,0,.2); }
+        .wallet-overview-label { display:block; margin-bottom:7px; color:#a8bbc7; font-weight:600; }
+        .wallet-overview-balance { color:#f1fbfc; font-size:clamp(2rem,5vw,3rem); font-weight:900; line-height:1.05; font-variant-numeric:tabular-nums; }
+        .wallet-overview-caption { display:block; margin-top:8px; color:#8499a9; font-size:.88rem; }
+        .wallet-overview-symbol { display:grid; width:64px; height:64px; flex:0 0 64px; place-items:center; border:1px solid rgba(100,226,207,.26); border-radius:20px; background:linear-gradient(145deg,rgba(39,186,169,.25),rgba(25,113,131,.14)); color:#8aeadb; font-size:2rem; font-weight:800; box-shadow:inset 0 1px 0 rgba(255,255,255,.08); }
+        .wallet-auth-notice,.wallet-payment-status { margin:0 0 19px; padding:13px 16px; border:1px solid rgba(82,212,193,.2); border-radius:13px; background:rgba(24,79,76,.17); color:#9ce6db; line-height:1.7; }
+        .wallet-auth-notice[hidden] { display:none; }
+        .wallet-auth-notice a { margin-inline-start:8px; color:#fff; font-weight:800; }
+        .wallet-payment-status { min-height:48px; display:flex; align-items:center; margin:0 0 18px; }
+        .wallet-section-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin:30px 2px 15px; }
+        .wallet-section-head h2 { margin:0; color:#eaf3f7; font-size:1.25rem; font-weight:800; }
+        .wallet-section-head p { margin:0; color:#899eae; font-size:.88rem; }
+        .wallet-topup-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
+        .wallet-topup-card { position:relative; display:flex; min-height:250px; flex-direction:column; gap:9px; padding:22px; border:1px solid rgba(142,170,191,.18); border-radius:20px; background:linear-gradient(155deg,rgba(19,36,54,.98),rgba(11,22,35,.98)); box-shadow:0 14px 35px rgba(0,0,0,.14); }
+        .wallet-topup-card.is-popular { border-color:rgba(77,216,194,.47); background:radial-gradient(ellipse at 100% 0%,rgba(38,162,150,.13),transparent 55%),linear-gradient(155deg,#142b38,#0d1927); }
+        .wallet-topup-badge { position:absolute; top:15px; inset-inline-end:15px; padding:5px 9px; border-radius:99px; background:rgba(44,172,154,.15); color:#8ce6d8; font-size:.72rem; font-weight:800; }
+        .wallet-topup-name { color:#aebec9; font-size:.95rem; font-weight:700; }
+        .wallet-topup-amount { color:#f4fafb; font-size:2.3rem; font-weight:900; line-height:1.2; }
+        .wallet-topup-caption { margin-bottom:7px; color:#879cab; font-size:.85rem; }
+        .wallet-topup-actions { display:grid; gap:11px; margin-top:auto; }
+        .wallet-topup-actions:empty { display:none; }
+        .wallet-payment-option[hidden] { display:none; }
+        .wallet-method-title { display:flex; align-items:center; gap:7px; margin:0 1px 5px; color:#aebec9; font-size:.75rem; font-weight:800; }
+        .wallet-method-title svg { width:15px; height:15px; color:#7bdccc; }
+        .wallet-payment-option + .wallet-payment-option { padding-top:10px; border-top:1px solid rgba(147,170,187,.12); }
+        .wallet-reload { border:0; background:none; color:#7ad9cb; text-decoration:underline; text-underline-offset:3px; cursor:pointer; font:inherit; font-size:.84rem; font-weight:700; }
+        .wallet-terms-note { margin:18px 0 0; color:#8295a4; font-size:.84rem; line-height:1.8; text-align:center; }
+        @media (max-width:720px) { .wallet-topup-grid { grid-template-columns:1fr; } .wallet-topup-card { min-height:220px; } .wallet-section-head { align-items:start; flex-direction:column; gap:5px; } }
+        @media (max-width:520px) { .wallet-page { padding:15px 14px 52px; } .wallet-overview { padding:20px; } .wallet-overview-symbol { width:54px; height:54px; flex-basis:54px; border-radius:17px; } }
+    </style>
+</head>
+<body>
+    <div class="wallet-page">
+        <header class="wallet-nav">
+            <a class="wallet-brand" href="/"><img src="/ys-bot-avatar.svg" alt=""><span>YS-Bot</span></a>
+            <a class="wallet-back" href="/">العودة للرئيسية</a>
+        </header>
+        <main class="wallet-main">
+            <div class="wallet-heading">
+                <span class="wallet-heading-kicker">YS-BOT · WALLET</span>
+                <h1>محفظتك</h1>
+                <p>اشحن رصيدك بأمان، ثم استخدمه لشراء أو تجديد باقات YS-Bot من دون إعادة الدفع كل مرة.</p>
+            </div>
+            <section class="wallet-overview" aria-label="رصيد المحفظة">
+                <div>
+                    <span class="wallet-overview-label">الرصيد المتاح</span>
+                    <strong class="wallet-overview-balance" id="wallet-balance">$0.00</strong>
+                    <span class="wallet-overview-caption">رصيدك مرتبط بحساب Discord</span>
+                </div>
+                <span class="wallet-overview-symbol" aria-hidden="true">$</span>
+            </section>
+            <p class="wallet-auth-notice" id="wallet-auth-notice" hidden>سجّل الدخول عبر Discord لتشحن رصيدك أو تعرض رصيدك الحالي. <a href="https://discord.com/oauth2/authorize?client_id=1546870264749494272&amp;redirect_uri=https%3A%2F%2Fys-bot.vercel.app%2Fdashboard.html&amp;response_type=token&amp;scope=identify%20guilds">تسجيل الدخول</a></p>
+            <p class="wallet-payment-status" id="wallet-status" role="status" aria-live="polite">اختر قيمة الشحن المناسبة لك.</p>
+            <div class="wallet-section-head">
+                <h2>اختر باقة الشحن</h2>
+                <button class="wallet-reload" type="button" id="wallet-reload">تحديث الرصيد</button>
+            </div>
+            <section class="wallet-topup-grid" aria-label="باقات شحن الرصيد">
+                <article class="wallet-topup-card">
+                    <span class="wallet-topup-name">رصيد البداية</span><strong class="wallet-topup-amount">$5</strong><span class="wallet-topup-caption">دفعة واحدة · بلا تجديد تلقائي</span>
+                    <div class="wallet-topup-actions"><div class="wallet-payment-option"><span class="wallet-method-title">PayPal</span><div id="wallet-paypal-5"></div></div><div class="wallet-payment-option" id="wallet-card-option-5" hidden><span class="wallet-method-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18m-14 5h4"/></svg>بطاقة بنكية</span><div id="wallet-card-5"></div></div></div>
+                </article>
+                <article class="wallet-topup-card is-popular">
+                    <span class="wallet-topup-badge">الأكثر اختيارًا</span><span class="wallet-topup-name">رصيد متوسط</span><strong class="wallet-topup-amount">$10</strong><span class="wallet-topup-caption">دفعة واحدة · بلا تجديد تلقائي</span>
+                    <div class="wallet-topup-actions"><div class="wallet-payment-option"><span class="wallet-method-title">PayPal</span><div id="wallet-paypal-10"></div></div><div class="wallet-payment-option" id="wallet-card-option-10" hidden><span class="wallet-method-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18m-14 5h4"/></svg>بطاقة بنكية</span><div id="wallet-card-10"></div></div></div>
+                </article>
+                <article class="wallet-topup-card">
+                    <span class="wallet-topup-name">رصيد كبير</span><strong class="wallet-topup-amount">$20</strong><span class="wallet-topup-caption">دفعة واحدة · بلا تجديد تلقائي</span>
+                    <div class="wallet-topup-actions"><div class="wallet-payment-option"><span class="wallet-method-title">PayPal</span><div id="wallet-paypal-20"></div></div><div class="wallet-payment-option" id="wallet-card-option-20" hidden><span class="wallet-method-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18m-14 5h4"/></svg>بطاقة بنكية</span><div id="wallet-card-20"></div></div></div>
+                </article>
+            </section>
+            <p class="wallet-terms-note">تُضاف قيمة الشحن بعد تأكيد الدفع. قد لا يظهر خيار البطاقة في بعض البلدان أو الحسابات، حسب توفره من PayPal. استخدم رصيدك من أزرار «شراء باستخدام رصيدي» في صفحة الخطط.</p>
+        </main>
+    </div>
+    <script>
+        const walletStatus = document.getElementById('wallet-status');
+        const walletBalance = document.getElementById('wallet-balance');
+        const walletAuthNotice = document.getElementById('wallet-auth-notice');
+        function walletFormat(cents) {
+            return new Intl.NumberFormat(localStorage.getItem('ys-bot-language') || 'ar', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(cents || 0) / 100);
+        }
+        function walletSetBalance(cents) { walletBalance.textContent = walletFormat(cents); }
+        async function walletApi(url, body) {
+            const token = localStorage.getItem('discord_token');
+            if (!token) throw new Error('سجّل الدخول عبر Discord أولًا.');
+            return fetch(url, { method: body ? 'POST' : 'GET', headers: { authorization: `Bearer ${token}`, ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
+        }
+        async function walletLoadBalance() {
+            if (!localStorage.getItem('discord_token')) {
+                walletSetBalance(0);
+                walletAuthNotice.hidden = false;
+                return;
+            }
+            walletAuthNotice.hidden = true;
+            try {
+                const response = await walletApi('/api/wallet/balance');
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(result.error || 'تعذر تحميل الرصيد.');
+                walletSetBalance(result.balanceCents);
+            } catch (error) {
+                walletStatus.textContent = error.message || 'تعذر تحميل الرصيد.';
+            }
+        }
+        function walletRenderButton(packId, fundingSource) {
+            const type = fundingSource === paypal.FUNDING.CARD ? 'card' : 'paypal';
+            const container = document.getElementById(`wallet-${type}-${packId}`);
+            const button = paypal.Buttons({
+                fundingSource,
+                style: { shape: 'rect', color: type === 'card' ? 'black' : 'gold', layout: 'vertical', label: type === 'card' ? 'pay' : 'paypal', height: 44, tagline: false },
+                onClick: (data, actions) => {
+                    if (!localStorage.getItem('discord_token')) {
+                        walletAuthNotice.hidden = false;
+                        walletStatus.textContent = 'سجّل الدخول عبر Discord قبل شحن الرصيد.';
+                        return actions.reject();
+                    }
+                    return actions.resolve();
+                },
+                createOrder: async () => {
+                    const response = await walletApi('/api/wallet/create-topup', { packId });
+                    const result = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(result.error || 'تعذر بدء شحن الرصيد.');
+                    return result.orderId;
+                },
+                onApprove: async (data) => {
+                    walletStatus.textContent = 'جاري تأكيد الدفع وإضافة الرصيد…';
+                    try {
+                        const response = await walletApi('/api/wallet/capture-topup', { orderId: data.orderID });
+                        const result = await response.json().catch(() => ({}));
+                        if (!response.ok) throw new Error(result.error || 'تعذر تأكيد شحن الرصيد.');
+                        walletSetBalance(result.balanceCents);
+                        walletStatus.textContent = `تم شحن ${walletFormat(Number(packId) * 100)} وإضافته لمحفظتك بنجاح.`;
+                    } catch (error) {
+                        walletStatus.textContent = error.message || 'تعذر تأكيد الشحن الآن. إذا دفعت، حدّث الرصيد قبل إعادة المحاولة.';
+                    }
+                },
+                onError: () => { walletStatus.textContent = 'تعذر إكمال الدفع. إذا انخصم المبلغ، حدّث الرصيد قبل إعادة المحاولة.'; }
+            });
+            if (type === 'card') {
+                const option = document.getElementById(`wallet-card-option-${packId}`);
+                if (button.isEligible()) {
+                    option.hidden = false;
+                    button.render(container);
+                }
+            } else button.render(container);
+        }
+        document.getElementById('wallet-reload').addEventListener('click', walletLoadBalance);
+        window.addEventListener('storage', (event) => { if (event.key === 'discord_token') walletLoadBalance(); });
+        ['5', '10', '20'].forEach((packId) => {
+            walletRenderButton(packId, paypal.FUNDING.PAYPAL);
+            walletRenderButton(packId, paypal.FUNDING.CARD);
+        });
+        walletLoadBalance();
+    </script>
+</body>
+</html>

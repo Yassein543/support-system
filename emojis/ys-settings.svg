@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="إعدادات">
+  <defs>
+    <linearGradient id="ring" x1="20" y1="15" x2="108" y2="113" gradientUnits="userSpaceOnUse"><stop stop-color="#70f1da"/><stop offset="1" stop-color="#557cff"/></linearGradient>
+    <radialGradient id="glow" cx=".3" cy=".24" r=".8"><stop stop-color="#1eb9a7"/><stop offset="1" stop-color="#4774ed"/></radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ring)" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="46" fill="url(#glow)" opacity=".13"/>
+  <g fill="none" stroke="#e8fffb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="m57 22 14 0 3 11 10 4 9-6 10 10-6 9 4 10 11 3v14l-11 3-4 10 6 9-10 10-9-6-10 4-3 11H57l-3-11-10-4-9 6-10-10 6-9-4-10-11-3V60l11-3 4-10-6-9 10-10 9 6 10-4 3-8Z"/><circle cx="64" cy="67" r="15"/></g>
+</svg>

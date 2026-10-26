@@ -9,8 +9,9 @@
           "*.html",
           "*.css",
           "ys-bot-avatar.svg",
+          "emojis/*.svg",
           "button-effects.js",
-          "guild-settings.js"
+          "services/**"
         ]
       }
     }

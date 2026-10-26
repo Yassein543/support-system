@@ -6,6 +6,7 @@
 # Local runtime data
 bot-state.json
 bot-state.json*
+2fa-secrets.json
 bot-runtime*.log
 .bot-runtime*.log
 cfg

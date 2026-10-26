@@ -2,15 +2,16 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
-const { addIpBan, getBotUserStats, isIpBanned, listBotUsers, listIpBans, normalizeIpAddress, recordBotCommandUser, recordWebsiteUser, removeIpBan } = require('./ip-ban-service');
+const { addIpBan, getBotUserStats, isIpBanned, listBotUsers, listIpBans, normalizeIpAddress, recordBotCommandUser, recordWebsiteUser, removeIpBan } = require('./services/ip-ban-service');
 const session = require('express-session');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const { SUPPORTED_LANGUAGES, PROFILE_CARD_THEMES, getBotLanguage, setBotLanguage, getProfileCardTheme, setProfileCardTheme, getProfileCardImage, setProfileCardImage, removeProfileCardImage } = require('./user-preferences');
-const { normalizeEmail, isValidEmail, saveCode, verifyCode, readVerificationToken, consumeVerificationToken, saveSupportRequest, consumeRateLimit } = require('./support-service');
-const { generateSecret, enable2FA, disable2FA, verifyCode: verify2FACode, is2FAEnabled, generateQRCode } = require('./2fa-service');
-const { activatePayment, claimPremiumOffer, getGuildSubscription, getPayment, isPremiumOwnerActive, saveCreatedPayment } = require('./subscription-service');
-const { getGuildSettings, saveGuildSettings, validateExtraSettings, enqueueEmbedSend, getEmbedSendRequest, claimEmbedSendRequests, completeEmbedSendRequest, createServerTask, listServerBackups, getServerBackup, getServerTask, claimServerTasks, getServerBackupForBot, updateServerTask, completeServerTask } = require('./guild-settings');
+const { SUPPORTED_LANGUAGES, PROFILE_CARD_THEMES, getBotLanguage, setBotLanguage, getProfileCardTheme, setProfileCardTheme, getProfileCardImage, setProfileCardImage, removeProfileCardImage } = require('./services/user-preferences');
+const { normalizeEmail, isValidEmail, saveCode, verifyCode, readVerificationToken, consumeVerificationToken, saveSupportRequest, consumeRateLimit } = require('./services/support-service');
+const { generateSecret, enable2FA, disable2FA, verifyCode: verify2FACode, is2FAEnabled, generateQRCode } = require('./services/2fa-service');
+const { activatePayment, cancelGuildSubscription, claimPremiumOffer, creditTopup, getGuildSubscription, getPayment, getTopup, getWalletBalance, isPremiumOwnerActive, purchaseSubscriptionWithWallet, saveCreatedPayment, saveCreatedTopup } = require('./services/subscription-service');
+const { getGuildSettings, saveGuildSettings, validateExtraSettings, EXTRA_DEFAULTS, EXTRA_SETTING_SCHEMA, enqueueEmbedSend, getEmbedSendRequest, claimEmbedSendRequests, completeEmbedSendRequest, createServerTask, listServerBackups, getServerBackup, getServerTask, claimServerTasks, getServerBackupForBot, updateServerTask, completeServerTask } = require('./services/guild-settings');
+const { normalizePlan, getLockedSettings, applyPlanSettings, mergePlanSettings } = require('./services/subscription-plans');
 
 const app = express();
 const aiAssistantUsage = new Map();
@@ -47,9 +48,13 @@ app.use(async (req, res, next) => {
 });
 
 const servePublicFile = express.static(__dirname, { dotfiles: 'deny', index: false });
-const PUBLIC_FILES = new Set(['/index.html', '/dashboard.html', '/privacy.html', '/style.css', '/button-effects.js', '/ys-bot-avatar.svg']);
+const PUBLIC_FILES = new Set([
+    '/index.html', '/dashboard.html', '/privacy.html', '/wallet.html', '/emoji-pack.html', '/style.css', '/button-effects.js', '/ys-bot-avatar.svg',
+    '/emojis/ys-logo.svg', '/emojis/ys-check.svg', '/emojis/ys-error.svg', '/emojis/ys-warning.svg',
+    '/emojis/ys-loading.svg', '/emojis/ys-lock.svg', '/emojis/ys-premium.svg', '/emojis/ys-online.svg'
+]);
 app.use((req, res, next) => {
-    if (!PUBLIC_FILES.has(req.path)) return next();
+    if (!PUBLIC_FILES.has(req.path) && !/^\/emojis\/ys-[a-z0-9-]{1,64}\.svg$/.test(req.path)) return next();
     return servePublicFile(req, res, next);
 });
 app.use(express.json({ limit: '3mb' }));
@@ -68,6 +73,10 @@ app.get('/terms', (req, res) => {
 
 app.get('/privacy', (req, res) => {
     res.sendFile(path.join(__dirname, 'privacy.html'));
+});
+
+app.get('/wallet', (req, res) => {
+    res.sendFile(path.join(__dirname, 'wallet.html'));
 });
 
 // إعداد الجلسات بأمان للبيئة السحابية
@@ -193,9 +202,24 @@ async function getManageableDiscordGuild(req, res, guildId) {
     }
 }
 
+async function getActiveGuildPlan(guildId) {
+    const subscription = await getGuildSubscription(guildId);
+    const active = Boolean(subscription && new Date(subscription.expires_at).getTime() > Date.now());
+    return { plan: active ? normalizePlan(subscription.plan) : 'Free', active, expiresAt: active ? subscription.expires_at : null };
+}
+
 const subscriptionPrices = {
     Basic: { monthly: '2.99', yearly: '29.00' },
     VIP: { monthly: '7.99', yearly: '79.00' }
+};
+const walletTopupPacks = {
+    '5': { amountCents: 500, label: '5.00' },
+    '10': { amountCents: 1000, label: '10.00' },
+    '20': { amountCents: 2000, label: '20.00' }
+};
+const subscriptionPriceCents = {
+    Basic: { monthly: 299, yearly: 2900 },
+    VIP: { monthly: 799, yearly: 7900 }
 };
 const premiumOfferEndsAt = new Date(process.env.PREMIUM_OFFER_ENDS_AT || '2026-11-08T19:26:04.000Z');
 
@@ -244,6 +268,109 @@ app.get('/api/subscriptions/guilds', async (req, res) => {
     }
 });
 
+app.get('/api/wallet/balance', async (req, res) => {
+    const user = await getAuthenticatedDiscordUser(req, res);
+    if (!user) return;
+    try {
+        const balanceCents = await getWalletBalance(user.id);
+        res.set('Cache-Control', 'no-store').json({ balanceCents, currency: 'USD' });
+    } catch (error) {
+        console.error('Wallet balance lookup failed:', error.message);
+        res.status(503).json({ error: 'تعذر تحميل رصيدك الآن.' });
+    }
+});
+
+app.post('/api/wallet/create-topup', async (req, res) => {
+    const user = await getAuthenticatedDiscordUser(req, res);
+    if (!user) return;
+    const packId = String(req.body?.packId || '');
+    const pack = walletTopupPacks[packId];
+    if (!pack) return res.status(400).json({ error: 'باقة شحن الرصيد غير صالحة.' });
+    try {
+        const order = await paypalApi('post', '/v2/checkout/orders', {
+            intent: 'CAPTURE',
+            purchase_units: [{
+                reference_id: user.id,
+                custom_id: user.id,
+                description: `YS-Bot wallet top-up $${pack.label}`,
+                amount: { currency_code: 'USD', value: pack.label }
+            }],
+            application_context: { brand_name: 'YS-Bot', user_action: 'PAY_NOW', shipping_preference: 'NO_SHIPPING' }
+        });
+        if (!order.id || order.status !== 'CREATED') return res.status(502).json({ error: 'تعذر إنشاء طلب شحن الرصيد.' });
+        await saveCreatedTopup({ orderId: order.id, ownerId: user.id, packId, amountCents: pack.amountCents });
+        res.status(201).json({ orderId: order.id });
+    } catch (error) {
+        if (error.code === 'PAYPAL_NOT_CONFIGURED') return res.status(503).json({ code: 'PAYPAL_NOT_CONFIGURED' });
+        console.error('Could not create wallet top-up:', error.response?.status || error.message);
+        res.status(503).json({ error: 'تعذر بدء شحن الرصيد الآن. حاول مرة ثانية.' });
+    }
+});
+
+app.post('/api/wallet/capture-topup', async (req, res) => {
+    const user = await getAuthenticatedDiscordUser(req, res);
+    if (!user) return;
+    const orderId = String(req.body?.orderId || '').slice(0, 64);
+    if (!/^[A-Z0-9-]{8,64}$/i.test(orderId)) return res.status(400).json({ error: 'رقم طلب الشحن غير صالح.' });
+    try {
+        const topup = await getTopup(orderId);
+        if (!topup || topup.owner_discord_id !== user.id) return res.status(404).json({ error: 'طلب الشحن غير موجود لهذا الحساب.' });
+        if (topup.status === 'COMPLETED') return res.json({ balanceCents: await getWalletBalance(user.id), credited: true });
+        const pack = walletTopupPacks[topup.pack_id];
+        if (!pack || pack.amountCents !== Number(topup.amount_cents)) return res.status(409).json({ error: 'بيانات باقة الشحن غير متطابقة.' });
+
+        const order = await paypalApi('get', `/v2/checkout/orders/${encodeURIComponent(orderId)}`);
+        const purchase = order.purchase_units?.[0];
+        if (!['APPROVED', 'COMPLETED'].includes(order.status) || order.intent !== 'CAPTURE' ||
+            purchase?.reference_id !== user.id || purchase?.custom_id !== user.id ||
+            purchase?.amount?.currency_code !== 'USD' || purchase?.amount?.value !== pack.label) {
+            return res.status(409).json({ error: 'بيانات الدفع لا تطابق طلب الشحن؛ لم تتم إضافة الرصيد.' });
+        }
+        const captured = order.status === 'COMPLETED'
+            ? order
+            : await paypalApi('post', `/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {});
+        const capture = captured.purchase_units?.[0]?.payments?.captures?.find((item) => item.status === 'COMPLETED');
+        if (captured.status !== 'COMPLETED' || !capture || capture.amount?.currency_code !== 'USD' || capture.amount?.value !== pack.label) {
+            return res.status(409).json({ error: 'لم يؤكد PayPal اكتمال المبلغ؛ لم تتم إضافة الرصيد.' });
+        }
+        const balanceCents = await creditTopup(orderId, user.id, capture.id);
+        if (balanceCents === null) return res.status(409).json({ error: 'تعذر تثبيت الشحن؛ تواصل مع الدعم برقم المعاملة.' });
+        res.json({ balanceCents, credited: true });
+    } catch (error) {
+        if (error.code === 'PAYPAL_NOT_CONFIGURED') return res.status(503).json({ code: 'PAYPAL_NOT_CONFIGURED' });
+        console.error('Wallet top-up capture failed:', error.response?.status || error.message);
+        res.status(503).json({ error: 'تعذر تأكيد الشحن الآن. لا تعِد الدفع؛ حدّث الرصيد وحاول التحقق مرة ثانية.' });
+    }
+});
+
+app.post('/api/subscriptions/purchase-with-wallet', async (req, res) => {
+    const plan = req.body?.plan === 'VIP' ? 'VIP' : req.body?.plan === 'Basic' ? 'Basic' : '';
+    const period = req.body?.period === 'yearly' ? 'yearly' : req.body?.period === 'monthly' ? 'monthly' : '';
+    const guildId = String(req.body?.guildId || '');
+    const requestId = String(req.body?.requestId || '');
+    if (!plan || !period || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
+        return res.status(400).json({ error: 'بيانات شراء الخطة غير صالحة.' });
+    }
+    const user = await getManageableDiscordGuild(req, res, guildId);
+    if (!user) return;
+    try {
+        const purchase = await purchaseSubscriptionWithWallet({
+            requestId, ownerId: user.id, guildId, plan, period,
+            amountCents: subscriptionPriceCents[plan][period]
+        });
+        if (purchase.conflict) return res.status(409).json({ error: 'رقم عملية الشراء مستخدم لطلب مختلف. حدّث الصفحة وحاول مرة ثانية.' });
+        if (purchase.insufficient) return res.status(402).json({
+            code: 'INSUFFICIENT_WALLET_BALANCE', balanceCents: purchase.balance_cents,
+            error: 'رصيدك ما بكفي لشراء هالخطة؛ اشحن المحفظة أولًا.'
+        });
+        if (!purchase.guild_id) return res.status(409).json({ error: 'تعذر تسجيل الاشتراك؛ تواصل مع الدعم.' });
+        res.json({ active: true, plan: purchase.plan, expiresAt: purchase.expires_at, guildId: purchase.guild_id, balanceCents: purchase.balance_cents });
+    } catch (error) {
+        console.error('Wallet subscription purchase failed:', error.message);
+        res.status(503).json({ error: 'تعذر شراء الخطة من الرصيد الآن. حاول مرة ثانية.' });
+    }
+});
+
 app.get('/api/subscriptions/premium-offer', (req, res) => {
     res.set('Cache-Control', 'no-store').json({
         active: Date.now() < premiumOfferEndsAt.getTime(),
@@ -286,11 +413,33 @@ app.get('/api/subscriptions/status/:guildId', async (req, res) => {
             active,
             plan: active ? subscription.plan : 'Free',
             expiresAt: active ? subscription.expires_at : null,
+            canCancel: Boolean(active && subscription.owner_discord_id === user.id),
             guildId: req.params.guildId
         });
     } catch (error) {
         console.error('Subscription status lookup failed:', error.message);
         res.status(503).json({ error: 'تعذر تحميل حالة الاشتراك.' });
+    }
+});
+
+app.post('/api/subscriptions/cancel', async (req, res) => {
+    const guildId = String(req.body?.guildId || '');
+    const user = await getManageableDiscordGuild(req, res, guildId);
+    if (!user) return;
+    try {
+        const current = await getGuildSubscription(guildId);
+        if (!current || new Date(current.expires_at).getTime() <= Date.now()) {
+            return res.status(409).json({ error: 'ما فيه اشتراك فعّال لإلغائه لهذا السيرفر.' });
+        }
+        if (current.owner_discord_id !== user.id) {
+            return res.status(403).json({ error: 'إلغاء الاشتراك متاح لحساب Discord الذي اشترى الخطة.' });
+        }
+        const cancelled = await cancelGuildSubscription(guildId, user.id);
+        if (!cancelled) return res.status(409).json({ error: 'تغيرت حالة الاشتراك قبل الإلغاء؛ حدّث الصفحة وحاول مرة ثانية.' });
+        res.json({ cancelled: true, guildId, plan: cancelled.plan, expiresAt: cancelled.expires_at });
+    } catch (error) {
+        console.error('Subscription cancellation failed:', error.message);
+        res.status(503).json({ error: 'تعذر إلغاء الاشتراك الآن. حاول مرة ثانية.' });
     }
 });
 
@@ -387,7 +536,12 @@ app.get('/api/guild-settings/:guildId', async (req, res) => {
     const user = await getManageableDiscordGuild(req, res, req.params.guildId);
     if (!user) return;
     try {
-        res.json(await getGuildSettings(req.params.guildId));
+        const [settings, planStatus] = await Promise.all([getGuildSettings(req.params.guildId), getActiveGuildPlan(req.params.guildId)]);
+        res.set('Cache-Control', 'no-store').json({
+            ...settings,
+            ...planStatus,
+            lockedSettings: getLockedSettings(planStatus.plan, EXTRA_SETTING_SCHEMA)
+        });
     } catch (error) {
         console.error('Failed to load server settings:', error.message);
         res.status(503).json({ error: 'تعذر تحميل إعدادات السيرفر. تأكد من إعداد قاعدة البيانات.' });
@@ -407,8 +561,10 @@ app.get('/api/internal/bot/guild-settings/:guildId', async (req, res) => {
         return res.status(400).json({ error: 'Invalid server id' });
     }
     try {
+        const [settings, planStatus] = await Promise.all([getGuildSettings(req.params.guildId), getActiveGuildPlan(req.params.guildId)]);
+        settings.advancedSettings = applyPlanSettings(settings.advancedSettings, planStatus.plan, EXTRA_DEFAULTS, EXTRA_SETTING_SCHEMA);
         res.set('Cache-Control', 'no-store');
-        res.json(await getGuildSettings(req.params.guildId));
+        res.json(settings);
     } catch (error) {
         console.error('Bot settings bridge failed:', error.message);
         res.status(503).json({ error: 'Server settings unavailable' });
@@ -595,13 +751,23 @@ app.put('/api/guild-settings/:guildId', async (req, res) => {
         return res.status(400).json({ error: 'يوجد إعداد إضافي غير صالح: ' + error.message });
     }
     try {
+        const [planStatus, currentSettings] = await Promise.all([
+            getActiveGuildPlan(req.params.guildId),
+            getGuildSettings(req.params.guildId)
+        ]);
+        const permittedSettings = mergePlanSettings(advancedSettings, currentSettings.advancedSettings, planStatus.plan, EXTRA_SETTING_SCHEMA);
         const settings = await saveGuildSettings(req.params.guildId, user.id, {
             commandPrefix,
             antiSpam: req.body.antiSpam,
             antiLinks: req.body.antiLinks,
-            advancedSettings
+            advancedSettings: permittedSettings
         });
-        res.json({ saved: true, ...settings });
+        res.set('Cache-Control', 'no-store').json({
+            saved: true,
+            ...settings,
+            ...planStatus,
+            lockedSettings: getLockedSettings(planStatus.plan, EXTRA_SETTING_SCHEMA)
+        });
     } catch (error) {
         console.error('Failed to save server settings:', error.message);
         res.status(503).json({ error: 'تعذر حفظ الإعدادات. تأكد من إعداد قاعدة البيانات.' });
@@ -875,7 +1041,7 @@ Verified YS-Bot product knowledge:
 - Main dashboard groups include command permissions, anti-spam, link filtering, message filters, event logs, welcome/farewell, verification and roles, moderation, anti-raid, anti-nuke, tickets/suggestions, polls/levels, embeds, adhkar/Quran scheduling, and server-structure backup/restore. The dashboard explicitly marks some settings “يعمل الآن” (active) and others “قيد الربط” (saved but not applied by the bot); always tell users to check that label and never claim an in-progress setting operates.
 - Core anti-link filtering deletes matching member messages and exempts administrators. Core anti-spam deletes messages starting at the fifth within eight seconds and exempts administrators. These require the bot in the server and Manage Messages permission. Actual behavior can also depend on saved per-server settings.
 - Anti-Nuke needs View Audit Log and the permission for the selected response. Recommend starting with alert-only, setting conservative limits, and checking allowlists carefully. Temporary raid lockdown needs Manage Channels. Welcome/farewell, verification, and automatic member roles need Server Members Intent enabled in Discord Developer Portal as well as the necessary bot permissions.
-- Slash commands currently registered in bot.js: /ticket [reason], /suggest text, /poll question, /warn member [reason] (Manage Messages), /verify, /support, /invites [member; moderators can inspect another member], /profile [user], /embed (Manage Server), /add-2fa site_name secret_key (private), and /get-2fa (private). /ticket and /suggest require their respective dashboard features/channels to be configured. /embed sends the configured embed; it is not a general-purpose message editor.
+- Slash commands currently registered in bot.js: /ticket [reason], /suggest text, /poll question, /warn member [reason] (Manage Messages), /verify, /support, /invites [member; moderators can inspect another member], /profile [user], /embed (Manage Server), /help, /plan, and /anticrash (Manage Server), /add-2fa site_name secret_key (private), and /get-2fa (private). /ticket and /suggest require their respective dashboard features/channels to be configured. /embed sends the configured embed; it is not a general-purpose message editor. The dashboard can select one YS SVG icon as a PNG image attachment/thumbnail for slash-command replies; this does not upload an emoji to the Discord server.
 - Text prefix commands currently implemented: <prefix>help, <prefix>plan, <prefix>anticrash, and <prefix>support. The prefix defaults to ! and can be changed in the dashboard. The anticrash command is available to Basic/VIP subscriptions. Do not invent other commands.
 - Server backup copies roles, channels, categories, role permissions, and YS-Bot settings. It does not copy messages, members, member-role assignments, or individual member channel permissions. Restore recreates missing items and updates matching items; it does not delete existing items. Restore needs Manage Roles and Manage Channels.
 - Prices, entitlement status, payment state, a user's live settings, and bot uptime are not visible to you. Do not guess or promise purchases, refunds, uptime, or account-specific results. Refer billing/support issues to the support server https://discord.gg/r9YQMhkZJm.

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="بطاقة دفع">
+  <defs>
+    <linearGradient id="ring" x1="20" y1="15" x2="108" y2="113" gradientUnits="userSpaceOnUse"><stop stop-color="#70f1da"/><stop offset="1" stop-color="#557cff"/></linearGradient>
+    <radialGradient id="glow" cx=".3" cy=".24" r=".8"><stop stop-color="#1eb9a7"/><stop offset="1" stop-color="#4774ed"/></radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ring)" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="46" fill="url(#glow)" opacity=".13"/>
+  <g fill="none" stroke="#e8fffb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="20" y="33" width="88" height="62" rx="10"/><path d="M20 50h88m-69 27h20"/><rect x="79" y="70" width="18" height="12" rx="3" fill="#6af0d7" fill-opacity=".7" stroke="none"/></g>
+</svg>

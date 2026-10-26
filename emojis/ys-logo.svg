@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="شعار YS-Bot">
+  <defs>
+    <linearGradient id="ring" x1="20" y1="15" x2="108" y2="113" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#70f1da"/>
+      <stop offset="1" stop-color="#557cff"/>
+    </linearGradient>
+    <linearGradient id="letter" x1="47" y1="39" x2="82" y2="91" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#a9c9ff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".3" cy=".24" r=".8">
+      <stop stop-color="#1eb9a7"/>
+      <stop offset="1" stop-color="#4774ed"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ring)" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="46" fill="url(#glow)" opacity=".16"/>
+  <text x="64" y="82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="49" font-weight="900" letter-spacing="-4" fill="url(#letter)">YS</text>
+  <circle cx="95" cy="34" r="5" fill="#6af1d7"/>
+</svg>
