@@ -1,9 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="تصويت">
   <defs>
-    <linearGradient id="ring" x1="20" y1="15" x2="108" y2="113" gradientUnits="userSpaceOnUse"><stop stop-color="#70f1da"/><stop offset="1" stop-color="#557cff"/></linearGradient>
-    <radialGradient id="glow" cx=".3" cy=".24" r=".8"><stop stop-color="#1eb9a7"/><stop offset="1" stop-color="#4774ed"/></radialGradient>
+    <linearGradient id="ring" x1="20" y1="15" x2="108" y2="113" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#70f1da"/>
+      <stop offset="1" stop-color="#557cff"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="34" y1="29" x2="93" y2="99" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102b3c"/>
+      <stop offset="1" stop-color="#102039"/>
+    </linearGradient>
   </defs>
   <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ring)" stroke-width="3.5"/>
-  <circle cx="64" cy="64" r="46" fill="url(#glow)" opacity=".13"/>
-  <g fill="none" stroke="#e8fffb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="28" y="29" width="72" height="70" rx="7"/><path d="M44 49h8m9 0h24M44 65h8m9 0h24M44 81h8m9 0h24"/><path d="m43 49 3 3 5-7m-5 23 3 3 5-7m-5 23 3 3 5-7" stroke="#6af0d7"/></g>
+  <circle cx="64" cy="64" r="46" fill="#4774ed" opacity=".12"/>
+  <rect x="29" y="25" width="70" height="78" rx="10" fill="url(#paper)" stroke="#e8fffb" stroke-width="4"/>
+  <path d="M46 37h36" fill="none" stroke="#67e8d1" stroke-width="4" stroke-linecap="round"/>
+  <g stroke="#e8fffb" stroke-width="3.5">
+    <circle cx="44" cy="52" r="5" fill="#67e8d1"/>
+    <circle cx="44" cy="69" r="5" fill="none"/>
+    <circle cx="44" cy="86" r="5" fill="none"/>
+  </g>
+  <g fill="none" stroke="#e8fffb" stroke-linecap="round" stroke-width="5">
+    <path d="M58 52h25"/>
+    <path d="M58 69h30"/>
+    <path d="M58 86h21"/>
+  </g>
 </svg>

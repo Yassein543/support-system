@@ -17,6 +17,9 @@
         .dashboard-brand-copy small { color: #80cfc3; font: 700 .62rem/1 system-ui, sans-serif; letter-spacing: .15em; }
         .dashboard-brand-status { display: inline-flex; align-items: center; gap: 7px; margin-inline-start: auto; padding: 7px 10px; border: 1px solid rgba(71, 215, 194, .19); border-radius: 999px; background: rgba(37, 150, 135, .09); color: #9adfd5; font-size: .72rem; font-weight: 800; }
         .dashboard-brand-status::before { width: 7px; height: 7px; border-radius: 50%; background: #47d7c2; box-shadow: 0 0 10px rgba(71, 215, 194, .7); content: ''; }
+        .dashboard-back { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 7px; padding: 7px 12px; border: 1px solid rgba(71,215,194,.22); border-radius: 10px; background: rgba(39,136,128,.1); color: #a6f0e3; font: 800 .84rem 'Tajawal',sans-serif; cursor: pointer; }
+        .dashboard-back svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        .dashboard-nav-short { display: none; }
         .dashboard-container { max-width: 1200px; margin: 30px auto; }
         .dashboard-workspace { display:grid; grid-template-columns:220px minmax(0,1fr); align-items:start; gap:22px; }
         .dashboard-main { min-width:0; }
@@ -32,7 +35,7 @@
         .guild-list-section { scroll-margin-top:20px; margin:0 0 22px; }
         .guild-list-section h3 { margin:0 0 14px; }
         @media(max-width:780px){.dashboard-workspace{grid-template-columns:minmax(0,1fr);gap:14px}.dashboard-side-nav{position:sticky;top:8px;z-index:30;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:8px;backdrop-filter:blur(14px)}.dashboard-side-nav-label,.dashboard-nav-hint{display:none}.dashboard-side-nav a,.dashboard-side-nav button{justify-content:center;gap:6px;min-height:42px;padding:7px 5px;font-size:.76rem}.dashboard-nav-icon{width:23px;height:23px;flex-basis:23px;font-size:.9rem}.dashboard-container{margin-top:18px}}
-        @media(max-width:480px){body{padding:12px}.dashboard-side-nav a,.dashboard-side-nav button{flex-direction:column;gap:3px;min-height:55px;font-size:.68rem}.dashboard-nav-icon{width:21px;height:21px;flex-basis:21px}}
+        @media(max-width:480px){body{padding:10px}.dashboard-brand{position:sticky;top:0;z-index:40;gap:8px;padding:8px 9px;backdrop-filter:blur(16px)}.dashboard-brand-status{display:none}.dashboard-back{min-height:42px;padding:6px 9px;font-size:.76rem}.dashboard-side-nav{top:62px;grid-template-columns:repeat(3,minmax(0,1fr));padding:6px}.dashboard-side-nav a,.dashboard-side-nav button{flex-direction:row;gap:5px;min-height:48px;font-size:.74rem}.dashboard-side-nav .dashboard-nav-icon{width:21px;height:21px;flex-basis:21px}.dashboard-nav-text{display:none}.dashboard-nav-short{display:inline;white-space:nowrap}}
         .user-header { display: flex; align-items: center; gap: 20px; background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
         .user-avatar { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #5865F2; }
         .guilds-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
@@ -162,6 +165,11 @@
         .vip-locked-option:hover::after, .vip-locked-option:focus-visible::after { opacity: 1; transform: translateY(0); }
         .vip-locked-option:focus-visible { outline: 2px solid rgba(242,190,91,.6); outline-offset: 3px; }
         .embed-builder-preview { position: relative; max-width: 620px; min-height: 105px; margin-top: 15px; padding: 16px; overflow: hidden; border: 1px solid #334155; border-inline-start: 4px solid #5865f2; border-radius: 10px; background: #121821; color: #e7e9ec; }
+        .embed-builder-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 12px; margin-top: 14px; }
+        .embed-builder-cards .embed-builder-preview { box-sizing: border-box; width: 100%; max-width: none; margin: 0; }
+        .embed-builder-card > summary { display: flex; min-height: 42px; align-items: center; color: #82dfd2; font-weight: 800; cursor: pointer; }
+        .embed-builder-card[open] > summary { margin-bottom: 12px; }
+        .embed-builder-cards .advanced-field { margin-top: 10px; }
         .embed-builder-preview h5 { margin: 0 0 7px; font-size: 1rem; }
         .embed-builder-preview p { margin: 0; color: #c6cbd2; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
         .embed-builder-preview-thumb { float: right; width: 62px; height: 62px; margin-inline-start: 12px; border-radius: 8px; object-fit: cover; }
@@ -244,10 +252,11 @@
             .guild-card { width: 100%; min-width: 0; min-height: 0; padding: 16px 13px; }
             .guild-card h4 { max-width: 100%; overflow-wrap: anywhere; }
             .btn-configure, .guild-card .btn-upgrade { width: 100%; box-sizing: border-box; }
-            .settings-actions { position: static; display: grid; grid-template-columns: minmax(0,1fr); gap: 9px; padding: 10px; }
-            .settings-save { width: 100%; min-height: 46px; }
-            .settings-status { overflow-wrap: anywhere; }
+            .settings-actions { position: sticky; top: auto; bottom: 8px; z-index: 35; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 5px 10px; padding: 8px; background: rgba(11,25,39,.97); box-shadow: 0 8px 30px rgba(0,0,0,.38); }
+            .settings-save { grid-column: 1; grid-row: 1 / span 2; width: 100%; min-height: 48px; }
+            .settings-status { grid-column: 2; grid-row: 1; max-width: 45vw; overflow-wrap: anywhere; font-size: .72rem; }
             .guild-plan-status { width: 100%; min-width: 0; margin-inline-start: 0; justify-content: space-between; gap: 7px; }
+            .settings-actions .guild-plan-status { grid-column: 1 / -1; grid-row: 3; }
             .guild-plan-chip { max-width: 55%; overflow-wrap: anywhere; }
             .guild-plan-refresh { min-height: 40px; }
             .settings-grid, .advanced-grid { grid-template-columns: minmax(0,1fr); }
@@ -294,7 +303,7 @@
 </head>
 <body>
     <label class="settings-note" for="dashboard-language" style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:0 auto;max-width:1000px"><span>لغة الموقع</span><select id="dashboard-language" aria-label="لغة الموقع" style="padding:8px;border-radius:8px;background:#0a1421;color:#fff;border:1px solid #33485e"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ko">한국어</option><option value="ja">日本語</option></select></label>
-    <div class="dashboard-brand" aria-label="YS-Bot Control Center"><img src="/ys-bot-avatar.svg" alt="YS-Bot" width="38" height="38"><div class="dashboard-brand-copy"><strong>YS-Bot</strong><small>CONTROL CENTER</small></div><span class="dashboard-brand-status">SECURE PANEL</span></div>
+    <div class="dashboard-brand" aria-label="YS-Bot Control Center"><button id="dashboard-back" class="dashboard-back" type="button" aria-label="رجوع"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg><span>رجوع</span></button><img src="/ys-bot-avatar.svg" alt="YS-Bot" width="38" height="38"><div class="dashboard-brand-copy"><strong>YS-Bot</strong><small>CONTROL CENTER</small></div><span class="dashboard-brand-status">SECURE PANEL</span></div>
     <div class="dashboard-container">
         <div id="loading" class="loading">جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳</div>
 
@@ -310,9 +319,9 @@
             <div class="dashboard-workspace">
                 <nav class="dashboard-side-nav" aria-label="التنقل في لوحة التحكم">
                     <span class="dashboard-side-nav-label">القائمة</span>
-                    <a href="#personal-settings"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span><span>إعداداتي الشخصية</span></a>
-                    <a href="#guild-list"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg></span><span>سيرفراتي</span></a>
-                    <button id="dashboard-nav-server-settings" type="button" disabled title="اختر سيرفرًا أولًا"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg></span><span>إعدادات السيرفر</span></button>
+                    <a href="#personal-settings"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span><span class="dashboard-nav-text">إعداداتي الشخصية</span><span class="dashboard-nav-short">شخصي</span></a>
+                    <a href="#guild-list"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg></span><span class="dashboard-nav-text">سيرفراتي</span><span class="dashboard-nav-short">السيرفرات</span></a>
+                    <button id="dashboard-nav-server-settings" type="button" disabled title="اختر سيرفرًا أولًا"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg></span><span class="dashboard-nav-text">إعدادات السيرفر</span><span class="dashboard-nav-short">الإعدادات</span></button>
                     <div class="dashboard-nav-hint" id="dashboard-nav-hint">اختر سيرفرًا لعرض إعداداته</div>
                 </nav>
                 <main class="dashboard-main">
@@ -431,6 +440,7 @@
             'لغة الموقع':'Website language','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Loading your account and Discord servers... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Choose a server to manage','سيرفراتك التي تديرها:':'Servers you manage:','إعدادات السيرفر':'Server settings','حفظ الإعدادات':'Save settings','إعدادات متقدمة — أكثر من 50 خيارًا':'Advanced settings — 50+ options','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'“Active” options affect bot behavior. “In progress” options are saved but do not affect behavior until implemented.','منع الروابط':'Block links','يحذف الروابط والدعوات من رسائل الأعضاء. المشرفون مستثنون.':'Deletes links and invites from member messages. Administrators are exempt.','مكافحة السبام':'Anti-spam','يحذف الرسائل ابتداءً من الرسالة الخامسة خلال 8 ثوانٍ. المشرفون مستثنون.':'Deletes messages starting at the fifth message within 8 seconds. Administrators are exempt.','بادئة الأوامر':'Command prefix','إعدادات متقدمة':'Advanced settings','الأذكار والقرآن':'Adhkar and Quran','يعمل الآن':'Active','قيد الربط':'In progress','تفعيل التحقق بخطوتين':'Enable two-factor authentication','غير مفعّل':'Disabled','مفعّل':'Enabled','إلغاء التحقق بخطوتين':'Disable two-factor authentication','جاري تحميل الإعدادات...':'Loading settings...','تم تحميل الإعدادات المحفوظة.':'Saved settings loaded.','جاري الحفظ...':'Saving...','انحفظت الإعدادات بنجاح.':'Settings saved successfully.','اختر ما تريد تفعيله. حماية الروابط والسبام تحذف الرسالة المخالفة فقط، وتتطلب صلاحية':'Choose what to enable. Link and spam protection only delete offending messages and require the bot to have permission:','إدارة الرسائل':'Manage Messages','أضف البوت للسيرفر حتى تعمل الحماية.':'Add the bot to your server for protection to work.','من 1 إلى 3 رموز؛ مثل ! أو ? (أوامر: plan و anticrash).':'Use 1–3 symbols, such as ! or ? (commands: plan and anticrash).','إعدادات البوت':'Bot settings','الأوامر والصلاحيات':'Commands and permissions','مكافحة السبام':'Anti-spam','الروابط والاستثناءات':'Links and exceptions','فلاتر الرسائل':'Message filters','سجل الأحداث':'Event log','الترحيب والمغادرة':'Welcome and farewell','التحقق والرتب':'Verification and roles','الإشراف وإعدادات إضافية':'Moderation and more','الحماية من الغارات':'Anti-raid protection','الدعوات والمكافآت':'Invites and rewards','التذاكر والاقتراحات':'Tickets and suggestions','التصويت والمستويات والنسخ الاحتياطي':'Polls, levels and backups'
         };
         Object.assign(dashboardEnglish, {
+            'رجوع':'Back','شخصي':'Profile','السيرفرات':'Servers','الإعدادات':'Settings',
             'إضافات الخطط المدفوعة':'Paid plan extras',
             'هذه إعدادات إضافية فقط: إعدادات اللوحة المعتادة تبقى متاحة للجميع. Basic يضيف إسكات السبام وحماية الحسابات الحديثة، وVIP يضيف تخصيص قفل الغارة واستثناء قنواته وتنبيه رتبة.':'These are optional extras only. Existing dashboard settings stay available to everyone. Basic adds spam timeouts and young-account protection; VIP adds raid-lockdown duration, exempt channels, and role alerts.',
             'نسخ واسترجاع هيكل السيرفر':'Server structure backup and restore',
@@ -464,6 +474,12 @@
             'انتقل مباشرة إلى إعدادات السيرفر المحدد':'Jump to the selected server settings',
             'ترحيب الأعضاء':'Member welcome', 'مغادرة الأعضاء':'Member departures',
             'الردود التلقائية':'Automatic replies', 'الإعلانات المجدولة':'Scheduled announcements'
+        });
+        document.getElementById('dashboard-back').addEventListener('click', () => {
+            let sameSiteReferrer = false;
+            try { sameSiteReferrer = Boolean(document.referrer) && new URL(document.referrer).origin === location.origin; } catch {}
+            if (sameSiteReferrer && history.length > 1) history.back();
+            else location.assign('/');
         });
         document.getElementById('dashboard-nav-server-settings').addEventListener('click', () => document.getElementById('server-settings-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }));
         const dashboardLanguageSelect = document.getElementById('dashboard-language');
@@ -532,9 +548,7 @@
             { title: 'الإعلانات المجدولة', note: 'يرسل البوت الرسالة إلى القناة المحددة كل فترة تختارها. يبدأ العد من وقت أول تشغيل أو حفظ الإعداد.', items: [
                 ['scheduledAnnouncementEnabled', 'تفعيل الإعلان المجدول'], ['scheduledAnnouncementChannelId', 'معرّف قناة الإعلان'], ['scheduledAnnouncementMessage', 'نص الإعلان'], ['scheduledAnnouncementIntervalHours', 'الفترة بين الإعلانات بالساعات'], ['scheduledAnnouncementTitle', 'عنوان الإعلان (اختياري)'], ['scheduledAnnouncementColor', 'لون الإعلان'], ['scheduledAnnouncementImageUrl', 'رابط صورة HTTPS (اختياري)']
             ] },
-            { key: 'embedBuilder', title: 'منشئ الإمبيد', note: 'عدّل محتوى البطاقة وحدد القناة، ثم اضغط «حفظ الإعدادات». يحفظ الموقع التصميم ويرسل الإمبيد مباشرة عبر البوت؛ لا تحتاج إلى أمر Discord.', items: [
-                ['customEmbedChannelId', 'معرّف قناة نشر الإمبيد'], ['customEmbedTitle', 'عنوان الإمبيد'], ['customEmbedDescription', 'رسالة الإمبيد'], ['customEmbedThumbnailUrl', 'رابط الأيقونة المصغرة'], ['customEmbedImageUrl', 'رابط الصورة السفلية'], ['customEmbedColor', 'لون الإمبيد']
-            ] },
+            { key: 'embedBuilder', title: 'إدارة الإمبيدات', note: 'حدد عدد الإمبيدات واكتب معرّف الروم لكل بطاقة. عند حفظ الإعدادات يرسل البوت كل إمبيد إلى الروم الخاص به.', items: [] },
             { title: 'التصويت والمستويات والنسخ الاحتياطي', items: [
                 ['pollEnabled', 'تفعيل التصويت'], ['pollChannelIds', 'القنوات المسموحة للتصويت'], ['levelSystemEnabled', 'تفعيل نظام المستويات'], ['levelAnnouncementChannelId', 'قناة إعلان المستوى'], ['levelUpMessage', 'رسالة الترقية للمستوى'], ['levelCooldownSeconds', 'فترة احتساب الخبرة بالثواني'], ['autorunBackupEnabled', 'تفعيل النسخ الاحتياطي المجدول'], ['autorunBackupIntervalHours', 'فترة النسخ الاحتياطي بالساعات']
             ] },
@@ -801,28 +815,53 @@
                 });
                 section.appendChild(grid);
                 if (group.key === 'embedBuilder') {
-                    const preview = document.createElement('article');
-                    preview.className = 'embed-builder-preview';
-                    preview.innerHTML = '<img class="embed-builder-preview-thumb" alt="معاينة الأيقونة المصغرة" hidden><h5>معاينة الإمبيد</h5><p></p><img class="embed-builder-preview-image" alt="معاينة الصورة السفلية">';
-                    section.appendChild(preview);
-                    const updatePreview = () => {
-                        const read = (key) => section.querySelector(`[data-advanced-setting="${key}"]`)?.value?.trim() || '';
-                        const title = read('customEmbedTitle');
-                        const description = read('customEmbedDescription');
-                        preview.querySelector('h5').textContent = title || 'معاينة الإمبيد';
-                        preview.querySelector('p').textContent = description || 'سيظهر نص الإمبيد هنا.';
-                        preview.style.borderInlineStartColor = read('customEmbedColor') || '#5865f2';
-                        const setPreviewImage = (img, url, visibleClass = '') => {
-                            let valid = false;
-                            try { valid = new URL(url).protocol === 'https:'; } catch {}
-                            if (valid) { img.src = url; img.hidden = false; if (visibleClass) img.classList.add(visibleClass); }
-                            else { img.removeAttribute('src'); img.hidden = true; if (visibleClass) img.classList.remove(visibleClass); }
-                        };
-                        setPreviewImage(preview.querySelector('.embed-builder-preview-thumb'), read('customEmbedThumbnailUrl'));
-                        setPreviewImage(preview.querySelector('.embed-builder-preview-image'), read('customEmbedImageUrl'), 'visible');
+                    const savedEmbeds = (() => { try { const parsed = JSON.parse(values.customEmbedsJson || '[]'); return Array.isArray(parsed) ? parsed.slice(0, 10) : []; } catch { return []; } })();
+                    const legacyHasContent = Boolean(values.customEmbedTitle?.trim() || values.customEmbedDescription?.trim());
+                    const embedDrafts = savedEmbeds.length ? savedEmbeds : legacyHasContent ? [{ title: values.customEmbedTitle || '', description: values.customEmbedDescription || '', thumbnail: values.customEmbedThumbnailUrl || '', image: values.customEmbedImageUrl || '', channelId: values.customEmbedChannelId || '', color: values.customEmbedColor || '#5865f2' }] : [{ title: '', description: '', thumbnail: '', image: '', channelId: '', color: '#5865f2' }];
+                    const countField = document.createElement('label');
+                    countField.className = 'advanced-field';
+                    const countCaption = document.createElement('span'); countCaption.textContent = 'عدد الإمبيدات (1–10)'; countField.appendChild(countCaption);
+                    const countSelect = document.createElement('select'); countSelect.id = 'custom-embed-count';
+                    for (let count = 1; count <= 10; count++) { const option = document.createElement('option'); option.value = String(count); option.textContent = String(count); countSelect.appendChild(option); }
+                    countSelect.value = String(embedDrafts.length); countField.appendChild(countSelect);
+                    const countHelp = document.createElement('small'); countHelp.className = 'advanced-field-help'; countHelp.textContent = 'كل إمبيد يُرسل كرسالة مستقلة إلى الروم الذي تحدده له.'; countField.appendChild(countHelp);
+                    section.appendChild(countField);
+                    const cards = document.createElement('div'); cards.className = 'embed-builder-cards';
+                    const renderCards = () => {
+                        const targetCount = Number(countSelect.value);
+                        while (embedDrafts.length < targetCount) embedDrafts.push({ title: '', description: '', thumbnail: '', image: '', channelId: '', color: '#5865f2' });
+                        embedDrafts.length = targetCount; cards.replaceChildren();
+                        embedDrafts.forEach((embed, index) => {
+                            const card = document.createElement('details'); card.className = 'embed-builder-preview embed-builder-card'; card.open = index === 0;
+                            const heading = document.createElement('summary');
+                            const updateHeading = () => { heading.textContent = `الإمبيد ${index + 1} · ${embed.title?.trim() || 'إمبيد جديد'} · ${embed.channelId?.trim() || 'أضف معرّف الروم'}`; };
+                            updateHeading(); card.appendChild(heading);
+                            const channelLabel = document.createElement('label'); channelLabel.className = 'advanced-field';
+                            const channelCaption = document.createElement('span'); channelCaption.textContent = 'معرّف الروم'; channelLabel.appendChild(channelCaption);
+                            const channelInput = document.createElement('input'); channelInput.type = 'text'; channelInput.inputMode = 'numeric'; channelInput.maxLength = 20; channelInput.value = embed.channelId || ''; channelInput.placeholder = 'مثال: 123456789012345678'; channelInput.dataset.embedField = 'channelId'; channelInput.dataset.embedIndex = String(index);
+                            channelInput.addEventListener('input', () => { embedDrafts[index].channelId = channelInput.value; updateHeading(); }); channelLabel.appendChild(channelInput); card.appendChild(channelLabel);
+                            for (const [key, labelText, type, maxLength] of [['title','العنوان','input',256], ['description','الوصف / الرسالة','textarea',4000], ['thumbnail','رابط الأيقونة المصغرة (اختياري)','input',500], ['image','رابط الصورة السفلية (اختياري)','input',500]]) {
+                                const label = document.createElement('label'); label.className = 'advanced-field';
+                                const caption = document.createElement('span'); caption.textContent = labelText; label.appendChild(caption);
+                                const input = document.createElement(type); input.maxLength = maxLength; input.value = embed[key] || ''; input.dataset.embedField = key; input.dataset.embedIndex = String(index);
+                                input.placeholder = key === 'description' ? 'اكتب محتوى هذه البطاقة...' : key === 'title' ? 'عنوان اختياري' : 'https://';
+                                input.addEventListener('input', () => { embedDrafts[index][key] = input.value; if (key === 'title') updateHeading(); }); label.appendChild(input); card.appendChild(label);
+                            }
+                            const colorLabel = document.createElement('label'); colorLabel.className = 'advanced-field';
+                            const colorCaption = document.createElement('span'); colorCaption.textContent = 'لون الإمبيد'; colorLabel.appendChild(colorCaption);
+                            const colorInput = document.createElement('input'); colorInput.type = 'color'; colorInput.className = 'embed-builder-color'; colorInput.value = /^#[\da-f]{6}$/i.test(embed.color || '') ? embed.color : '#5865f2'; colorInput.dataset.embedField = 'color'; colorInput.dataset.embedIndex = String(index);
+                            colorInput.addEventListener('input', () => { embedDrafts[index].color = colorInput.value; card.style.borderInlineStartColor = colorInput.value; }); colorLabel.appendChild(colorInput); card.appendChild(colorLabel);
+                            card.style.borderInlineStartColor = colorInput.value;
+                            const body = document.createElement('p'); body.textContent = embed.title || embed.description ? `${embed.title || ''}${embed.title && embed.description ? '\n' : ''}${embed.description || ''}` : 'معاينة الإمبيد'; card.appendChild(body);
+                            card.querySelectorAll('[data-embed-field="title"], [data-embed-field="description"]').forEach((input) => input.addEventListener('input', () => {
+                                const title = card.querySelector('[data-embed-field="title"]').value.trim();
+                                const description = card.querySelector('[data-embed-field="description"]').value.trim();
+                                body.textContent = title || description ? `${title}${title && description ? '\n' : ''}${description}` : 'معاينة الإمبيد';
+                            }));
+                            cards.appendChild(card);
+                        });
                     };
-                    section.querySelectorAll('[data-advanced-setting^="customEmbed"]').forEach((control) => control.addEventListener('input', updatePreview));
-                    updatePreview();
+                    countSelect.addEventListener('change', renderCards); renderCards(); section.appendChild(cards);
                     const sendStatus = document.createElement('p');
                     sendStatus.id = 'embed-send-status';
                     sendStatus.className = 'settings-note';
@@ -835,7 +874,7 @@
         }
 
         function readAdvancedSettings() {
-            return Object.fromEntries([...document.querySelectorAll('[data-advanced-setting]')].map((control) => {
+            const values = Object.fromEntries([...document.querySelectorAll('[data-advanced-setting]')].map((control) => {
                 const key = control.dataset.advancedSetting;
                 let value;
                 if (extraBooleanKeys.has(key)) value = control.checked;
@@ -843,6 +882,11 @@
                 else value = control.value.trim();
                 return [key, value];
             }));
+            values.customEmbedsJson = JSON.stringify([...document.querySelectorAll('#advanced-settings-groups [data-embed-field="title"]')].map((titleControl, index) => {
+                const get = (key) => document.querySelector(`#advanced-settings-groups [data-embed-index="${index}"][data-embed-field="${key}"]`)?.value?.trim() || '';
+                return { title: get('title'), description: get('description'), thumbnail: get('thumbnail'), image: get('image'), channelId: get('channelId'), color: get('color') || '#5865f2' };
+            }));
+            return values;
         }
 
         async function initDashboard() {
@@ -1210,11 +1254,15 @@
                 if (!response.ok) throw new Error(result.error || 'تعذر حفظ الإعدادات');
                 status.textContent = dashboardLanguage === 'en' ? 'Settings saved successfully.' : 'انحفظت الإعدادات بنجاح.';
                 status.style.color = '#71e0cc';
-                const hasEmbedContent = Boolean(advancedSettings.customEmbedTitle?.trim() || advancedSettings.customEmbedDescription?.trim());
-                const embedStatus = document.getElementById('embed-send-status');
+                let configuredEmbeds = [];
+                try { configuredEmbeds = JSON.parse(advancedSettings.customEmbedsJson || '[]'); } catch {}
+                const embedsToSend = Array.isArray(configuredEmbeds) ? configuredEmbeds.filter((embed) => embed.title?.trim() || embed.description?.trim()) : [];
+                const hasEmbedContent = embedsToSend.length > 0;
+                    const embedStatus = document.getElementById('embed-send-status');
                 if (hasEmbedContent && embedStatus) {
-                    if (!/^\d{17,20}$/.test(String(advancedSettings.customEmbedChannelId || '').trim())) {
-                        embedStatus.textContent = 'تم الحفظ. ضع معرّف قناة صحيحًا حتى يرسل البوت الإمبيد.';
+                    const missingRoom = embedsToSend.findIndex((embed) => !/^\d{17,20}$/.test(String(embed.channelId || '').trim()));
+                    if (missingRoom >= 0) {
+                        embedStatus.textContent = `تم الحفظ. ضع معرّف روم صحيحًا للإمبيد رقم ${missingRoom + 1} حتى يرسله البوت.`;
                         embedStatus.style.color = '#fbbf24';
                     } else {
                         embedStatus.textContent = 'تم الحفظ؛ جارٍ إرسال الإمبيد عبر البوت...';

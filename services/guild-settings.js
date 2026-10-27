@@ -189,6 +189,7 @@ const EXTRA_SETTING_SCHEMA = {
     customEmbedThumbnailUrl: { type: 'text', default: '', maxLength: 500 },
     customEmbedImageUrl: { type: 'text', default: '', maxLength: 500 },
     customEmbedColor: { type: 'color', default: '#5865f2' },
+    customEmbedsJson: { type: 'text', default: '[]', maxLength: 50000 },
     pollEnabled: { type: 'boolean', default: false },
     pollChannelIds: { type: 'text', default: '', maxLength: 500 },
     levelSystemEnabled: { type: 'boolean', default: false },

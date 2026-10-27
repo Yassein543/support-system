@@ -5,5 +5,8 @@
   </defs>
   <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ring)" stroke-width="3.5"/>
   <circle cx="64" cy="64" r="46" fill="url(#glow)" opacity=".13"/>
-  <g fill="none" stroke="#e8fffb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="m64 22 9 29 29 13-29 10-9 31-10-31-29-10 29-13 10-29Z" fill="#6af0d7" fill-opacity=".2"/><path d="m99 22 4 12 12 4-12 4-4 12-4-12-12-4 12-4 4-12Z"/></g>
+  <g fill="none" stroke="#e8fffb" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m64 29 9 27 27 10-27 10-9 28-9-28-27-10 27-10 9-27Z" fill="#6af0d7" fill-opacity=".18"/>
+    <path d="m91 30 3 9 9 3-9 3-3 9-3-9-9-3 9-3 3-9Z" fill="#6af0d7" fill-opacity=".25"/>
+  </g>
 </svg>

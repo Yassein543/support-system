@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500" role="img" aria-labelledby="title desc">
+  <title id="title">YS-Bot Discord security banner</title>
+  <desc id="desc">A deep navy and teal security banner with the YS-Bot shield mascot and clean server protection branding.</desc>
+  <defs>
+    <linearGradient id="background" x1="80" y1="30" x2="1420" y2="490" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#071522"/>
+      <stop offset=".52" stop-color="#0b1b2a"/>
+      <stop offset="1" stop-color="#101b37"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="760" y1="90" x2="1395" y2="430" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#68efd8"/>
+      <stop offset="1" stop-color="#5c7cff"/>
+    </linearGradient>
+    <linearGradient id="shieldFill" x1="1010" y1="105" x2="1300" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#15374a"/>
+      <stop offset="1" stop-color="#0a1727"/>
+    </linearGradient>
+    <linearGradient id="letters" x1="1050" y1="265" x2="1250" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b3fff2"/>
+      <stop offset="1" stop-color="#89aaff"/>
+    </linearGradient>
+    <radialGradient id="aura" cx="0" cy="0" r="1" gradientTransform="matrix(0 250 -430 0 1160 250)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20c8b5" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#20c8b5" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+    <filter id="drop" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000814" flood-opacity=".55"/>
+    </filter>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0v36" fill="none" stroke="#a3d7e5" stroke-opacity=".035" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1500" height="500" rx="28" fill="url(#background)"/>
+  <rect width="1500" height="500" rx="28" fill="url(#grid)"/>
+  <ellipse cx="1150" cy="250" rx="390" ry="260" fill="url(#aura)"/>
+  <circle cx="1155" cy="250" r="215" fill="#1bbda9" fill-opacity=".08" filter="url(#softGlow)"/>
+
+  <g fill="none" stroke="url(#accent)" stroke-opacity=".17">
+    <circle cx="1160" cy="250" r="215" stroke-width="1.5"/>
+    <circle cx="1160" cy="250" r="190" stroke-width="1" stroke-dasharray="3 12"/>
+    <path d="M772 89h115l25 25h52m303 272h111" stroke-width="2"/>
+    <path d="M918 414h-88l-20-20h-45m542-300h85l23 23h47" stroke-width="2"/>
+  </g>
+  <g fill="#79f0dc">
+    <circle cx="964" cy="114" r="4"/><circle cx="1267" cy="386" r="4"/>
+    <circle cx="765" cy="394" r="3"/><circle cx="1435" cy="138" r="3"/>
+    <circle cx="1390" cy="365" r="2.5"/><circle cx="875" cy="88" r="2.5"/>
+  </g>
+
+  <g filter="url(#drop)">
+    <path d="m1160 68 153 60v128c0 101-60 172-153 226-93-54-153-125-153-226V128l153-60Z" fill="#071522" stroke="url(#accent)" stroke-width="6" stroke-linejoin="round"/>
+    <path d="m1160 88 132 52v115c0 84-48 145-132 197-84-52-132-113-132-197V140l132-52Z" fill="url(#shieldFill)" stroke="#77ead8" stroke-opacity=".3" stroke-width="2"/>
+    <path d="M1098 183c0-18 14-32 32-32h60c18 0 32 14 32 32v37c0 18-14 32-32 32h-60c-18 0-32-14-32-32v-37Z" fill="#081521" stroke="#65dfcd" stroke-width="4"/>
+    <rect x="1118" y="184" width="17" height="28" rx="8.5" fill="#72efdc"/>
+    <rect x="1185" y="184" width="17" height="28" rx="8.5" fill="#72efdc"/>
+    <path d="M1136 229h48" stroke="#477f8b" stroke-width="4" stroke-linecap="round"/>
+    <path d="M1160 151v-15m-15 0h30" stroke="#70e7d5" stroke-width="4" stroke-linecap="round"/>
+    <text x="1160" y="331" fill="url(#letters)" font-family="Arial,Helvetica,sans-serif" font-size="62" font-weight="800" letter-spacing="4" text-anchor="middle">YS</text>
+    <path d="M1129 350h62" stroke="#4ed7c4" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <g font-family="Arial,Helvetica,sans-serif">
+    <rect x="110" y="116" width="234" height="35" rx="17.5" fill="#113746" fill-opacity=".78" stroke="#4bd8c5" stroke-opacity=".35"/>
+    <circle cx="132" cy="133.5" r="5" fill="#67efd8"/>
+    <text x="151" y="139" fill="#9de9df" font-size="14" font-weight="700" letter-spacing="2.2">DISCORD SECURITY BOT</text>
+    <text x="110" y="243" fill="#f1fbff" font-size="76" font-weight="800" letter-spacing="-2">YS-Bot</text>
+    <path d="M114 267h174" stroke="url(#accent)" stroke-width="5" stroke-linecap="round"/>
+    <text x="110" y="316" fill="#b8cbd8" font-size="25" font-weight="600">Smart protection for your community</text>
+    <text x="110" y="358" fill="#71e1d1" font-size="21" font-weight="700" direction="rtl" text-anchor="end" unicode-bidi="plaintext">حماية أذكى، وإدارة أسهل لسيرفرك</text>
+  </g>
+
+  <path d="M0 472c220-36 396-30 593 6 122 23 225 21 340-2" fill="none" stroke="url(#accent)" stroke-opacity=".45" stroke-width="2"/>
+  <rect x="1" y="1" width="1498" height="498" rx="27" fill="none" stroke="#9bc3d4" stroke-opacity=".13" stroke-width="2"/>
+</svg>

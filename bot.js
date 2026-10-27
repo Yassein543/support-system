@@ -431,6 +431,35 @@ client.on('ready', async () => {
     processServerTasks().catch((error) => console.error('Server backup processing failed:', error.message));
 });
 
+client.on('guildCreate', async (guild) => {
+    try {
+        const owner = await guild.fetchOwner().catch(() => null);
+        if (!owner) {
+            console.warn(`Could not find owner for newly joined guild ${guild.id}.`);
+            return;
+        }
+        const welcomeMessage = [
+            '<:image:1564474128784691200> Thanks for adding YS-Bot!',
+            '<:image:1564469759981133865> Welcome to the YS-Bot security system!',
+            'Thank you for choosing YS-Bot to help protect your Discord server.',
+            '🚀 **Getting Started**',
+            '',
+            '- 1 <:image:1564470161430544547> Configure your server\'s protection settings.',
+            '- 2 <:image:1564471000190554174> Review the available security features.',
+            '- 3 <:image:1564473668292321391> Check the bot\'s permissions to ensure everything works correctly.',
+            '',
+            '- 4 <:image:1564472130698084432> Need help? Visit our website',
+            '- 5 <:image:1564472473687167096> https://ys-bot.vercel.app/',
+            '- 6 <:image:1564470641598668810> Thanks for trusting YS-Bot!',
+            'Stay safe. Stay protected. <:image:1564469759981133865>'
+        ].join('\n');
+        await owner.send({ content: welcomeMessage, allowedMentions: { parse: [] } });
+        console.log(`Sent welcome DM to the owner of guild ${guild.id}.`);
+    } catch (error) {
+        console.warn(`Could not send welcome DM for guild ${guild.id}: ${error.message}`);
+    }
+});
+
 let preferenceWarningShown = false;
 let userTrackingWarningShown = false;
 let guildSettingsWarningShown = false;
@@ -528,6 +557,36 @@ const COLOR_VALUES = { teal: 0x18b6a0, blue: 0x5865f2, purple: 0x8b5cf6, green: 
 const BUTTON_STYLES = { primary: ButtonStyle.Primary, secondary: ButtonStyle.Secondary, success: ButtonStyle.Success, danger: ButtonStyle.Danger };
 function safeImageUrl(value) { try { const url = new URL(value); return url.protocol === 'https:' ? url.toString() : null; } catch { return null; } }
 
+function buildConfiguredEmbeds(advanced) {
+    let definitions = [];
+    try {
+        const parsed = JSON.parse(String(advanced.customEmbedsJson || '[]'));
+        if (Array.isArray(parsed)) definitions = parsed.slice(0, 10);
+    } catch {}
+    if (!definitions.length) definitions = [{
+        title: advanced.customEmbedTitle,
+        description: advanced.customEmbedDescription,
+        thumbnail: advanced.customEmbedThumbnailUrl,
+        image: advanced.customEmbedImageUrl,
+        color: advanced.customEmbedColor
+    }];
+    return definitions.map((definition) => {
+        const title = String(definition?.title || '').trim().slice(0, 256);
+        const description = String(definition?.description || '').trim().slice(0, 4000);
+        if (!title && !description) return null;
+        const rawColor = String(definition?.color || '#5865f2');
+        const color = /^#[\da-f]{6}$/i.test(rawColor) ? Number.parseInt(rawColor.slice(1), 16) : 0x5865f2;
+        const embed = new EmbedBuilder().setColor(color);
+        if (title) embed.setTitle(title);
+        if (description) embed.setDescription(description);
+        const thumbnail = safeImageUrl(definition?.thumbnail);
+        const image = safeImageUrl(definition?.image);
+        if (thumbnail) embed.setThumbnail(thumbnail);
+        if (image) embed.setImage(image);
+        return { embed, channelId: String(definition?.channelId || advanced.customEmbedChannelId || '').trim() };
+    }).filter(Boolean);
+}
+
 async function sendConfiguredEmbed(interaction) {
     if (!interaction.guild) return interaction.reply({ content: 'استخدم الأمر داخل السيرفر.', ephemeral: true });
     await interaction.deferReply({ ephemeral: true });
@@ -536,28 +595,20 @@ async function sendConfiguredEmbed(interaction) {
     }
     const settings = await loadGuildSettings(interaction.guild.id);
     const advanced = settings.advancedSettings || {};
-    const title = String(advanced.customEmbedTitle || '').trim();
-    const description = String(advanced.customEmbedDescription || '').trim();
-    if (!title && !description) return interaction.editReply('اكتب عنوانًا أو رسالة في قسم «منشئ الإمبيد» بلوحة التحكم ثم احفظ.');
-
-    const destinationId = String(advanced.customEmbedChannelId || '').trim();
-    const destination = destinationId
-        ? await interaction.guild.channels.fetch(destinationId).catch(() => null)
-        : interaction.channel;
-    if (!destination?.isTextBased() || !destination.send) return interaction.editReply('القناة المحددة غير صالحة أو لا يستطيع البوت الكتابة فيها. راجع معرّف القناة والصلاحيات.');
-
-    const colorValue = /^#[\da-f]{6}$/i.test(String(advanced.customEmbedColor || '')) ? advanced.customEmbedColor : '#5865f2';
-    const embed = new EmbedBuilder().setColor(Number.parseInt(colorValue.slice(1), 16));
-    if (title) embed.setTitle(title.slice(0, 256));
-    if (description) embed.setDescription(description.slice(0, 4000));
-    const thumbnail = safeImageUrl(advanced.customEmbedThumbnailUrl);
-    const image = safeImageUrl(advanced.customEmbedImageUrl);
-    if (thumbnail) embed.setThumbnail(thumbnail);
-    if (image) embed.setImage(image);
+    const configuredEmbeds = buildConfiguredEmbeds(advanced);
+    if (!configuredEmbeds.length) return interaction.editReply('اكتب عنوانًا أو رسالة في قسم «إدارة الإمبيدات» بلوحة التحكم ثم احفظ.');
+    const destinations = [];
+    for (let index = 0; index < configuredEmbeds.length; index++) {
+        const channelId = configuredEmbeds[index].channelId;
+        if (!/^\d{17,20}$/.test(channelId)) return interaction.editReply(`معرّف الروم غير صحيح للإمبيد رقم ${index + 1}.`);
+        const destination = await interaction.guild.channels.fetch(channelId).catch(() => null);
+        if (!destination?.isTextBased() || !destination.send) return interaction.editReply(`الروم المحدد للإمبيد رقم ${index + 1} غير صالح أو لا يستطيع البوت الكتابة فيه.`);
+        destinations.push(destination);
+    }
 
     try {
-        await destination.send({ embeds: [embed], allowedMentions: { parse: [] } });
-        return interaction.editReply(`تم إرسال الإمبيد إلى ${destination}.`);
+        for (let index = 0; index < configuredEmbeds.length; index++) await destinations[index].send({ embeds: [configuredEmbeds[index].embed], allowedMentions: { parse: [] } });
+        return interaction.editReply(`تم إرسال ${configuredEmbeds.length} إمبيد إلى الرومات المحددة.`);
     } catch (error) {
         console.error('Could not send configured embed:', error.message);
         return interaction.editReply('تعذر إرسال الإمبيد. تأكد أن البوت يستطيع عرض القناة وإرسال الرسائل فيها.');
@@ -570,23 +621,18 @@ async function publishConfiguredEmbed(guildId) {
     guildSettingsCache.delete(String(guildId));
     const settings = await loadGuildSettings(guild.id);
     const advanced = settings.advancedSettings || {};
-    const title = String(advanced.customEmbedTitle || '').trim();
-    const description = String(advanced.customEmbedDescription || '').trim();
-    if (!title && !description) throw new Error('اكتب عنوانًا أو رسالة في منشئ الإمبيد ثم احفظ.');
-    const destinationId = String(advanced.customEmbedChannelId || '').trim();
-    if (!/^\d{17,20}$/.test(destinationId)) throw new Error('أدخل معرّف قناة نشر الإمبيد في لوحة التحكم ثم احفظ.');
-    const destination = await guild.channels.fetch(destinationId).catch(() => null);
-    if (!destination?.isTextBased() || !destination.send) throw new Error('القناة المحددة غير صالحة أو لا يستطيع البوت الكتابة فيها. راجع معرّف القناة والصلاحيات.');
-    const colorValue = /^#[\da-f]{6}$/i.test(String(advanced.customEmbedColor || '')) ? advanced.customEmbedColor : '#5865f2';
-    const embed = new EmbedBuilder().setColor(Number.parseInt(colorValue.slice(1), 16));
-    if (title) embed.setTitle(title.slice(0, 256));
-    if (description) embed.setDescription(description.slice(0, 4000));
-    const thumbnail = safeImageUrl(advanced.customEmbedThumbnailUrl);
-    const image = safeImageUrl(advanced.customEmbedImageUrl);
-    if (thumbnail) embed.setThumbnail(thumbnail);
-    if (image) embed.setImage(image);
-    await destination.send({ embeds: [embed], allowedMentions: { parse: [] } });
-    return `تم إرسال الإمبيد إلى #${destination.name}.`;
+    const configuredEmbeds = buildConfiguredEmbeds(advanced);
+    if (!configuredEmbeds.length) throw new Error('أضف عنوانًا أو رسالة واحدة على الأقل في قسم إدارة الإمبيدات.');
+    const destinations = [];
+    for (let index = 0; index < configuredEmbeds.length; index++) {
+        const channelId = configuredEmbeds[index].channelId;
+        if (!/^\d{17,20}$/.test(channelId)) throw new Error(`معرّف الروم غير صحيح للإمبيد رقم ${index + 1}.`);
+        const destination = await guild.channels.fetch(channelId).catch(() => null);
+        if (!destination?.isTextBased() || !destination.send) throw new Error(`الروم المحدد للإمبيد رقم ${index + 1} غير صالح أو لا يستطيع البوت الكتابة فيه.`);
+        destinations.push(destination);
+    }
+    for (let index = 0; index < configuredEmbeds.length; index++) await destinations[index].send({ embeds: [configuredEmbeds[index].embed], allowedMentions: { parse: [] } });
+    return `تم إرسال ${configuredEmbeds.length} إمبيد إلى الرومات المحددة.`;
 }
 
 let processingEmbedQueue = false;
