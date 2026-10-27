@@ -1234,15 +1234,16 @@ function getGameMenuOptions(advanced) {
 }
 
 async function showGamesMenu(interaction, settings) {
-    if (!interaction.guild) return interaction.reply({ content:'استخدم /games داخل سيرفر Discord.', ephemeral:true });
+    const respond = (payload) => interaction.deferred || interaction.replied ? interaction.editReply(payload) : interaction.reply(payload);
+    if (!interaction.guild) return respond({ content:'استخدم /games داخل سيرفر Discord.', ephemeral:true });
     const advanced = settings?.advancedSettings || {};
-    if (advanced.gamesEnabled === false) return interaction.reply({ content:'قائمة الألعاب متوقفة من لوحة تحكم السيرفر.', ephemeral:true });
+    if (advanced.gamesEnabled === false) return respond({ content:'قائمة الألعاب متوقفة من لوحة تحكم السيرفر.', ephemeral:true });
     const allowedChannels = String(advanced.gameChannelIds || '').split(/[\s,]+/).filter(Boolean);
     if (allowedChannels.length && !allowedChannels.includes(interaction.channelId)) {
-        return interaction.reply({ content:`الألعاب متاحة في القنوات التالية فقط: ${allowedChannels.map((id) => `<#${id}>`).join(' ')}`, ephemeral:true });
+        return respond({ content:`الألعاب متاحة في القنوات التالية فقط: ${allowedChannels.map((id) => `<#${id}>`).join(' ')}`, ephemeral:true });
     }
     const games = getGameMenuOptions(advanced);
-    if (!games.length) return interaction.reply({ content:'ما في ألعاب مفعّلة حاليًا. فعّل الألعاب من لوحة التحكم.', ephemeral:true });
+    if (!games.length) return respond({ content:'ما في ألعاب مفعّلة حاليًا. فعّل الألعاب من لوحة التحكم.', ephemeral:true });
     const prefix = settings?.commandPrefix || '!';
     const categories = GAME_CATEGORIES.filter((category) => games.some((game) => game.categories.includes(category.id)));
     const menu = new StringSelectMenuBuilder()
@@ -1255,7 +1256,7 @@ async function showGamesMenu(interaction, settings) {
         .setTitle('🎮 مركز ألعاب YS-Bot')
         .setDescription(`اختار منيو الألعاب الجماعية أو الفردية أو العب ضد البوت.\n\nالأوامر النصية تستخدم بادئة هذا السيرفر: **${prefix}**\nمثال: \`${prefix}games\` و \`${prefix}picture\`\n\nعدد الألعاب المتاحة: **${games.length}**`)
         .setFooter({ text:'YS-Bot Games • اختر نوع اللعب للمتابعة' });
-    return interaction.reply({ embeds:[embed], components:[new ActionRowBuilder().addComponents(menu)] });
+    return respond({ embeds:[embed], components:[new ActionRowBuilder().addComponents(menu)] });
 }
 
 async function sendGamesMenu(message, settings) {
@@ -1274,28 +1275,30 @@ async function sendGamesMenu(message, settings) {
 }
 
 async function showGamesCategory(interaction) {
-    if (!interaction.guild) return interaction.update({content:'الألعاب متاحة داخل السيرفر فقط.',embeds:[],components:[]});
+    const respond = (payload) => interaction.deferred || interaction.replied ? interaction.editReply(payload) : interaction.update(payload);
+    if (!interaction.guild) return respond({content:'الألعاب متاحة داخل السيرفر فقط.',embeds:[],components:[]});
     const settings=await loadGuildSettings(interaction.guild.id);
     const advanced=settings.advancedSettings || {};
     const categoryId=interaction.values[0];
-    if (advanced.gamesEnabled===false) return interaction.update({content:'الألعاب متوقفة من لوحة تحكم السيرفر.',embeds:[],components:[]});
+    if (advanced.gamesEnabled===false) return respond({content:'الألعاب متوقفة من لوحة تحكم السيرفر.',embeds:[],components:[]});
     const allowedChannels=String(advanced.gameChannelIds||'').split(/[\s,]+/).filter(Boolean);
-    if (allowedChannels.length&&!allowedChannels.includes(interaction.channelId)) return interaction.update({content:`الألعاب متاحة في: ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`,embeds:[],components:[]});
+    if (allowedChannels.length&&!allowedChannels.includes(interaction.channelId)) return respond({content:`الألعاب متاحة في: ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`,embeds:[],components:[]});
     const category=GAME_CATEGORIES.find((item)=>item.id===categoryId);
     const games=getGameMenuOptions(advanced).filter((game)=>game.categories.includes(categoryId));
-    if (!category||!games.length) return interaction.update({content:'ما في ألعاب متاحة بهذا القسم حاليًا.',embeds:[],components:[]});
+    if (!category||!games.length) return respond({content:'ما في ألعاب متاحة بهذا القسم حاليًا.',embeds:[],components:[]});
     const prefix=settings.commandPrefix || '!';
     const menu=new StringSelectMenuBuilder().setCustomId(`ys_games_pick:${categoryId}:${interaction.user.id}`).setPlaceholder('اختار لعبة من القائمة')
         .addOptions(games.map((game)=>({label:game.name,description:`${game.description} • ${prefix}${game.command}`.slice(0,100),value:game.id}))).setMinValues(1).setMaxValues(1);
     const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(`🎮 ${category.name}`)
         .setDescription(`${games.map((game)=>`• **${game.name}** — ${game.description}\n  الأمر: \`${prefix}${game.command}\``).join('\n')}\n\nتقدر تختار اللعبة من القائمة أو تستخدم أمرها مباشرة.`)
         .setFooter({text:`بادئة السيرفر الحالية: ${prefix} • YS-Bot Games`});
-    return interaction.update({embeds:[embed],components:[new ActionRowBuilder().addComponents(menu)]});
+    return respond({embeds:[embed],components:[new ActionRowBuilder().addComponents(menu)]});
 }
 
 function randomGameItem(items) { return items[Math.floor(Math.random() * items.length)]; }
 
 function deliverGamePayload(target, payload) {
+    if (target.deferred || target.replied) return target.editReply(payload);
     if (typeof target.update === 'function') return target.update(payload).then(() => target.fetchReply());
     return target.reply(payload);
 }
@@ -1391,7 +1394,7 @@ async function startTicTacToe(target) {
         if (!result) { board[chooseTicTacToeMove(board)]='O'; result=ticTacToeWinner(board); }
         const status=result==='X' ? 'فزت! جولة حلوة 🎉' : result==='O' ? 'فاز البوت هالمرة 🤖' : result==='draw' ? 'تعادل! جولة متوازنة 🤝' : 'دورك — أنت X';
         embed.setDescription(status);
-        await button.update({ embeds:[embed], components:ticTacToeRows(board, interaction.user.id, Boolean(result)) });
+        await button.update({ embeds:[embed], components:ticTacToeRows(board, user.id, Boolean(result)) });
         if (result) collector.stop('finished');
     });
     collector.on('end', async (_, reason) => {
@@ -1435,6 +1438,7 @@ async function startMemoryGame(target) {
 }
 
 function respondGameStatus(target, content) {
+    if (target.deferred || target.replied) return target.editReply({content,embeds:[],components:[]});
     return typeof target.update === 'function' ? target.update({content,embeds:[],components:[]}) : target.reply(content);
 }
 
@@ -1504,7 +1508,7 @@ async function launchGameTarget(target, gameId, categoryId) {
 
 async function launchSelectedGame(interaction) {
     const [,categoryId,ownerId]=interaction.customId.split(':');
-    if(interaction.user.id!==ownerId)return interaction.reply({content:'اختار صاحب القائمة اللعبة. افتح /games لبدء قائمتك.',ephemeral:true});
+    if(interaction.user.id!==ownerId)return interaction.followUp({content:'اختار صاحب القائمة اللعبة. افتح /games لبدء قائمتك.',ephemeral:true});
     return launchGameTarget(interaction,interaction.values[0],categoryId);
 }
 
@@ -1688,8 +1692,14 @@ function addSlashReplyEmoji(interaction) {
 
 // معالجة أوامر السلاش (Interaction)
 client.on('interactionCreate', async (interaction) => {
-    if (interaction.isStringSelectMenu() && interaction.customId === 'ys_games_category') return showGamesCategory(interaction);
-    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('ys_games_pick:')) return launchSelectedGame(interaction);
+    if (interaction.isStringSelectMenu() && interaction.customId === 'ys_games_category') {
+        await interaction.deferUpdate();
+        return showGamesCategory(interaction);
+    }
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('ys_games_pick:')) {
+        await interaction.deferUpdate();
+        return launchSelectedGame(interaction);
+    }
     if (interaction.isButton()) {
         if (interaction.customId.startsWith('ys_game_')) return handleGameButton(interaction);
         if (interaction.customId === 'ys_ticket_open') return createTicket(interaction);
@@ -1701,6 +1711,7 @@ client.on('interactionCreate', async (interaction) => {
         return createTicket(interaction, interaction.fields.getTextInputValue('reason').trim());
     }
     if (!interaction.isChatInputCommand()) return;
+    if (interaction.commandName === 'games') await interaction.deferReply();
 
     let guildSettings = null;
     if (interaction.guild) {
