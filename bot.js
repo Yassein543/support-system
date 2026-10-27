@@ -1211,16 +1211,22 @@ async function submitPoll(interaction) {
 }
 
 const GAME_OPTIONS = [
-    { id:'trivia', flag:'gamesTriviaEnabled', name:'معلومات عامة', description:'أسئلة سريعة بأربع إجابات' },
-    { id:'image', flag:'gamesImageGuessEnabled', name:'خمّن الصورة', description:'شاهد رسمة YS وحاول معرفة الشيء' },
-    { id:'scramble', flag:'gamesScrambleEnabled', name:'ترتيب الحروف', description:'رتّب الحروف لاكتشاف الكلمة' },
-    { id:'riddle', flag:'gamesRiddleEnabled', name:'الألغاز', description:'ألغاز قصيرة وتحديات ذهنية' },
-    { id:'math', flag:'gamesMathEnabled', name:'الحساب السريع', description:'حل مسألة قبل نفاد الوقت' },
-    { id:'memory', flag:'gamesMemoryEnabled', name:'اختبار الذاكرة', description:'تذكّر تسلسل الألوان' },
-    { id:'rps', flag:'gamesRpsEnabled', name:'حجر ورقة مقص', description:'تحدّ البوت بجولة سريعة' },
-    { id:'dice', flag:'gamesDiceEnabled', name:'تحدي النرد', description:'توقّع نتيجة رمية النرد' },
-    { id:'ttt', flag:'gamesTicTacToeEnabled', name:'إكس أو', description:'العب إكس أو ضد البوت' },
-    { id:'emoji', flag:'gamesEmojiPuzzleEnabled', name:'لغز الإيموجي', description:'خمن العبارة من الصورة الرمزية' }
+    { id:'trivia', flag:'gamesTriviaEnabled', name:'معلومات عامة', description:'سباق أسئلة سريع بين أعضاء السيرفر', command:'quiz', categories:['group','solo'] },
+    { id:'picture', flag:'gamesPictureGuessEnabled', name:'خمّن الرسمة', description:'خمن رسمة YS المصنوعة خصيصًا للعبة', command:'picture', categories:['group','solo'] },
+    { id:'difference', flag:'gamesSpotDifferenceEnabled', name:'اكتشف الاختلاف', description:'قارن بطاقتين مرسومتين واختر موضع الاختلاف', command:'difference', categories:['group','solo'] },
+    { id:'scramble', flag:'gamesScrambleEnabled', name:'ترتيب الحروف', description:'رتّب الحروف لاكتشاف الكلمة', command:'scramble', categories:['group','solo'] },
+    { id:'riddle', flag:'gamesRiddleEnabled', name:'الألغاز', description:'حل لغزًا قبل بقية الأعضاء', command:'riddle', categories:['group','solo'] },
+    { id:'math', flag:'gamesMathEnabled', name:'الحساب السريع', description:'أسرع إجابة صحيحة تكسب الجولة', command:'mathgame', categories:['group','solo'] },
+    { id:'memory', flag:'gamesMemoryEnabled', name:'الذاكرة البصرية', description:'احفظ نمط الألوان المرسوم ثم أعده', command:'memory', categories:['solo'] },
+    { id:'rps', flag:'gamesRpsEnabled', name:'حجر ورقة مقص', description:'تحدّ البوت بجولة سريعة', command:'rps', categories:['bot'] },
+    { id:'dice', flag:'gamesDiceEnabled', name:'تحدي النرد', description:'توقّع نتيجة رمية البوت', command:'dice', categories:['bot'] },
+    { id:'ttt', flag:'gamesTicTacToeEnabled', name:'إكس أو', description:'العب إكس أو ضد البوت', command:'tictactoe', categories:['bot'] },
+    { id:'emoji', flag:'gamesEmojiPuzzleEnabled', name:'لغز الإيموجي', description:'خمن العبارة من مجموعة إيموجي', command:'emojipuzzle', categories:['group','solo'] }
+];
+const GAME_CATEGORIES = [
+    { id:'group', name:'ألعاب جماعية', description:'تحديات يتنافس فيها أعضاء القناة' },
+    { id:'solo', name:'ألعاب فردية', description:'جولات خاصة بلا منافسة مباشرة' },
+    { id:'bot', name:'العب مع البوت', description:'تحديات مباشرة ضد YS-Bot' }
 ];
 
 function getGameMenuOptions(advanced) {
@@ -1237,82 +1243,113 @@ async function showGamesMenu(interaction, settings) {
     }
     const games = getGameMenuOptions(advanced);
     if (!games.length) return interaction.reply({ content:'ما في ألعاب مفعّلة حاليًا. فعّل الألعاب من لوحة التحكم.', ephemeral:true });
+    const prefix = settings?.commandPrefix || '!';
+    const categories = GAME_CATEGORIES.filter((category) => games.some((game) => game.categories.includes(category.id)));
     const menu = new StringSelectMenuBuilder()
-        .setCustomId('ys_games_menu')
-        .setPlaceholder('اختار لعبة من القائمة')
-        .addOptions(games.map((game) => ({ label:game.name, description:game.description, value:game.id })))
+        .setCustomId('ys_games_category')
+        .setPlaceholder('اختار نوع الألعاب')
+        .addOptions(categories.map((category) => ({ label:category.name, description:category.description, value:category.id })))
         .setMinValues(1).setMaxValues(1);
     const embed = new EmbedBuilder()
         .setColor(0x35cdb7)
-        .setTitle('🎮 ألعاب YS-Bot')
-        .setDescription(`اختار تحدّي وابدأ اللعب! عندك **${games.length} ألعاب** متنوعة، منها تخمين الصورة والذاكرة وإكس أو.\n\n${games.map((game) => `• **${game.name}** — ${game.description}`).join('\n')}`)
-        .setFooter({ text:'كل جولة مستقلة • YS-Bot Games' });
+        .setTitle('🎮 مركز ألعاب YS-Bot')
+        .setDescription(`اختار منيو الألعاب الجماعية أو الفردية أو العب ضد البوت.\n\nالأوامر النصية تستخدم بادئة هذا السيرفر: **${prefix}**\nمثال: \`${prefix}games\` و \`${prefix}picture\`\n\nعدد الألعاب المتاحة: **${games.length}**`)
+        .setFooter({ text:'YS-Bot Games • اختر نوع اللعب للمتابعة' });
     return interaction.reply({ embeds:[embed], components:[new ActionRowBuilder().addComponents(menu)] });
+}
+
+async function sendGamesMenu(message, settings) {
+    const advanced=settings?.advancedSettings || {};
+    if (advanced.gamesEnabled===false) return message.reply('قائمة الألعاب متوقفة من لوحة تحكم السيرفر.');
+    const games=getGameMenuOptions(advanced);
+    if (!games.length) return message.reply('ما في ألعاب مفعّلة حاليًا. فعّل الألعاب من لوحة التحكم.');
+    const prefix=settings.commandPrefix || '!';
+    const categories=GAME_CATEGORIES.filter((category)=>games.some((game)=>game.categories.includes(category.id)));
+    const menu=new StringSelectMenuBuilder().setCustomId('ys_games_category').setPlaceholder('اختار نوع الألعاب')
+        .addOptions(categories.map((category)=>({label:category.name,description:category.description,value:category.id}))).setMinValues(1).setMaxValues(1);
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('🎮 مركز ألعاب YS-Bot')
+        .setDescription(`اختار منيو الألعاب الجماعية أو الفردية أو العب ضد البوت.\n\nبادئة أوامر هذا السيرفر: **${prefix}**\nمثال: \`${prefix}games\` و \`${prefix}picture\`\nعدد الألعاب المتاحة: **${games.length}**`)
+        .setFooter({text:'YS-Bot Games • اختر نوع اللعب للمتابعة'});
+    return message.reply({embeds:[embed],components:[new ActionRowBuilder().addComponents(menu)]});
+}
+
+async function showGamesCategory(interaction) {
+    if (!interaction.guild) return interaction.update({content:'الألعاب متاحة داخل السيرفر فقط.',embeds:[],components:[]});
+    const settings=await loadGuildSettings(interaction.guild.id);
+    const advanced=settings.advancedSettings || {};
+    const categoryId=interaction.values[0];
+    if (advanced.gamesEnabled===false) return interaction.update({content:'الألعاب متوقفة من لوحة تحكم السيرفر.',embeds:[],components:[]});
+    const allowedChannels=String(advanced.gameChannelIds||'').split(/[\s,]+/).filter(Boolean);
+    if (allowedChannels.length&&!allowedChannels.includes(interaction.channelId)) return interaction.update({content:`الألعاب متاحة في: ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`,embeds:[],components:[]});
+    const category=GAME_CATEGORIES.find((item)=>item.id===categoryId);
+    const games=getGameMenuOptions(advanced).filter((game)=>game.categories.includes(categoryId));
+    if (!category||!games.length) return interaction.update({content:'ما في ألعاب متاحة بهذا القسم حاليًا.',embeds:[],components:[]});
+    const prefix=settings.commandPrefix || '!';
+    const menu=new StringSelectMenuBuilder().setCustomId(`ys_games_pick:${categoryId}:${interaction.user.id}`).setPlaceholder('اختار لعبة من القائمة')
+        .addOptions(games.map((game)=>({label:game.name,description:`${game.description} • ${prefix}${game.command}`.slice(0,100),value:game.id}))).setMinValues(1).setMaxValues(1);
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(`🎮 ${category.name}`)
+        .setDescription(`${games.map((game)=>`• **${game.name}** — ${game.description}\n  الأمر: \`${prefix}${game.command}\``).join('\n')}\n\nتقدر تختار اللعبة من القائمة أو تستخدم أمرها مباشرة.`)
+        .setFooter({text:`بادئة السيرفر الحالية: ${prefix} • YS-Bot Games`});
+    return interaction.update({embeds:[embed],components:[new ActionRowBuilder().addComponents(menu)]});
 }
 
 function randomGameItem(items) { return items[Math.floor(Math.random() * items.length)]; }
 
-function imageGuessArtwork(item) {
-    const canvas = createCanvas(720, 360);
-    const ctx = canvas.getContext('2d');
-    const background = ctx.createLinearGradient(0, 0, 720, 360);
-    background.addColorStop(0, '#10293b'); background.addColorStop(1, '#111a38');
-    ctx.fillStyle = background; ctx.fillRect(0, 0, 720, 360);
-    ctx.fillStyle = 'rgba(83,223,202,.09)'; ctx.beginPath(); ctx.arc(610, 65, 128, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(92,132,255,.12)'; ctx.beginPath(); ctx.arc(120, 290, 150, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#a4b8c8'; ctx.font = '700 18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('YS-BOT  •  GUESS THE PICTURE', 360, 43);
-    ctx.save(); ctx.translate(360, 188); ctx.fillStyle = '#61e4cf'; ctx.strokeStyle = '#e8fffb'; ctx.lineWidth = 8; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.shadowColor = 'rgba(58,221,196,.3)'; ctx.shadowBlur = 28;
-    if (item === 'moon') {
-        ctx.beginPath(); ctx.arc(0, 0, 86, 0, Math.PI * 2); ctx.fill();
-        ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(40, -28, 78, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = '#ffe58a'; ctx.beginPath(); ctx.arc(100, -64, 7, 0, Math.PI * 2); ctx.fill();
-    } else if (item === 'rocket') {
-        ctx.beginPath(); ctx.moveTo(0,-112); ctx.quadraticCurveTo(71,-52,52,45); ctx.lineTo(0,88); ctx.lineTo(-52,45); ctx.quadraticCurveTo(-71,-52,0,-112); ctx.fill(); ctx.stroke();
-        ctx.fillStyle='#122139'; ctx.beginPath(); ctx.arc(0,-20,20,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='#ffbd72'; ctx.beginPath(); ctx.moveTo(-22,72); ctx.lineTo(0,122); ctx.lineTo(22,72); ctx.fill();
-    } else if (item === 'crown') {
-        ctx.beginPath(); ctx.moveTo(-100,55); ctx.lineTo(-78,-54); ctx.lineTo(-25,-4); ctx.lineTo(0,-94); ctx.lineTo(31,-4); ctx.lineTo(82,-54); ctx.lineTo(100,55); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.fillStyle='#ffe58a'; for (const x of [-78,0,82]) { ctx.beginPath(); ctx.arc(x, -58, 10, 0, Math.PI*2); ctx.fill(); }
-    } else if (item === 'football') {
-        ctx.save(); ctx.rotate(-.38); ctx.beginPath(); ctx.ellipse(0,0,116,67,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-        ctx.strokeStyle='#122139'; ctx.lineWidth=8; ctx.beginPath(); ctx.moveTo(-18,-62); ctx.lineTo(-18,62); ctx.moveTo(8,-58); ctx.lineTo(8,58); ctx.stroke(); ctx.restore();
-    } else if (item === 'cat') {
-        ctx.beginPath(); ctx.moveTo(-82,-48); ctx.lineTo(-68,-112); ctx.lineTo(-18,-75); ctx.quadraticCurveTo(0,-81,18,-75); ctx.lineTo(68,-112); ctx.lineTo(82,-48); ctx.quadraticCurveTo(102,72,0,87); ctx.quadraticCurveTo(-102,72,-82,-48); ctx.fill(); ctx.stroke();
-        ctx.fillStyle='#122139'; for (const x of [-30,30]) { ctx.beginPath(); ctx.arc(x,-15,9,0,Math.PI*2); ctx.fill(); }
-        ctx.beginPath(); ctx.arc(0,13,7,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#122139'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(0,20); ctx.lineTo(0,34); ctx.moveTo(0,34); ctx.quadraticCurveTo(-16,45,-25,34); ctx.moveTo(0,34); ctx.quadraticCurveTo(16,45,25,34); ctx.stroke();
-    } else if (item === 'pizza') {
-        ctx.beginPath(); ctx.moveTo(-102,-73); ctx.lineTo(104,47); ctx.quadraticCurveTo(0,115,-102,-73); ctx.fill(); ctx.stroke();
-        ctx.strokeStyle='#ffbd72'; ctx.lineWidth=15; ctx.beginPath(); ctx.moveTo(-102,-73); ctx.quadraticCurveTo(8,-31,104,47); ctx.stroke();
-        ctx.fillStyle='#ff7e83'; for (const [x,y] of [[-35,-16],[11,6],[38,44],[-18,40]]) { ctx.beginPath(); ctx.arc(x,y,9,0,Math.PI*2); ctx.fill(); }
-    } else if (item === 'robot') {
-        ctx.beginPath(); ctx.roundRect(-90,-72,180,150,36); ctx.fill(); ctx.stroke();
-        ctx.strokeStyle='#e8fffb'; ctx.beginPath(); ctx.moveTo(0,-72); ctx.lineTo(0,-101); ctx.stroke();
-        ctx.fillStyle='#ffe58a'; ctx.beginPath(); ctx.arc(0,-109,10,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='#122139'; for (const x of [-38,38]) { ctx.beginPath(); ctx.arc(x,-12,12,0,Math.PI*2); ctx.fill(); }
-        ctx.strokeStyle='#122139'; ctx.lineWidth=7; ctx.beginPath(); ctx.moveTo(-34,37); ctx.quadraticCurveTo(0,63,34,37); ctx.stroke();
-    } else {
-        ctx.beginPath(); ctx.moveTo(0,-110); ctx.lineTo(-100,55); ctx.lineTo(100,55); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0,-51); ctx.lineTo(-78,76); ctx.lineTo(78,76); ctx.closePath(); ctx.fill();
-        ctx.fillStyle='#ffbd72'; ctx.fillRect(-14,66,28,54);
+function deliverGamePayload(target, payload) {
+    if (typeof target.update === 'function') return target.update(payload).then(() => target.fetchReply());
+    return target.reply(payload);
+}
+
+function drawGameCard(kind, value = null) {
+    const canvas=createCanvas(760,390),ctx=canvas.getContext('2d');
+    const bg=ctx.createLinearGradient(0,0,760,390);bg.addColorStop(0,'#0c1b2a');bg.addColorStop(1,'#172849');ctx.fillStyle=bg;ctx.fillRect(0,0,760,390);
+    ctx.fillStyle='rgba(88,226,205,.08)';ctx.beginPath();ctx.arc(670,65,150,0,Math.PI*2);ctx.fill();
+    ctx.textAlign='center';ctx.fillStyle='#b7d1de';ctx.font='700 18px sans-serif';
+    if(kind==='memory'){
+        ctx.fillText('YS-BOT  •  VISUAL MEMORY',380,42);
+        const palette=['#ff6b7a','#45c7ff','#5bddad','#ffcf68'];
+        value.forEach((color,index)=>{const x=140+index*160;ctx.shadowColor=palette[color];ctx.shadowBlur=22;ctx.fillStyle=palette[color];ctx.beginPath();ctx.roundRect(x-49,112,98,112,24);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#102033';ctx.font='900 28px sans-serif';ctx.fillText(String(index+1),x,178);});
+        ctx.fillStyle='#d4e7ef';ctx.font='600 16px sans-serif';ctx.fillText('Remember the order',380,315);
+        return canvas.toBuffer('image/png');
     }
-    ctx.restore();
-    ctx.fillStyle = '#d4e7ef'; ctx.font = '600 16px sans-serif'; ctx.fillText('Can you name it?', 360, 326);
+    ctx.fillText(kind==='difference'?'YS-BOT  •  FIND THE ODD SHAPE':'YS-BOT  •  PICTURE CHALLENGE',380,40);
+    if(kind==='difference'){
+        const oddSide=value.side,oddIndex=value.index;
+        for(let side=0;side<2;side++){
+            const x0=side===0?45:395;ctx.fillStyle='#12263a';ctx.beginPath();ctx.roundRect(x0,65,320,250,22);ctx.fill();
+            ctx.fillStyle='#eaf8fb';ctx.font='900 22px sans-serif';ctx.fillText(side===0?'A':'B',x0+160,95);
+            for(let i=0;i<9;i++){
+                const cx=x0+72+(i%3)*88,cy=142+Math.floor(i/3)*62;ctx.fillStyle='#55dfca';ctx.strokeStyle='#c8fff3';ctx.lineWidth=3;
+                if(side===oddSide&&i===oddIndex){ctx.beginPath();ctx.moveTo(cx,cy-17);ctx.lineTo(cx+18,cy+15);ctx.lineTo(cx-18,cy+15);ctx.closePath();ctx.fill();ctx.stroke();}
+                else{ctx.beginPath();ctx.arc(cx,cy,15,0,Math.PI*2);ctx.fill();}
+            }
+        }
+        return canvas.toBuffer('image/png');
+    }
+    const item=value;
+    ctx.save();ctx.translate(380,200);ctx.fillStyle='#61e4cf';ctx.strokeStyle='#edfffb';ctx.lineWidth=7;ctx.lineJoin='round';ctx.lineCap='round';ctx.shadowColor='rgba(58,221,196,.3)';ctx.shadowBlur=24;
+    if(item==='moon'){ctx.beginPath();ctx.arc(0,0,90,0,Math.PI*2);ctx.fill();ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.arc(44,-31,82,0,Math.PI*2);ctx.fill();ctx.globalCompositeOperation='source-over';}
+    else if(item==='rocket'){ctx.beginPath();ctx.moveTo(0,-115);ctx.quadraticCurveTo(68,-55,52,45);ctx.lineTo(0,83);ctx.lineTo(-52,45);ctx.quadraticCurveTo(-68,-55,0,-115);ctx.fill();ctx.stroke();ctx.fillStyle='#102033';ctx.beginPath();ctx.arc(0,-22,20,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffbd72';ctx.beginPath();ctx.moveTo(-22,70);ctx.lineTo(0,124);ctx.lineTo(22,70);ctx.fill();}
+    else if(item==='crown'){ctx.beginPath();ctx.moveTo(-100,55);ctx.lineTo(-82,-52);ctx.lineTo(-25,-5);ctx.lineTo(0,-100);ctx.lineTo(30,-5);ctx.lineTo(83,-52);ctx.lineTo(101,55);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#ffdb83';for(const x of[-82,0,83]){ctx.beginPath();ctx.arc(x,-57,10,0,Math.PI*2);ctx.fill();}}
+    else if(item==='ball'){ctx.beginPath();ctx.ellipse(0,0,116,68,-.3,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#13233a';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(-25,-62);ctx.lineTo(-25,62);ctx.moveTo(8,-61);ctx.lineTo(8,61);ctx.stroke();}
+    else if(item==='cat'){ctx.beginPath();ctx.moveTo(-82,-48);ctx.lineTo(-68,-112);ctx.lineTo(-18,-75);ctx.quadraticCurveTo(0,-81,18,-75);ctx.lineTo(68,-112);ctx.lineTo(82,-48);ctx.quadraticCurveTo(102,72,0,88);ctx.quadraticCurveTo(-102,72,-82,-48);ctx.fill();ctx.stroke();ctx.fillStyle='#13233a';for(const x of[-30,30]){ctx.beginPath();ctx.arc(x,-15,9,0,Math.PI*2);ctx.fill();}ctx.beginPath();ctx.arc(0,13,7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#13233a';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(0,20);ctx.quadraticCurveTo(-14,43,-26,33);ctx.moveTo(0,20);ctx.quadraticCurveTo(14,43,26,33);ctx.stroke();}
+    else if(item==='pizza'){ctx.beginPath();ctx.moveTo(-103,-70);ctx.lineTo(105,47);ctx.quadraticCurveTo(0,115,-103,-70);ctx.fill();ctx.stroke();ctx.fillStyle='#ff7e83';for(const [x,y]of[[-35,-15],[12,8],[40,44],[-18,42]]){ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();}}
+    else if(item==='robot'){ctx.beginPath();ctx.roundRect(-90,-78,180,156,34);ctx.fill();ctx.stroke();ctx.strokeStyle='#edfffb';ctx.beginPath();ctx.moveTo(0,-78);ctx.lineTo(0,-112);ctx.stroke();ctx.fillStyle='#ffdb83';ctx.beginPath();ctx.arc(0,-119,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#13233a';for(const x of[-38,38]){ctx.beginPath();ctx.arc(x,-16,11,0,Math.PI*2);ctx.fill();}ctx.strokeStyle='#13233a';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-34,34);ctx.quadraticCurveTo(0,62,34,34);ctx.stroke();}
+    else{ctx.beginPath();ctx.moveTo(0,-112);ctx.lineTo(-101,57);ctx.lineTo(101,57);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(0,-48);ctx.lineTo(-79,80);ctx.lineTo(79,80);ctx.closePath();ctx.fill();ctx.fillStyle='#ffbd72';ctx.fillRect(-14,66,28,56);}
+    ctx.restore();ctx.fillStyle='#d4e7ef';ctx.font='600 16px sans-serif';ctx.fillText('Name the drawing',380,355);
     return canvas.toBuffer('image/png');
 }
 
-function questionGame(interaction, title, prompt, choices, answer, imageItem = null) {
+function questionGame(target, title, prompt, choices, answer, {group=false,artwork=null} = {}) {
     const correct = choices.indexOf(answer);
+    const ownerId=group?'all':(target.user?.id||target.author?.id);
     const row = new ActionRowBuilder().addComponents(choices.map((choice, index) => new ButtonBuilder()
-        .setCustomId(`ys_game_answer:${interaction.user.id}:${correct}:${index}`)
+        .setCustomId(`ys_game_answer:${ownerId}:${correct}:${index}`)
         .setLabel(String(choice).slice(0, 80)).setStyle(ButtonStyle.Secondary)));
     const embed = new EmbedBuilder().setColor(0x35cdb7).setTitle(title).setDescription(prompt).setFooter({ text:'اختار إجابتك • YS-Bot Games' });
-    const payload = { embeds:[embed], components:[row] };
-    if (imageItem) {
-        const fileName='ys-game-picture.png';
-        embed.setImage(`attachment://${fileName}`);
-        payload.files=[new AttachmentBuilder(imageGuessArtwork(imageItem), { name:fileName })];
-    }
-    return interaction.update(payload);
+    const payload={embeds:[embed],components:[row]};
+    if(artwork){const fileName='ys-game-art.png';embed.setImage(`attachment://${fileName}`);payload.files=[new AttachmentBuilder(artwork,{name:fileName})];}
+    return deliverGamePayload(target,payload);
 }
 
 function ticTacToeWinner(board) {
@@ -1340,12 +1377,12 @@ function chooseTicTacToeMove(board) {
     return randomGameItem(corners.length ? corners : open);
 }
 
-async function startTicTacToe(interaction) {
+async function startTicTacToe(target) {
+    const user=target.user||target.author;
     const board=Array(9).fill(null);
-    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('❎ إكس أو ضد البوت').setDescription('أنت **X** والبوت **O**. اختار مربعًا للبدء.');
-    await interaction.update({ embeds:[embed], components:ticTacToeRows(board, interaction.user.id) });
-    const message=await interaction.fetchReply();
-    const collector=message.createMessageComponentCollector({ time:90000, filter:(button)=>button.user.id===interaction.user.id && button.customId.startsWith(`ys_game_ttt:${interaction.user.id}:`) });
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('إكس أو ضد البوت').setDescription('أنت **X** والبوت **O**. اختار مربعًا للبدء.');
+    const message=await deliverGamePayload(target,{ embeds:[embed], components:ticTacToeRows(board,user.id) });
+    const collector=message.createMessageComponentCollector({ time:90000, filter:(button)=>button.user.id===user.id && button.customId.startsWith(`ys_game_ttt:${user.id}:`) });
     collector.on('collect', async (button) => {
         const index=Number(button.customId.split(':')[2]);
         if (!Number.isInteger(index) || board[index]) return button.reply({ content:'هذا المربع مستخدم، اختار غيره.', ephemeral:true });
@@ -1360,29 +1397,28 @@ async function startTicTacToe(interaction) {
     collector.on('end', async (_, reason) => {
         if (reason === 'time') {
             embed.setDescription('انتهى وقت الجولة. استخدم /games لبدء لعبة جديدة.');
-            await interaction.editReply({ embeds:[embed], components:ticTacToeRows(board, interaction.user.id, true) }).catch(()=>{});
+            await message.edit({ embeds:[embed], components:ticTacToeRows(board, user.id, true) }).catch(()=>{});
         }
     });
 }
 
-async function startMemoryGame(interaction) {
-    const colors=[{id:'red',name:'أحمر',emoji:'🔴',style:ButtonStyle.Danger},{id:'blue',name:'أزرق',emoji:'🔵',style:ButtonStyle.Primary},{id:'green',name:'أخضر',emoji:'🟢',style:ButtonStyle.Success},{id:'yellow',name:'أصفر',emoji:'🟡',style:ButtonStyle.Secondary}];
-    const sequence=Array.from({length:4},()=>randomGameItem(colors).id);
-    const colorButtons=()=>new ActionRowBuilder().addComponents(colors.map((color)=>new ButtonBuilder().setCustomId(`ys_game_memory:${interaction.user.id}:${color.id}`).setLabel(color.name).setEmoji(color.emoji).setStyle(color.style)));
-    const colorNames=sequence.map((id)=>colors.find((color)=>color.id===id).emoji).join('  ');
-    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('🧠 اختبار الذاكرة').setDescription(`احفظ هذا التسلسل:\n\n# ${colorNames}\n\nراح تختفي الألوان بعد لحظات.`);
-    await interaction.update({ embeds:[embed], components:[] });
+async function startMemoryGame(target) {
+    const user=target.user||target.author;
+    const colors=[{name:'أحمر',style:ButtonStyle.Danger},{name:'أزرق',style:ButtonStyle.Primary},{name:'أخضر',style:ButtonStyle.Success},{name:'أصفر',style:ButtonStyle.Secondary}];
+    const sequence=Array.from({length:4},()=>Math.floor(Math.random()*colors.length));
+    const colorButtons=()=>new ActionRowBuilder().addComponents(colors.map((color,index)=>new ButtonBuilder().setCustomId(`ys_game_memory:${user.id}:${index}`).setLabel(color.name).setStyle(color.style)));
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('اختبار الذاكرة البصرية').setDescription('احفظ ترتيب البطاقات المرسومة؛ ستختفي بعد لحظات.');
+    const art=drawGameCard('memory',sequence);
+    const message=await deliverGamePayload(target,{embeds:[embed.setImage('attachment://ys-game-memory.png')],components:[],files:[new AttachmentBuilder(art,{name:'ys-game-memory.png'})]});
     await new Promise((resolve)=>setTimeout(resolve,2600));
-    embed.setDescription('كرر التسلسل بالترتيب. اضغط أول لون ثم اللي بعده.\n\nالتقدم: **0 / 4**');
-    await interaction.editReply({ embeds:[embed], components:[colorButtons()] }).catch(()=>null);
-    const message=await interaction.fetchReply().catch(()=>null);
-    if (!message) return;
+    embed.setImage(null).setDescription('كرر ترتيب الألوان بالضغط على أسمائها.\n\nالتقدم: **0 / 4**');
+    await message.edit({embeds:[embed],components:[colorButtons()],attachments:[]}).catch(()=>null);
     let progress=0;
-    const collector=message.createMessageComponentCollector({ time:60000, filter:(button)=>button.user.id===interaction.user.id && button.customId.startsWith(`ys_game_memory:${interaction.user.id}:`) });
+    const collector=message.createMessageComponentCollector({ time:60000, filter:(button)=>button.user.id===user.id && button.customId.startsWith(`ys_game_memory:${user.id}:`) });
     collector.on('collect', async (button)=>{
-        const chosen=button.customId.split(':')[2];
+        const chosen=Number(button.customId.split(':')[2]);
         if (chosen!==sequence[progress]) {
-            embed.setDescription(`التسلسل الصحيح كان: ${colorNames}\n\nقريب! جرّب مرة ثانية.`);
+            embed.setDescription(`التسلسل الصحيح كان: ${sequence.map((index)=>colors[index].name).join(' ← ')}\n\nقريب! جرّب مرة ثانية.`);
             await button.update({ embeds:[embed], components:[] });
             collector.stop('finished'); return;
         }
@@ -1395,87 +1431,86 @@ async function startMemoryGame(interaction) {
         embed.setDescription(`ممتاز، كمل التسلسل.\n\nالتقدم: **${progress} / 4**`);
         await button.update({ embeds:[embed], components:[colorButtons()] });
     });
-    collector.on('end',async(_,reason)=>{ if(reason==='time'){embed.setDescription(`انتهى وقت اللعبة. التسلسل كان: ${colorNames}`); await interaction.editReply({embeds:[embed],components:[]}).catch(()=>{});} });
+    collector.on('end',async(_,reason)=>{ if(reason==='time'){embed.setDescription(`انتهى وقت اللعبة. التسلسل كان: ${sequence.map((index)=>colors[index].name).join(' ← ')}`); await message.edit({embeds:[embed],components:[]}).catch(()=>{});} });
+}
+
+function respondGameStatus(target, content) {
+    return typeof target.update === 'function' ? target.update({content,embeds:[],components:[]}) : target.reply(content);
+}
+
+async function launchGameTarget(target, gameId, categoryId) {
+    const guild=target.guild;
+    const user=target.user||target.author;
+    const channelId=target.channelId||target.channel?.id;
+    if (!guild) return respondGameStatus(target,'الألعاب متاحة داخل السيرفر فقط.');
+    const settings=await loadGuildSettings(guild.id);
+    const advanced=settings.advancedSettings||{};
+    const game=GAME_OPTIONS.find((item)=>item.id===gameId);
+    if (advanced.gamesEnabled===false) return respondGameStatus(target,'الألعاب متوقفة من لوحة تحكم السيرفر.');
+    if (!game||advanced[game.flag]===false||!game.categories.includes(categoryId)) return respondGameStatus(target,'هذه اللعبة غير مفعّلة أو غير متاحة بهذا القسم.');
+    const allowedChannels=String(advanced.gameChannelIds||'').split(/[\s,]+/).filter(Boolean);
+    if (allowedChannels.length&&!allowedChannels.includes(channelId)) return respondGameStatus(target,`الألعاب متاحة في: ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`);
+    const cooldownMs=Math.max(0,Number(advanced.gamesCooldownSeconds??8))*1000;
+    const cooldownKey=`${guild.id}:${user.id}`;
+    const remaining=cooldownMs-(Date.now()-(gameCooldowns.get(cooldownKey)||0));
+    if (remaining>0) return respondGameStatus(target,`استنى ${Math.ceil(remaining/1000)} ثواني قبل ما تبدأ لعبة ثانية.`);
+    const startedAt=Date.now();gameCooldowns.set(cooldownKey,startedAt);
+    if(cooldownMs){const timer=setTimeout(()=>{if(gameCooldowns.get(cooldownKey)===startedAt)gameCooldowns.delete(cooldownKey);},cooldownMs);timer.unref?.();}
+    const group=categoryId==='group';
+    if(game.id==='memory')return startMemoryGame(target);
+    if(game.id==='ttt')return startTicTacToe(target);
+    if(game.id==='rps'){
+        const choices=[['rock','حجر','🪨'],['paper','ورقة','📄'],['scissors','مقص','✂️']];
+        const row=new ActionRowBuilder().addComponents(choices.map(([id,name,emoji])=>new ButtonBuilder().setCustomId(`ys_game_rps:${user.id}:${id}`).setLabel(name).setEmoji(emoji).setStyle(ButtonStyle.Secondary)));
+        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('حجر ورقة مقص').setDescription('اختار حركتك، والبوت يلعب ضدك.');
+        return deliverGamePayload(target,{embeds:[embed],components:[row]});
+    }
+    if(game.id==='dice'){
+        const row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ys_game_dice:${user.id}:low`).setLabel('أتوقع 1–3').setStyle(ButtonStyle.Primary),new ButtonBuilder().setCustomId(`ys_game_dice:${user.id}:high`).setLabel('أتوقع 4–6').setStyle(ButtonStyle.Success));
+        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('تحدي النرد').setDescription('توقّع نتيجة رمية النرد: منخفض (1–3) أو مرتفع (4–6).');
+        return deliverGamePayload(target,{embeds:[embed],components:[row]});
+    }
+    if(game.id==='trivia'){
+        const q=randomGameItem([{prompt:'ما أكبر كوكب في المجموعة الشمسية؟',choices:['الأرض','المشتري','المريخ','زحل'],answer:'المشتري'},{prompt:'كم عدد أضلاع الشكل السداسي؟',choices:['5','6','7','8'],answer:'6'},{prompt:'ما عاصمة اليابان؟',choices:['سيول','بكين','طوكيو','بانكوك'],answer:'طوكيو'},{prompt:'ما الغاز الذي تمتصه النباتات من الهواء؟',choices:['الأكسجين','الهيليوم','ثاني أكسيد الكربون','الهيدروجين'],answer:'ثاني أكسيد الكربون'},{prompt:'كم دقيقة في ساعتين ونصف؟',choices:['120','140','150','180'],answer:'150'}]);
+        return questionGame(target,'معلومات عامة',q.prompt,q.choices,q.answer,{group});
+    }
+    if(game.id==='picture'){
+        const gallery=[['moon','القمر'],['rocket','الصاروخ'],['crown','التاج'],['ball','كرة القدم'],['cat','القطة'],['pizza','البيتزا'],['robot','الروبوت'],['tree','الشجرة']];
+        const chosen=randomGameItem(gallery),choices=[chosen[1],...gallery.filter((item)=>item[0]!==chosen[0]).sort(()=>Math.random()-.5).slice(0,3).map((item)=>item[1])].sort(()=>Math.random()-.5);
+        return questionGame(target,'خمّن الرسمة','شو الشيء اللي بتمثله الرسمة؟',choices,chosen[1],{group,artwork:drawGameCard('picture',chosen[0])});
+    }
+    if(game.id==='difference'){
+        const artInfo={side:Math.floor(Math.random()*2),index:Math.floor(Math.random()*9)};
+        const answer=artInfo.side===0?'A':'B';
+        return questionGame(target,'اكتشف الاختلاف','أي لوحة فيها الشكل المختلف؟ أسرع إجابة صحيحة تفوز.', ['A','B'],answer,{group,artwork:drawGameCard('difference',artInfo)});
+    }
+    if(game.id==='scramble'){
+        const word=randomGameItem([{word:'كوكب',choices:['كوكب','مكتب','مركب','كوبك']},{word:'روبوت',choices:['روبوت','ربوتو','روبوب','بوتر']},{word:'مجرة',choices:['مجرة','مجرد','مرجة','مجره']},{word:'سحابة',choices:['سحابة','سباحة','سحارة','ساحة']}]);
+        return questionGame(target,'ترتيب الحروف',`رتّب الحروف لتكتشف الكلمة:\n\n# ${Array.from(word.word).reverse().join('  ')}`,word.choices,word.word,{group});
+    }
+    if(game.id==='riddle'){
+        const q=randomGameItem([{prompt:'له أسنان كثيرة لكنه لا يعض، ما هو؟',choices:['المشط','التمساح','المفتاح','المنشار'],answer:'المشط'},{prompt:'كلما أخذت منه كبر، ما هو؟',choices:['الحفرة','العمر','الكتاب','الظل'],answer:'الحفرة'},{prompt:'يكتب ولا يقرأ، ما هو؟',choices:['القلم','الكتاب','الطالب','المدرسة'],answer:'القلم'},{prompt:'ما الشيء الذي له عين ولا يرى؟',choices:['الإبرة','العاصفة','الكاميرا','السمكة'],answer:'الإبرة'}]);
+        return questionGame(target,'لغز سريع',q.prompt,q.choices,q.answer,{group});
+    }
+    if(game.id==='math'){
+        const a=2+Math.floor(Math.random()*18),b=2+Math.floor(Math.random()*18),answer=a+b,choices=[answer,answer+2,answer-3,answer+5].sort(()=>Math.random()-.5).map(String);
+        return questionGame(target,'الحساب السريع',`كم ناتج **${a} + ${b}**؟`,choices,String(answer),{group});
+    }
+    if(game.id==='emoji'){
+        const q=randomGameItem([{picture:'🚰  +  🌹',answer:'ماء الورد',choices:['ماء الورد','شاي بالنعناع','قهوة عربية','عصير تفاح']},{picture:'🧊  +  🍵',answer:'شاي مثلج',choices:['شاي مثلج','حليب ساخن','قهوة سادة','عصير برتقال']},{picture:'☀️  +  🌻',answer:'عباد الشمس',choices:['عباد الشمس','قمر كامل','حديقة ليلية','زهرة الثلج']},{picture:'🐝  +  🍯',answer:'عسل النحل',choices:['عسل النحل','خبز بالعسل','حليب النحل','سكر بني']}]);
+        return questionGame(target,'لغز الإيموجي',`# ${q.picture}\n\nما العبارة المقصودة؟`,q.choices,q.answer,{group});
+    }
 }
 
 async function launchSelectedGame(interaction) {
-    if (!interaction.guild) return interaction.update({ content:'الألعاب متاحة داخل السيرفر فقط.', embeds:[], components:[] });
-    const settings=await loadGuildSettings(interaction.guild.id);
-    const advanced=settings.advancedSettings || {};
-    if (advanced.gamesEnabled===false) return interaction.update({ content:'الألعاب متوقفة من لوحة تحكم السيرفر.', embeds:[], components:[] });
-    const game=GAME_OPTIONS.find((item)=>item.id===interaction.values[0]);
-    if (!game || advanced[game.flag]===false) return interaction.update({ content:'هذه اللعبة غير مفعّلة حاليًا.', embeds:[], components:[] });
-    const allowedChannels=String(advanced.gameChannelIds || '').split(/[\s,]+/).filter(Boolean);
-    if (allowedChannels.length && !allowedChannels.includes(interaction.channelId)) return interaction.update({ content:`الألعاب متاحة في: ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`, embeds:[], components:[] });
-    const cooldownMs=Math.max(0,Number(advanced.gamesCooldownSeconds ?? 8))*1000;
-    const cooldownKey=`${interaction.guild.id}:${interaction.user.id}`;
-    const remaining=cooldownMs-(Date.now()-(gameCooldowns.get(cooldownKey)||0));
-    if (remaining>0) return interaction.update({ content:`استنى ${Math.ceil(remaining/1000)} ثواني قبل ما تبدأ لعبة ثانية.`, embeds:[], components:[] });
-    const startedAt=Date.now();
-    gameCooldowns.set(cooldownKey,startedAt);
-    if (cooldownMs) {
-        const cooldownTimer=setTimeout(()=>{if(gameCooldowns.get(cooldownKey)===startedAt)gameCooldowns.delete(cooldownKey);},cooldownMs);
-        cooldownTimer.unref?.();
-    }
+    const [,categoryId,ownerId]=interaction.customId.split(':');
+    if(interaction.user.id!==ownerId)return interaction.reply({content:'اختار صاحب القائمة اللعبة. افتح /games لبدء قائمتك.',ephemeral:true});
+    return launchGameTarget(interaction,interaction.values[0],categoryId);
+}
 
-    if (game.id==='memory') return startMemoryGame(interaction);
-    if (game.id==='ttt') return startTicTacToe(interaction);
-    if (game.id==='rps') {
-        const choices=[['rock','حجر','🪨'],['paper','ورقة','📄'],['scissors','مقص','✂️']];
-        const row=new ActionRowBuilder().addComponents(choices.map(([id,name,emoji])=>new ButtonBuilder().setCustomId(`ys_game_rps:${interaction.user.id}:${id}`).setLabel(name).setEmoji(emoji).setStyle(ButtonStyle.Secondary)));
-        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('✊ حجر ورقة مقص').setDescription('اختار حركتك، والبوت يلعب ضدك.');
-        return interaction.update({embeds:[embed],components:[row]});
-    }
-    if (game.id==='dice') {
-        const row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ys_game_dice:${interaction.user.id}:low`).setLabel('أتوقع 1–3').setStyle(ButtonStyle.Primary),new ButtonBuilder().setCustomId(`ys_game_dice:${interaction.user.id}:high`).setLabel('أتوقع 4–6').setStyle(ButtonStyle.Success));
-        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('🎲 تحدي النرد').setDescription('توقّع نتيجة رمية النرد: منخفض (1–3) أو مرتفع (4–6).');
-        return interaction.update({embeds:[embed],components:[row]});
-    }
-
-    if (game.id==='trivia') {
-        const q=randomGameItem([
-            {prompt:'ما أكبر كوكب في المجموعة الشمسية؟',choices:['الأرض','المشتري','المريخ','زحل'],answer:'المشتري'},
-            {prompt:'كم عدد أضلاع الشكل السداسي؟',choices:['5','6','7','8'],answer:'6'},
-            {prompt:'ما عاصمة اليابان؟',choices:['سيول','بكين','طوكيو','بانكوك'],answer:'طوكيو'},
-            {prompt:'ما الغاز الذي تمتصه النباتات من الهواء؟',choices:['الأكسجين','الهيليوم','ثاني أكسيد الكربون','الهيدروجين'],answer:'ثاني أكسيد الكربون'},
-            {prompt:'كم دقيقة في ساعتين ونصف؟',choices:['120','140','150','180'],answer:'150'}
-        ]);
-        return questionGame(interaction,'🌍 معلومات عامة',q.prompt,q.choices,q.answer);
-    }
-    if (game.id==='image') {
-        const gallery=[['moon','القمر'],['rocket','الصاروخ'],['crown','التاج'],['football','كرة القدم'],['cat','القطة'],['pizza','البيتزا'],['robot','الروبوت'],['tree','الشجرة']];
-        const chosen=randomGameItem(gallery);
-        const choices=[chosen[1],...gallery.filter((item)=>item[0]!==chosen[0]).sort(()=>Math.random()-.5).slice(0,3).map((item)=>item[1])].sort(()=>Math.random()-.5);
-        return questionGame(interaction,'🖼️ خمّن الصورة','شو الشيء اللي بتمثله رسمة YS؟',choices,chosen[1],chosen[0]);
-    }
-    if (game.id==='scramble') {
-        const word=randomGameItem([{word:'كوكب',choices:['كوكب','مكتب','مركب','كوبك']},{word:'روبوت',choices:['روبوت','ربوتو','روبوب','بوتر']},{word:'مجرة',choices:['مجرة','مجرد','مرجة','مجره']},{word:'سحابة',choices:['سحابة','سباحة','سحارة','ساحة']}]);
-        const letters=Array.from(word.word).reverse().join('  ');
-        return questionGame(interaction,'🔤 ترتيب الحروف',`رتّب الحروف لتكتشف الكلمة:\n\n# ${letters}`,word.choices,word.word);
-    }
-    if (game.id==='riddle') {
-        const q=randomGameItem([
-            {prompt:'له أسنان كثيرة لكنه لا يعض، ما هو؟',choices:['المشط','التمساح','المفتاح','المنشار'],answer:'المشط'},
-            {prompt:'كلما أخذت منه كبر، ما هو؟',choices:['الحفرة','العمر','الكتاب','الظل'],answer:'الحفرة'},
-            {prompt:'يكتب ولا يقرأ، ما هو؟',choices:['القلم','الكتاب','الطالب','المدرسة'],answer:'القلم'},
-            {prompt:'ما الشيء الذي له عين ولا يرى؟',choices:['الإبرة','العاصفة','الكاميرا','السمكة'],answer:'الإبرة'}
-        ]);
-        return questionGame(interaction,'🧩 لغز سريع',q.prompt,q.choices,q.answer);
-    }
-    if (game.id==='math') {
-        const a=2+Math.floor(Math.random()*18), b=2+Math.floor(Math.random()*18), answer=a+b;
-        const choices=[answer,answer+2,answer-3,answer+5].sort(()=>Math.random()-.5).map(String);
-        return questionGame(interaction,'⚡ الحساب السريع',`كم ناتج **${a} + ${b}**؟`,choices,String(answer));
-    }
-    if (game.id==='emoji') {
-        const q=randomGameItem([
-            {picture:'🚰  +  🌹',answer:'ماء الورد',choices:['ماء الورد','شاي بالنعناع','قهوة عربية','عصير تفاح']},
-            {picture:'🧊  +  🍵',answer:'شاي مثلج',choices:['شاي مثلج','حليب ساخن','قهوة سادة','عصير برتقال']},
-            {picture:'☀️  +  🌻',answer:'عباد الشمس',choices:['عباد الشمس','قمر كامل','حديقة ليلية','زهرة الثلج']},
-            {picture:'🐝  +  🍯',answer:'عسل النحل',choices:['عسل النحل','خبز بالعسل','حليب النحل','سكر بني']}
-        ]);
-        return questionGame(interaction,'✨ لغز الإيموجي',`# ${q.picture}\n\nما العبارة المقصودة؟`,q.choices,q.answer);
-    }
+async function launchPrefixGame(message,game) {
+    const category=game.categories.includes('group')?'group':game.categories.includes('bot')?'bot':'solo';
+    return launchGameTarget(message,game.id,category);
 }
 
 async function handleGameButton(interaction) {
@@ -1485,9 +1520,14 @@ async function handleGameButton(interaction) {
     }
     if (parts[0]==='ys_game_answer') {
         const [,ownerId,correctIndex,chosenIndex]=parts;
-        if (interaction.user.id!==ownerId) return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
+        if (ownerId!=='all'&&interaction.user.id!==ownerId) return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
         const correct=Number(correctIndex)===Number(chosenIndex);
-        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setColor(correct?0x23b887:0xed6673).setFooter({text:correct?'إجابة صحيحة! أحسنت 🎉':'مو هي الإجابة هالمرة، جرّب لعبة ثانية!'});
+        if(ownerId==='all'&&!correct){
+            const embed=EmbedBuilder.from(interaction.message.embeds[0]).setFooter({text:`${interaction.user.username} جرّب إجابة ثانية — لسا التحدي مفتوح`});
+            const rows=interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(component.customId===interaction.customId))));
+            return interaction.update({embeds:[embed],components:rows});
+        }
+        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setColor(0x23b887).setFooter({text:ownerId==='all'?`أسرع إجابة صحيحة: ${interaction.user.username} 🎉`:'إجابة صحيحة! أحسنت 🎉'});
         const rows=interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(true).setStyle(Number(component.customId.split(':')[3])===Number(correctIndex)?ButtonStyle.Success:ButtonStyle.Secondary))));
         return interaction.update({embeds:[embed],components:rows});
     }
@@ -1593,7 +1633,7 @@ async function getReplyMessages(userId, forcedLanguage) {
 
 const slashEmojiBufferCache = new Map();
 const SLASH_COMMAND_EMOJI = Object.freeze({
-    help: 'ys-info', plan: 'ys-premium', anticrash: 'ys-shield', profile: 'ys-stats', games: 'ys-sparkles',
+    help: 'ys-info', plan: 'ys-premium', anticrash: 'ys-shield', profile: 'ys-stats',
     ticket: 'ys-ticket-open', suggest: 'ys-suggestion', poll: 'ys-poll', warn: 'ys-warning',
     verify: 'ys-shield-check', support: 'ys-support', invites: 'ys-users', embed: 'ys-message'
 });
@@ -1648,7 +1688,8 @@ function addSlashReplyEmoji(interaction) {
 
 // معالجة أوامر السلاش (Interaction)
 client.on('interactionCreate', async (interaction) => {
-    if (interaction.isStringSelectMenu() && interaction.customId === 'ys_games_menu') return launchSelectedGame(interaction);
+    if (interaction.isStringSelectMenu() && interaction.customId === 'ys_games_category') return showGamesCategory(interaction);
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('ys_games_pick:')) return launchSelectedGame(interaction);
     if (interaction.isButton()) {
         if (interaction.customId.startsWith('ys_game_')) return handleGameButton(interaction);
         if (interaction.customId === 'ys_ticket_open') return createTicket(interaction);
@@ -2486,8 +2527,10 @@ client.on('messageCreate', async (message) => {
 
     const content = plainText;
     if (!content.startsWith(settings.commandPrefix)) return;
-    const command = content.slice(settings.commandPrefix.length).trim().toLowerCase();
-    if (!['plan', 'anticrash', 'help', 'support'].includes(command)) return;
+    const commandInput=content.slice(settings.commandPrefix.length).trim().toLowerCase();
+    const command=commandInput.split(/\s+/)[0];
+    const gameCommand=GAME_OPTIONS.find((game)=>game.command===command);
+    if (!['plan', 'anticrash', 'help', 'support', 'games'].includes(command)&&!gameCommand) return;
 
     if (advanced.commandsEnabled === false) return;
     if (advanced.commandsAllowedChannelIds) {
@@ -2516,8 +2559,21 @@ client.on('messageCreate', async (message) => {
     const messages = await getReplyMessages(message.author.id, advanced.commandLanguage);
     if (advanced.logBotCommands) await sendGuildLog(message.guild, settings, `<@${message.author.id}> استخدم الأمر ${command} في <#${message.channel.id}>.`);
 
+    if (command==='games') {
+        await sendGamesMenu(message,settings);
+        if(advanced.commandDeleteAfterUse)await message.delete().catch(()=>{});
+        return;
+    }
+    if (gameCommand) {
+        if(advanced.gamesEnabled===false||advanced[gameCommand.flag]===false){await message.reply('هذه اللعبة متوقفة من لوحة تحكم السيرفر.').catch(()=>{});return;}
+        await launchPrefixGame(message,gameCommand);
+        if(advanced.commandDeleteAfterUse)await message.delete().catch(()=>{});
+        return;
+    }
+
     if (command === 'help') {
-        const sent = await message.reply(`أوامري: ${settings.commandPrefix}plan، ${settings.commandPrefix}anticrash، ${settings.commandPrefix}support، ${settings.commandPrefix}help`);
+        const gameCommands=GAME_OPTIONS.map((game)=>`${settings.commandPrefix}${game.command}`).join('، ');
+        const sent = await message.reply(`أوامري الأساسية: ${settings.commandPrefix}plan، ${settings.commandPrefix}anticrash، ${settings.commandPrefix}support، ${settings.commandPrefix}help، ${settings.commandPrefix}games\nأوامر الألعاب: ${gameCommands}`);
         if (advanced.commandDeleteAfterUse) await message.delete().catch(() => {});
         return sent;
     }
