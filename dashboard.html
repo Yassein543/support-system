@@ -34,6 +34,11 @@
         .dashboard-nav-hint { margin:4px 5px 2px; padding:10px 9px 2px; border-top:1px solid rgba(133,171,194,.12); color:#91a3b2; font-size:.72rem; line-height:1.6; }
         .guild-list-section { scroll-margin-top:20px; margin:0 0 22px; }
         .guild-list-section h3 { margin:0 0 14px; }
+        .server-management-layout { display:grid; grid-template-columns:minmax(245px,.36fr) minmax(0,1fr); align-items:start; gap:18px; }
+        .server-management-layout[data-view="list"] { grid-template-columns:minmax(0,1fr); }
+        .server-settings-back { display:inline-flex; min-height:40px; align-items:center; justify-content:center; gap:7px; padding:7px 12px; border:1px solid rgba(71,215,194,.24); border-radius:10px; background:rgba(39,136,128,.11); color:#a6f0e3; font:800 .84rem 'Tajawal',sans-serif; cursor:pointer; }
+        .server-settings-back:hover, .server-settings-back:focus-visible { border-color:rgba(71,215,194,.52); background:rgba(39,136,128,.2); outline:none; }
+        .server-settings-back svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
         @media(max-width:780px){.dashboard-workspace{grid-template-columns:minmax(0,1fr);gap:14px}.dashboard-side-nav{position:sticky;top:8px;z-index:30;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:8px;backdrop-filter:blur(14px)}.dashboard-side-nav-label,.dashboard-nav-hint{display:none}.dashboard-side-nav a,.dashboard-side-nav button{justify-content:center;gap:6px;min-height:42px;padding:7px 5px;font-size:.76rem}.dashboard-nav-icon{width:23px;height:23px;flex-basis:23px;font-size:.9rem}.dashboard-container{margin-top:18px}}
         @media(max-width:480px){body{padding:10px}.dashboard-brand{position:sticky;top:0;z-index:40;gap:8px;padding:8px 9px;backdrop-filter:blur(16px)}.dashboard-brand-status{display:none}.dashboard-back{min-height:42px;padding:6px 9px;font-size:.76rem}.dashboard-side-nav{top:62px;grid-template-columns:repeat(3,minmax(0,1fr));padding:6px}.dashboard-side-nav a,.dashboard-side-nav button{flex-direction:row;gap:5px;min-height:48px;font-size:.74rem}.dashboard-side-nav .dashboard-nav-icon{width:21px;height:21px;flex-basis:21px}.dashboard-nav-text{display:none}.dashboard-nav-short{display:inline;white-space:nowrap}}
         .user-header { display: flex; align-items: center; gap: 20px; background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
@@ -100,7 +105,20 @@
         .settings-actions { position: sticky; top: 10px; z-index: 20; display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin: 0 0 18px; padding: 12px; border: 1px solid #2a3b4f; border-radius: 12px; background: rgba(17,30,46,.96); backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
         .settings-save { border: 0; border-radius: 9px; padding: 11px 18px; background: linear-gradient(135deg,#1bb49f,#128c83); color: #fff; font: 800 .95rem 'Tajawal',sans-serif; cursor: pointer; }
         .settings-save:disabled { opacity: .55; cursor: wait; }
+        .advanced-security-jump { min-height: 42px; padding: 9px 13px; border: 1px solid rgba(91,216,195,.28); border-radius: 9px; background: rgba(31,164,146,.12); color: #9cebdd; font: 800 .9rem 'Tajawal',sans-serif; cursor: pointer; }
+        .advanced-security-jump:hover { background: rgba(31,164,146,.2); }
         .settings-status { min-height: 24px; color: #71e0cc; }
+        .settings-status[data-dirty="true"] { color: #ffd27b !important; }
+        .settings-status[data-saved="true"] { color: #71e0cc !important; }
+        .dashboard-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:0 0 16px; }
+        .dashboard-summary-card { min-width:0; padding:15px 16px; border:1px solid rgba(113,164,190,.18); border-radius:13px; background:linear-gradient(145deg,rgba(20,40,58,.9),rgba(11,24,38,.94)); }
+        .dashboard-summary-card small { display:block; margin-bottom:6px; color:#91a8b7; font-size:.76rem; }
+        .dashboard-summary-card strong { display:block; overflow:hidden; color:#edf9fa; font-size:1rem; text-overflow:ellipsis; white-space:nowrap; }
+        .dashboard-summary-card[data-state="ready"] strong { color:#72e0cb; }
+        .dashboard-summary-card[data-state="loading"] strong { color:#ffd27b; }
+        .settings-new-badge { display:inline-flex; align-items:center; margin-inline-start:auto; padding:3px 8px; border:1px solid rgba(71,215,194,.28); border-radius:999px; background:rgba(31,164,146,.12); color:#83e5d5; font-size:.68rem; font-weight:900; white-space:nowrap; }
+        .settings-result-category { display:block; flex:1 0 100%; color:#70cfc2; font-size:.7rem; font-weight:700; }
+        .settings-result-category[hidden] { display:none; }
         .guild-plan-status { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-inline-start:auto; color:#c5d5df; font-size:.88rem; }
         .guild-plan-chip { padding:6px 12px; border:1px solid rgba(71,215,194,.3); border-radius:999px; background:rgba(31,164,146,.12); color:#8ce7d7; font-weight:900; }
         .guild-plan-upgrade { color:#8ce7d7; font-weight:800; text-decoration:none; }
@@ -119,7 +137,7 @@
         .settings-search-count { min-width: 68px; color: #91a3b2; font-size: .78rem; text-align: end; }
         .advanced-field[hidden], .advanced-group[hidden] { display: none !important; }
         .advanced-groups { display: grid; gap: 16px; margin-top: 18px; }
-        .advanced-group { padding: 16px; border: 1px solid #26384a; border-radius: 12px; background: rgba(9,20,33,.55); }
+        .advanced-group { scroll-margin-top:90px; padding: 16px; border: 1px solid #26384a; border-radius: 12px; background: rgba(9,20,33,.55); }
         .advanced-group summary { margin: 0; color: #82dfd2; font-size: .98rem; font-weight: 800; cursor: pointer; }
         .advanced-group[open] summary { margin-bottom: 13px; }
         .advanced-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(205px,1fr)); gap: 12px; }
@@ -215,6 +233,10 @@
         .advanced-settings h4 { color: #eff9fa; font-size: 1.16rem; }
         .settings-search { border-color: rgba(113,164,190,.24); border-radius: 12px; background: rgba(6,16,28,.7); }
         .advanced-groups { gap: 12px; }
+        .settings-load-card { display:flex; min-height:112px; align-items:center; justify-content:center; gap:12px; padding:18px; border:1px solid rgba(113,164,190,.18); border-radius:14px; background:rgba(8,20,32,.7); color:#a9c0cb; text-align:center; }
+        .settings-load-spinner { width:22px; height:22px; flex:0 0 22px; border:2px solid rgba(113,164,190,.28); border-top-color:#63dfcb; border-radius:50%; animation:settings-spin .8s linear infinite; }
+        @keyframes settings-spin { to { transform:rotate(360deg); } }
+        .settings-load-card button { min-height:40px; padding:8px 13px; border:1px solid rgba(71,215,194,.32); border-radius:9px; background:rgba(31,164,146,.13); color:#a6f0e3; font:800 .85rem 'Tajawal',sans-serif; cursor:pointer; }
         .advanced-group { border-color: rgba(113,164,190,.17); border-radius: 14px; background: linear-gradient(145deg,rgba(15,30,46,.88),rgba(9,20,33,.88)); transition: border-color .18s ease,background .18s ease; }
         .advanced-group[open] { border-color: rgba(71,215,194,.25); background: linear-gradient(145deg,rgba(16,34,49,.96),rgba(9,20,33,.96)); }
         .advanced-group summary { display: flex; min-height: 27px; align-items: center; gap: 10px; font-size: .96rem; }
@@ -224,8 +246,8 @@
         .advanced-field { color: #e3edf1; }
         .advanced-field input:not([type="checkbox"]):focus, .advanced-field select:focus, .advanced-field textarea:focus, .setting-prefix input:focus { border-color: rgba(71,215,194,.62); box-shadow: 0 0 0 3px rgba(71,215,194,.09); }
         .advanced-field-help { color: #9baebb; }
-        .server-backup-tool { border-color: rgba(71,215,194,.2); border-radius: 15px; }
-        @media(max-width:780px) { .dashboard-workspace { gap: 15px; } .dashboard-main { gap: 14px; } .dashboard-side-nav { border-color: rgba(113,164,190,.25); box-shadow: 0 10px 30px rgba(0,0,0,.28); } .server-settings-panel,.guild-list-section,.personal-settings { padding: 17px; } }
+        .server-backup-tool { scroll-margin-top:90px; border-color: rgba(71,215,194,.2); border-radius: 15px; }
+        @media(max-width:780px) { .dashboard-workspace { gap: 15px; } .dashboard-main { gap: 14px; } .dashboard-side-nav { border-color: rgba(113,164,190,.25); box-shadow: 0 10px 30px rgba(0,0,0,.28); } .server-management-layout { grid-template-columns:minmax(0,1fr); gap:12px; } .server-settings-panel,.guild-list-section,.personal-settings { padding: 17px; } }
         @media(max-width:480px) { .dashboard-brand-status { padding: 6px 8px; font-size: .62rem; } .dashboard-brand-copy strong { font-size: .94rem; } .user-header { min-height: 96px; gap: 13px; padding: 16px; } .user-avatar { width: 62px; height: 62px; } .guilds-grid { gap: 11px; } .guild-card { min-height: 174px; padding: 17px 13px; } .advanced-group { padding: 13px; } .settings-actions { gap: 9px; } }
         /* Mobile dashboard: keep each panel inside the viewport and make controls easy to tap. */
         @media (max-width: 780px) {
@@ -238,10 +260,10 @@
             .guild-list-section, .personal-settings, .settings-actions, .advanced-group, .advanced-field { min-width: 0; }
             .dashboard-container { width: 100%; margin: 12px auto 28px; }
             .dashboard-workspace { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; }
-            .dashboard-side-nav { position: sticky; top: 6px; width: 100%; box-sizing: border-box; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; padding: 7px; }
-            .dashboard-side-nav a, .dashboard-side-nav button { min-width: 0; min-height: 61px; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 3px; text-align: center; font-size: .76rem; line-height: 1.25; }
-            .dashboard-side-nav a > span:last-child, .dashboard-side-nav button > span:last-child { display: block; max-width: 100%; overflow-wrap: anywhere; }
-            .dashboard-nav-icon { width: 23px; height: 23px; flex-basis: 23px; }
+            .dashboard-side-nav { position: sticky; top: 6px; z-index: 30; display:flex; width:100%; box-sizing:border-box; flex-wrap:nowrap; align-items:stretch; gap:6px; padding:7px; overflow-x:auto; overscroll-behavior-inline:contain; -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
+            .dashboard-side-nav a, .dashboard-side-nav button { flex:0 0 auto; min-width:104px; min-height:48px; flex-direction:row; justify-content:center; gap:6px; padding:6px 9px; text-align:center; white-space:nowrap; font-size:.76rem; line-height:1.2; }
+            .dashboard-side-nav a > span:last-child, .dashboard-side-nav button > span:last-child { display:block; max-width:none; overflow-wrap:normal; }
+            .dashboard-nav-icon { width:22px; height:22px; flex:0 0 22px; }
             .dashboard-main { gap: 12px; }
             .user-header { min-height: 88px; gap: 12px; padding: 14px; }
             .user-header > div { min-width: 0; }
@@ -252,9 +274,16 @@
             .guild-card { width: 100%; min-width: 0; min-height: 0; padding: 16px 13px; }
             .guild-card h4 { max-width: 100%; overflow-wrap: anywhere; }
             .btn-configure, .guild-card .btn-upgrade { width: 100%; box-sizing: border-box; }
-            .settings-actions { position: sticky; top: auto; bottom: 8px; z-index: 35; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 5px 10px; padding: 8px; background: rgba(11,25,39,.97); box-shadow: 0 8px 30px rgba(0,0,0,.38); }
-            .settings-save { grid-column: 1; grid-row: 1 / span 2; width: 100%; min-height: 48px; }
-            .settings-status { grid-column: 2; grid-row: 1; max-width: 45vw; overflow-wrap: anywhere; font-size: .72rem; }
+            .server-management-layout[data-view="settings"] #guild-list { display:none; }
+            .server-settings-heading { justify-content:flex-start; }
+            .server-settings-heading h3 { flex:1 1 auto; }
+            .server-settings-heading #selected-guild-name { flex:0 0 auto; margin-inline-start:0; }
+            body:has(#server-settings-panel:not([hidden])) { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+            .settings-actions { position: static; inset: auto; z-index: 1; display: grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; gap: 8px; margin: 12px 0 18px; padding: 10px; border-color:rgba(71,215,194,.3); background:rgba(7,19,31,.97); box-shadow:0 8px 22px rgba(0,0,0,.25); }
+            .settings-save { width: 100%; min-width:0; min-height: 46px; padding-inline:8px; font-size:.84rem; }
+            .advanced-security-jump { min-width:0; min-height:46px; padding:7px 8px; font-size:.76rem; }
+            .settings-status { grid-column:1/-1; max-width:100%; min-height:0; overflow-wrap:anywhere; font-size:.76rem; }
+            .settings-actions .guild-plan-status { display:none; }
             .guild-plan-status { width: 100%; min-width: 0; margin-inline-start: 0; justify-content: space-between; gap: 7px; }
             .settings-actions .guild-plan-status { grid-column: 1 / -1; grid-row: 3; }
             .guild-plan-chip { max-width: 55%; overflow-wrap: anywhere; }
@@ -284,6 +313,8 @@
             .server-backup-success-like { margin-inline-start: auto; }
             .embed-builder-preview { width: 100%; box-sizing: border-box; }
         }
+        @media(max-width:480px) { .dashboard-side-nav { top:62px; } }
+        @media(max-width:620px) { .dashboard-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } .dashboard-summary-card { padding:11px 12px; } .dashboard-summary-card:first-child { grid-column:1/-1; } .dashboard-summary-card strong { font-size:.9rem; } }
         @media (max-width: 390px) {
             body { padding: 8px; }
             .dashboard-brand { gap: 8px; padding-inline: 9px; }
@@ -291,7 +322,7 @@
             .dashboard-brand-copy strong { font-size: .88rem; }
             .dashboard-brand-status { gap: 5px; padding: 5px 7px; font-size: .58rem; }
             .dashboard-side-nav { gap: 4px; padding: 6px; }
-            .dashboard-side-nav a, .dashboard-side-nav button { min-height: 58px; font-size: .7rem; }
+            .dashboard-side-nav a, .dashboard-side-nav button { min-height: 48px; font-size: .7rem; }
             .dashboard-side-nav .dashboard-nav-icon { width: 21px; height: 21px; flex-basis: 21px; }
             .guild-plan-status { flex-wrap: wrap; }
             .guild-plan-chip { max-width: 100%; }
@@ -317,11 +348,15 @@
             </div>
 
             <div class="dashboard-workspace">
-                <nav class="dashboard-side-nav" aria-label="التنقل في لوحة التحكم">
+                <nav class="dashboard-side-nav" id="dashboard-nav" aria-label="التنقل في لوحة التحكم">
                     <span class="dashboard-side-nav-label">القائمة</span>
                     <a href="#personal-settings"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span><span class="dashboard-nav-text">إعداداتي الشخصية</span><span class="dashboard-nav-short">شخصي</span></a>
                     <a href="#guild-list"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg></span><span class="dashboard-nav-text">سيرفراتي</span><span class="dashboard-nav-short">السيرفرات</span></a>
                     <button id="dashboard-nav-server-settings" type="button" disabled title="اختر سيرفرًا أولًا"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg></span><span class="dashboard-nav-text">إعدادات السيرفر</span><span class="dashboard-nav-short">الإعدادات</span></button>
+                    <button class="dashboard-group-nav" type="button" data-dashboard-jump="protection" disabled><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="dashboard-nav-text">الحماية</span><span class="dashboard-nav-short">الحماية</span></button>
+                    <button class="dashboard-group-nav" type="button" data-dashboard-jump="welcome" disabled><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 1.9 5.8L20 11l-6.1 2.1L12 19l-1.9-5.9L4 11l6.1-2.2L12 3Z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg></span><span class="dashboard-nav-text">الترحيب</span><span class="dashboard-nav-short">الترحيب</span></button>
+                    <button class="dashboard-group-nav" type="button" data-dashboard-jump="tickets" disabled><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6V6a2 2 0 0 1 2-2Z"/><path d="M12 7v2m0 3v2m0 3v1"/></svg></span><span class="dashboard-nav-text">التذاكر</span><span class="dashboard-nav-short">التذاكر</span></button>
+                    <button class="dashboard-group-nav" type="button" data-dashboard-jump="backups" disabled><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM3 4h18v3H3z"/><path d="M9 11h6m-6 3h6"/></svg></span><span class="dashboard-nav-text">النسخ الاحتياطي</span><span class="dashboard-nav-short">النسخ</span></button>
                     <div class="dashboard-nav-hint" id="dashboard-nav-hint">اختر سيرفرًا لعرض إعداداته</div>
                 </nav>
                 <main class="dashboard-main">
@@ -346,6 +381,7 @@
                 </div>
             </section>
 
+            <div id="server-management-layout" class="server-management-layout" data-view="list">
             <section id="guild-list" class="guild-list-section" aria-labelledby="guild-list-title">
                 <h3 id="guild-list-title">سيرفراتك التي تديرها:</h3>
                 <div id="guilds-container" class="guilds-grid"></div>
@@ -353,12 +389,19 @@
 
             <section id="server-settings-panel" class="server-settings-panel" aria-labelledby="server-settings-title" hidden>
                 <div class="server-settings-heading">
+                    <button id="back-to-guild-list" class="server-settings-back" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>قائمة السيرفرات</span></button>
                     <h3 id="server-settings-title">إعدادات السيرفر</h3>
                     <span id="selected-guild-name" class="status-badge enabled"></span>
                 </div>
+                <div class="dashboard-summary" aria-label="ملخص السيرفر">
+                    <article class="dashboard-summary-card" id="summary-bot-card" data-state="loading"><small>حالة إعدادات البوت</small><strong id="summary-bot-status">بانتظار اختيار سيرفر</strong></article>
+                    <article class="dashboard-summary-card"><small>خطة السيرفر</small><strong id="summary-plan">Free</strong></article>
+                    <article class="dashboard-summary-card"><small>الحمايات المفعّلة</small><strong id="summary-protections">0 مفعّلة</strong></article>
+                </div>
                 <div class="settings-actions">
                     <button id="save-guild-settings" class="settings-save" type="button">حفظ الإعدادات</button>
-                    <span id="guild-settings-status" class="settings-status" role="status" aria-live="polite"></span>
+                    <button id="jump-advanced-security" class="advanced-security-jump" type="button">🛡️ الحماية المتقدمة</button>
+                    <span id="guild-settings-status" class="settings-status" role="status" aria-live="polite" data-dirty="false"></span>
                     <div class="guild-plan-status"><span>خطة السيرفر</span><strong id="guild-plan-chip" class="guild-plan-chip">Free</strong><a class="guild-plan-upgrade" href="/#pricing">عرض الباقات</a><button id="refresh-guild-plan" class="guild-plan-refresh" type="button">تحديث الخطة</button></div>
                 </div>
                 <p class="settings-note">اختر ما تريد تفعيله. حماية الروابط والسبام تحذف الرسالة المخالفة فقط، وتتطلب صلاحية <b>إدارة الرسائل</b> للبوت. أضف البوت للسيرفر حتى تعمل الحماية.</p>
@@ -397,6 +440,7 @@
                     <p id="server-backup-error" class="server-backup-error" role="alert"></p>
                 </section>
             </section>
+            </div>
 
                 </main>
             </div>
@@ -458,6 +502,13 @@
             autoReplyEnabled:'Enable automatic replies',autoReplyRules:'Automatic reply rules',autoReplyMatchMode:'Trigger matching mode',autoReplyIgnoreChannelIds:'Ignored channel IDs',autoReplyCooldownSeconds:'Reply cooldown (seconds)',autoReplyCaseSensitive:'Case sensitive matching',scheduledAnnouncementEnabled:'Enable scheduled announcements',scheduledAnnouncementChannelId:'Announcement channel ID',scheduledAnnouncementMessage:'Announcement text',scheduledAnnouncementIntervalHours:'Announcement interval (hours)',scheduledAnnouncementTitle:'Announcement title (optional)',scheduledAnnouncementColor:'Announcement color',scheduledAnnouncementImageUrl:'Announcement image URL (optional)',
             antiSpamTimeoutEnabled:'Enable automatic timeout (Basic)',antiSpamTimeoutMinutes:'Automatic timeout duration (minutes)',antiRaidLockdownDurationMinutes:'Raid lockdown duration (minutes, VIP)',commandCooldownSeconds:'Command cooldown (seconds)',commandsEnabled:'Enable text commands',commandsRoleId:'Command access role ID',commandsAllowedChannelIds:'Allowed command channels',commandLanguage:'Command response language',commandDeleteAfterUse:'Delete command after use',antiSpamLimit:'Messages before action',antiSpamWindowSeconds:'Spam detection window (seconds)',antiSpamAction:'Spam action',antiSpamWarning:'Spam warning text',antiSpamIgnoreAdmins:'Ignore administrators',antiSpamIgnoreChannels:'Channels exempt from spam filter',antiLinksBlockInvites:'Block Discord invites',antiLinksBlockExternal:'Block external links',antiLinksAllowedDomains:'Allowed domains',antiLinksWarning:'Link warning text',antiLinksIgnoreChannels:'Channels exempt from link filter',antiLinksIgnoreRoleIds:'Roles exempt from link filter',capsFilterEnabled:'Enable uppercase filter',capsThresholdPercent:'Uppercase percentage threshold',capsMinimumLength:'Minimum message length',capsAction:'Uppercase filter action',duplicateFilterEnabled:'Enable duplicate message filter',duplicateMessageLimit:'Duplicate message limit',duplicateWindowSeconds:'Duplicate detection window (seconds)',mentionSpamEnabled:'Block mention spam',mentionLimit:'Maximum mentions',mentionSpamAction:'Mention spam action',blockedWordsEnabled:'Enable blocked words filter',blockedWords:'Blocked words',blockedWordsAction:'Blocked words action',modLogChannelId:'Moderation log channel ID',logDeletedMessages:'Log deleted messages',logEditedMessages:'Log edited messages',logMemberJoins:'Log member joins',logMemberLeaves:'Log member departures',logModerationActions:'Log moderation actions',logRoleChanges:'Log role changes',logChannelChanges:'Log channel changes',logBotCommands:'Log bot commands',welcomeEnabled:'Enable welcome message',welcomeChannelId:'Welcome channel ID',welcomeMessage:'Welcome message',welcomeRoleId:'New member auto-role ID',welcomeSendDm:'Send welcome DM',welcomeDmMessage:'Welcome DM text',welcomeIgnoreBots:'Ignore bots in welcome',farewellEnabled:'Enable farewell message',farewellChannelId:'Farewell channel ID',farewellMessage:'Farewell message',verificationEnabled:'Enable member verification',verificationRoleId:'Verification role ID',verificationTimeoutMinutes:'Verification timeout (minutes)',verificationMinAccountAgeDays:'Minimum account age (days)',autoRoleEnabled:'Enable automatic role',autoRoleId:'Automatic role ID',antiRaidEnabled:'Enable anti-raid protection',ticketEnabled:'Enable ticket system',ticketPanelChannelId:'Ticket panel channel ID',ticketPanelTitle:'Ticket panel title',ticketPanelDescription:'Ticket panel description',ticketPanelColor:'Ticket panel color',ticketPanelButtonLabel:'Open ticket button text',ticketPanelButtonStyle:'Open ticket button color',ticketPanelButtonEmoji:'Open ticket button emoji',ticketWelcomeMessage:'Ticket welcome message',ticketCloseMessage:'Ticket close message',suggestionEnabled:'Enable suggestions',suggestionChannelId:'Suggestion channel ID',suggestionReviewChannelId:'Suggestion review channel ID',suggestionEmbedTitle:'Suggestion card title',suggestionConfirmationMessage:'Suggestion confirmation message',pollEnabled:'Enable polls',levelSystemEnabled:'Enable level system',autorunBackupEnabled:'Enable scheduled backups',azkarEnabled:'Enable scheduled Adhkar',azkarChannelId:'Adhkar channel ID',azkarMessage:'Adhkar text',azkarIntervalHours:'Adhkar interval (hours)',quranReminderEnabled:'Enable Quran reminder',quranChannelId:'Quran channel ID',quranMessage:'Verse or reading text',quranIntervalHours:'Quran interval (hours)'
         };
+        Object.assign(dashboardEnglishLabels, {
+            gamesEnabled:'Enable the games menu', gameChannelIds:'Allowed game channels', gamesCooldownSeconds:'Cooldown between games (seconds)',
+            gamesTriviaEnabled:'General knowledge quiz', gamesImageGuessEnabled:'Guess the picture', gamesScrambleEnabled:'Word scramble',
+            gamesRiddleEnabled:'Riddles', gamesMathEnabled:'Quick math challenge', gamesMemoryEnabled:'Memory sequence',
+            gamesRpsEnabled:'Rock, paper, scissors', gamesDiceEnabled:'Dice challenge', gamesTicTacToeEnabled:'Tic-tac-toe vs bot',
+            gamesEmojiPuzzleEnabled:'Emoji puzzle'
+        });
         const dashboardLocales = {
             fr: { 'لغة الموقع':'Langue du site','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Chargement du compte et des serveurs Discord... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Choisissez un serveur à gérer','سيرفراتك التي تديرها:':'Serveurs que vous gérez :','إعدادات السيرفر':'Paramètres du serveur','حفظ الإعدادات':'Enregistrer','إعدادات متقدمة — أكثر من 50 خيارًا':'Paramètres avancés — plus de 50 options','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'Les options « Actif » contrôlent le bot. Les options « En cours » sont enregistrées mais ne sont pas encore appliquées.','منع الروابط':'Bloquer les liens','مكافحة السبام':'Anti-spam','إعدادات متقدمة':'Paramètres avancés','يعمل الآن':'Actif','قيد الربط':'En cours','تفعيل التحقق بخطوتين':'Activer l’authentification à deux facteurs','غير مفعّل':'Désactivé','مفعّل':'Activé','إلغاء التحقق بخطوتين':'Désactiver l’authentification à deux facteurs','جاري تحميل الإعدادات...':'Chargement des paramètres...','تم تحميل الإعدادات المحفوظة.':'Paramètres enregistrés chargés.','جاري الحفظ...':'Enregistrement...','انحفظت الإعدادات بنجاح.':'Paramètres enregistrés.','الأوامر والصلاحيات':'Commandes et permissions','الروابط والاستثناءات':'Liens et exceptions','فلاتر الرسائل':'Filtres de messages','سجل الأحداث':'Journal des événements','الترحيب والمغادرة':'Bienvenue et départ','التحقق والرتب':'Vérification et rôles','الإشراف وإعدادات إضافية':'Modération et autres paramètres','الحماية من الغارات':'Protection anti-raid','الدعوات والمكافآت':'Invitations et récompenses','التذاكر والاقتراحات':'Tickets et suggestions','التصويت والمستويات والنسخ الاحتياطي':'Sondages, niveaux et sauvegardes','إلغاء':'Annuler' },
             es: { 'لغة الموقع':'Idioma del sitio','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Cargando tu cuenta y servidores de Discord... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Elige un servidor para administrar','سيرفراتك التي تديرها:':'Servidores que administras:','إعدادات السيرفر':'Ajustes del servidor','حفظ الإعدادات':'Guardar ajustes','إعدادات متقدمة — أكثر من 50 خيارًا':'Ajustes avanzados — más de 50 opciones','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'Las opciones «Activo» controlan el bot. Las opciones «En progreso» se guardan, pero aún no se aplican.','منع الروابط':'Bloquear enlaces','مكافحة السبام':'Antispam','إعدادات متقدمة':'Ajustes avanzados','يعمل الآن':'Activo','قيد الربط':'En progreso','تفعيل التحقق بخطوتين':'Activar autenticación en dos pasos','غير مفعّل':'Desactivado','مفعّل':'Activado','إلغاء التحقق بخطوتين':'Desactivar autenticación en dos pasos','جاري تحميل الإعدادات...':'Cargando ajustes...','تم تحميل الإعدادات المحفوظة.':'Ajustes guardados cargados.','جاري الحفظ...':'Guardando...','انحفظت الإعدادات بنجاح.':'Ajustes guardados correctamente.','الأوامر والصلاحيات':'Comandos y permisos','الروابط والاستثناءات':'Enlaces y excepciones','فلاتر الرسائل':'Filtros de mensajes','سجل الأحداث':'Registro de eventos','الترحيب والمغادرة':'Bienvenida y despedida','التحقق والرتب':'Verificación y roles','الإشراف وإعدادات إضافية':'Moderación y otros ajustes','الحماية من الغارات':'Protección anti-raid','الدعوات والمكافآت':'Invitaciones y recompensas','التذاكر والاقتراحات':'Tickets y sugerencias','التصويت والمستويات والنسخ الاحتياطي':'Encuestas, niveles y copias de seguridad','إلغاء':'Cancelar' },
@@ -468,10 +519,19 @@
         };
         Object.assign(dashboardEnglish, {
             'القائمة':'Navigation',
+            'الألعاب التفاعلية':'Interactive games',
+            'قائمة السيرفرات':'Server list',
             'إعداداتي الشخصية':'Personal settings',
             'سيرفراتي':'My servers',
+            'الحماية':'Protection', 'الترحيب':'Welcome', 'التذاكر':'Tickets', 'النسخ الاحتياطي':'Backups',
+            'حالة إعدادات البوت':'Bot setup status', 'بانتظار اختيار سيرفر':'Choose a server', 'جارٍ تحميل إعدادات البوت':'Loading bot settings', 'إعدادات السيرفر محمّلة':'Server settings loaded', 'خطة السيرفر':'Server plan', 'الحمايات المفعّلة':'Enabled protections', 'مفعّلة':'enabled', 'جديد':'New', 'في تغييرات غير محفوظة':'Unsaved changes', 'الفئة':'Category', 'انحفظت الإعدادات بنجاح.':'Settings saved successfully.', 'تعذر تحميل الإعدادات':'Settings could not be loaded', 'ابحث عن إعداد مثل: التذاكر أو السبام':'Search settings, e.g. tickets or spam',
             'اختر سيرفرًا لعرض إعداداته':'Choose a server to view its settings',
             'انتقل مباشرة إلى إعدادات السيرفر المحدد':'Jump to the selected server settings',
+            'يتم الاتصال بـ Discord وتحميل إعدادات السيرفر...':'Connecting to Discord and loading server settings...',
+            'انتهت مهلة التحميل. جرّب إعادة المحاولة مع اتصال مستقر.':'Loading timed out. Retry with a stable connection.',
+            'انتهت مهلة تحميل إعدادات السيرفر. جرّب إعادة المحاولة.':'Loading server settings timed out. Please retry.',
+            'تعذر تحميل الإعدادات. أعد المحاولة أو حدّث الصفحة.':'Could not load settings. Retry or refresh the page.',
+            'إعادة المحاولة':'Retry',
             'ترحيب الأعضاء':'Member welcome', 'مغادرة الأعضاء':'Member departures',
             'الردود التلقائية':'Automatic replies', 'الإعلانات المجدولة':'Scheduled announcements'
         });
@@ -481,7 +541,18 @@
             if (sameSiteReferrer && history.length > 1) history.back();
             else location.assign('/');
         });
-        document.getElementById('dashboard-nav-server-settings').addEventListener('click', () => document.getElementById('server-settings-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        document.getElementById('dashboard-nav-server-settings').addEventListener('click', () => {
+            const panel = document.getElementById('server-settings-panel');
+            if (!selectedGuild) { document.getElementById('guild-list').scrollIntoView({ behavior:'smooth', block:'start' }); return; }
+            panel.hidden = false;
+            document.getElementById('server-management-layout').dataset.view = 'settings';
+            panel.scrollIntoView({ behavior:'smooth', block:'start' });
+        });
+        document.getElementById('back-to-guild-list').addEventListener('click', () => {
+            document.getElementById('server-settings-panel').hidden = true;
+            document.getElementById('server-management-layout').dataset.view = 'list';
+            document.getElementById('guild-list').scrollIntoView({ behavior:'smooth', block:'start' });
+        });
         const dashboardLanguageSelect = document.getElementById('dashboard-language');
         const dashboardOriginalText = new WeakMap();
         const dashboardArabicByEnglish = Object.fromEntries(Object.entries(dashboardEnglish).map(([ar, en]) => [en, ar]));
@@ -503,6 +574,9 @@
         dashboardLanguageSelect.value = dashboardLanguage;
         dashboardLanguageSelect.addEventListener('change', e => applyDashboardLanguage(e.target.value));
         const advancedSettingGroups = [
+            { id: 'advanced-protection-settings', title: 'الحماية المتقدمة', note: 'تعمل الحمايات عند حفظها، والتنبيهات تُرسل إلى قناة تنبيهات Anti-Nuke أو سجل الإدارة. تحتاج حماية سجل التدقيق إلى View Audit Log، وتحتاج حماية الرتب والقفل المؤقت إلى Manage Roles وManage Channels. إلغاء الصلاحيات والقفل التلقائي خياران مطفآن افتراضيًا.', items: [
+                ['antiMentionRaidEnabled', 'تفعيل حماية إغراق المنشنات'], ['antiMentionRaidBlockEveryone', 'منع @everyone'], ['antiMentionRaidBlockHere', 'منع @here'], ['antiMentionRaidLimit', 'حد المنشنات في الرسالة'], ['antiMentionRaidWindowSeconds', 'نافذة رصد تكرار المنشنات بالثواني'], ['antiMentionRaidMessageLimit', 'عدد رسائل المنشن قبل الإجراء'], ['antiMentionRaidTimeoutEnabled', 'إسكات تلقائي عند تكرار المنشنات'], ['antiMentionRaidTimeoutMinutes', 'مدة الإسكات بالدقائق'], ['antiSuspiciousActivityEnabled', 'رصد النشاط المشبوه'], ['antiSuspiciousActivityThreshold', 'عدد المؤشرات لإطلاق التنبيه'], ['antiSuspiciousActivityWindowSeconds', 'نافذة تجميع المؤشرات بالثواني'], ['antiSuspiciousAutoLockdownEnabled', 'قفل مؤقت عند تراكم المؤشرات'], ['antiSuspiciousLockdownDurationMinutes', 'مدة القفل المؤقت بالدقائق'], ['antiPermissionAbuseEnabled', 'رصد الصلاحيات الخطرة'], ['antiPermissionAbuseRevertEnabled', 'إلغاء الصلاحية الخطرة المضافة للرتبة'], ['antiBotEnabled', 'مراجعة البوتات الجديدة'], ['antiBotApprovedIds', 'معرّفات البوتات المعتمدة (مفصولة بفواصل)'], ['antiImpersonationEnabled', 'رصد انتحال الطاقم'], ['antiImpersonationStaffRoleIds', 'معرّفات رتب الطاقم الموثوقة (مفصولة بفواصل)'], ['antiAltEnabled', 'تفعيل Anti-Alt للحسابات البديلة'], ['antiAltMinAccountAgeDays', 'العمر الأدنى للحساب (بالأيام)'], ['antiAltAction', 'إجراء الحساب المشتبه به'], ['antiAltTimeoutMinutes', 'مدة الإسكات بالدقائق'], ['antiAltClusterLimit', 'عدد الحسابات الحديثة لتأكيد موجة'], ['antiAltWindowSeconds', 'نافذة رصد الحسابات الحديثة بالثواني']
+            ] },
             { title: 'الأوامر والصلاحيات', note: 'التفعيل والصلاحيات والقنوات والانتظار وحذف رسالة الأمر تخص أوامر البادئة القديمة مثل !help و!plan. إعداد اللغة يؤثر أيضًا على ردود بعض أوامر السلاش مثل /help و/plan و/anticrash.', items: [
                 ['commandCooldownSeconds', 'مدة انتظار أوامر البادئة بالثواني'], ['commandsEnabled', 'تفعيل أوامر البادئة'], ['commandsRoleId', 'معرّف رتبة أوامر البادئة'], ['commandsAllowedChannelIds', 'قنوات أوامر البادئة المسموحة'], ['commandLanguage', 'لغة ردود البوت'], ['commandDeleteAfterUse', 'حذف رسالة أمر البادئة بعد الاستخدام']
             ] },
@@ -549,6 +623,9 @@
                 ['scheduledAnnouncementEnabled', 'تفعيل الإعلان المجدول'], ['scheduledAnnouncementChannelId', 'معرّف قناة الإعلان'], ['scheduledAnnouncementMessage', 'نص الإعلان'], ['scheduledAnnouncementIntervalHours', 'الفترة بين الإعلانات بالساعات'], ['scheduledAnnouncementTitle', 'عنوان الإعلان (اختياري)'], ['scheduledAnnouncementColor', 'لون الإعلان'], ['scheduledAnnouncementImageUrl', 'رابط صورة HTTPS (اختياري)']
             ] },
             { key: 'embedBuilder', title: 'إدارة الإمبيدات', note: 'حدد عدد الإمبيدات واكتب معرّف الروم لكل بطاقة. عند حفظ الإعدادات يرسل البوت كل إمبيد إلى الروم الخاص به.', items: [] },
+            { title: 'الألعاب التفاعلية', note: 'يتيح الأمر /games قائمة ألعاب تفاعلية، منها تحديات معلومات وألغاز ولعبة تخمين صورة مرسومة خصيصًا لـ YS-Bot. الردود خاصة باللاعب، ويمكن تحديد قنوات وألعاب مسموحة.', items: [
+                ['gamesEnabled', 'تفعيل قائمة الألعاب'], ['gameChannelIds', 'القنوات المسموحة للألعاب'], ['gamesCooldownSeconds', 'فترة الانتظار بين الألعاب بالثواني'], ['gamesTriviaEnabled', 'لعبة المعلومات العامة'], ['gamesImageGuessEnabled', 'لعبة تخمين الصورة'], ['gamesScrambleEnabled', 'لعبة ترتيب الحروف'], ['gamesRiddleEnabled', 'لعبة الألغاز'], ['gamesMathEnabled', 'تحدي الحساب السريع'], ['gamesMemoryEnabled', 'لعبة الذاكرة'], ['gamesRpsEnabled', 'حجر ورقة مقص'], ['gamesDiceEnabled', 'تحدي النرد'], ['gamesTicTacToeEnabled', 'إكس أو ضد البوت'], ['gamesEmojiPuzzleEnabled', 'لغز الإيموجي']
+            ] },
             { title: 'التصويت والمستويات والنسخ الاحتياطي', items: [
                 ['pollEnabled', 'تفعيل التصويت'], ['pollChannelIds', 'القنوات المسموحة للتصويت'], ['levelSystemEnabled', 'تفعيل نظام المستويات'], ['levelAnnouncementChannelId', 'قناة إعلان المستوى'], ['levelUpMessage', 'رسالة الترقية للمستوى'], ['levelCooldownSeconds', 'فترة احتساب الخبرة بالثواني'], ['autorunBackupEnabled', 'تفعيل النسخ الاحتياطي المجدول'], ['autorunBackupIntervalHours', 'فترة النسخ الاحتياطي بالساعات']
             ] },
@@ -564,9 +641,11 @@
             'autoRoleEnabled', 'warningEscalationEnabled', 'antiRaidEnabled', 'inviteTrackingEnabled', 'ticketEnabled',
             'ticketAskReason', 'ticketTranscriptEnabled', 'ticketNotifySupport', 'ticketAllowMemberClose', 'suggestionAnonymousEnabled',
             'suggestionEnabled', 'pollEnabled', 'levelSystemEnabled', 'autorunBackupEnabled', 'azkarEnabled', 'quranReminderEnabled',
+            'gamesEnabled', 'gamesTriviaEnabled', 'gamesImageGuessEnabled', 'gamesScrambleEnabled', 'gamesRiddleEnabled', 'gamesMathEnabled', 'gamesMemoryEnabled', 'gamesRpsEnabled', 'gamesDiceEnabled', 'gamesTicTacToeEnabled', 'gamesEmojiPuzzleEnabled',
             'antiNukeEnabled', 'antiNukeChannelCreateEnabled', 'antiNukeChannelDeleteEnabled', 'antiNukeRoleCreateEnabled', 'antiNukeRoleDeleteEnabled',
             'antiNukeRoleUpdateEnabled', 'antiNukeBanEnabled', 'antiNukeWebhookCreateEnabled', 'antiNukeWebhookDeleteEnabled',
             'antiNukeEmojiDeleteEnabled', 'antiNukeStickerDeleteEnabled', 'antiNukeLockdownEnabled', 'antiNukeLogAllEvents',
+            'antiMentionRaidEnabled', 'antiMentionRaidBlockEveryone', 'antiMentionRaidBlockHere', 'antiMentionRaidTimeoutEnabled', 'antiSuspiciousActivityEnabled', 'antiSuspiciousAutoLockdownEnabled', 'antiPermissionAbuseEnabled', 'antiPermissionAbuseRevertEnabled', 'antiBotEnabled', 'antiImpersonationEnabled', 'antiAltEnabled',
             'emojiSpamEnabled', 'lineSpamEnabled', 'repeatedCharacterFilterEnabled', 'zalgoFilterEnabled',
             'autoReplyEnabled', 'autoReplyCaseSensitive', 'scheduledAnnouncementEnabled'
         ]);
@@ -576,13 +655,14 @@
             emojiLimit: [3, 50], lineSpamLimit: [3, 30], repeatedCharacterLimit: [4, 50], zalgoMarkLimit: [2, 40],
             verificationTimeoutMinutes: [1, 1440], verificationMinAccountAgeDays: [0, 365], warningLimit: [2, 10],
             warningTimeoutMinutes: [1, 10080], slowmodeSeconds: [0, 21600], auditRetentionDays: [1, 365], antiRaidJoinLimit: [2, 100],
-            antiRaidWindowSeconds: [5, 600], inviteRewardThreshold: [1, 100], levelCooldownSeconds: [5, 3600], autorunBackupIntervalHours: [1, 168],
+            antiRaidWindowSeconds: [5, 600], inviteRewardThreshold: [1, 100], levelCooldownSeconds: [5, 3600], autorunBackupIntervalHours: [1, 168], gamesCooldownSeconds: [0, 300],
             ticketMaxOpen: [1, 5], ticketCloseDeleteAfterMinutes: [0, 1440], suggestionMinLength: [1, 500], suggestionMaxLength: [10, 1000], azkarIntervalHours: [1, 168], quranIntervalHours: [1, 168],
-            antiNukeChannelCreateLimit: [1, 20], antiNukeChannelDeleteLimit: [1, 20], antiNukeRoleCreateLimit: [1, 20], antiNukeRoleDeleteLimit: [1, 20], antiNukeRoleUpdateLimit: [1, 20], antiNukeBanLimit: [1, 20], antiNukeWebhookCreateLimit: [1, 20], antiNukeWebhookDeleteLimit: [1, 20], antiNukeEmojiDeleteLimit: [1, 20], antiNukeStickerDeleteLimit: [1, 20], antiNukeWindowSeconds: [1, 600], antiNukeTimeoutMinutes: [1, 1440], antiNukeCooldownSeconds: [0, 3600], antiNukeLockdownDurationMinutes: [1, 60]
+            antiNukeChannelCreateLimit: [1, 20], antiNukeChannelDeleteLimit: [1, 20], antiNukeRoleCreateLimit: [1, 20], antiNukeRoleDeleteLimit: [1, 20], antiNukeRoleUpdateLimit: [1, 20], antiNukeBanLimit: [1, 20], antiNukeWebhookCreateLimit: [1, 20], antiNukeWebhookDeleteLimit: [1, 20], antiNukeEmojiDeleteLimit: [1, 20], antiNukeStickerDeleteLimit: [1, 20], antiNukeWindowSeconds: [1, 600], antiNukeTimeoutMinutes: [1, 1440], antiNukeCooldownSeconds: [0, 3600], antiNukeLockdownDurationMinutes: [1, 60], antiMentionRaidLimit: [2, 30], antiMentionRaidWindowSeconds: [3, 120], antiMentionRaidMessageLimit: [2, 20], antiMentionRaidTimeoutMinutes: [1, 1440], antiSuspiciousActivityThreshold: [2, 20], antiSuspiciousActivityWindowSeconds: [5, 600], antiSuspiciousLockdownDurationMinutes: [1, 60], antiAltMinAccountAgeDays: [1, 365], antiAltTimeoutMinutes: [1, 1440], antiAltClusterLimit: [2, 20], antiAltWindowSeconds: [10, 600]
         };
         const extraChoiceOptions = {
             autoReplyMatchMode: [['exact', 'تطابق كامل'], ['includes', 'تحتوي على'], ['startsWith', 'تبدأ بـ']],
             antiRaidYoungAccountAction: [['alert', 'تنبيه فقط'], ['kick', 'طرد'], ['ban', 'حظر']],
+            antiAltAction: [['alert', 'تنبيه فقط'], ['timeout', 'إسكات مؤقت'], ['kick', 'طرد']],
             scheduledAnnouncementColor: [['teal', 'فيروزي'], ['blue', 'أزرق'], ['purple', 'بنفسجي'], ['green', 'أخضر'], ['red', 'أحمر'], ['gold', 'ذهبي']],
             commandLanguage: [['ar', 'العربية'], ['en', 'English']],
             antiSpamAction: [['delete', 'حذف'], ['warn', 'تحذير']],
@@ -603,10 +683,21 @@
             suggestionUpvoteStyle: [['primary', 'أزرق'], ['secondary', 'رمادي'], ['success', 'أخضر'], ['danger', 'أحمر']],
             suggestionDownvoteStyle: [['primary', 'أزرق'], ['secondary', 'رمادي'], ['success', 'أخضر'], ['danger', 'أحمر']]
         };
-        const extraLongTextKeys = new Set(['commandsAllowedChannelIds', 'antiSpamIgnoreChannels', 'antiLinksAllowedDomains', 'antiLinksIgnoreChannels', 'antiLinksIgnoreRoleIds', 'blockedWords', 'pollChannelIds', 'ticketPanelDescription', 'ticketWelcomeMessage', 'suggestionReviewMessage', 'azkarMessage', 'quranMessage', 'antiNukeAllowlistedUserIds', 'antiNukeAllowlistedRoleIds', 'antiRaidLockdownExcludeChannelIds', 'customEmbedDescription', 'autoReplyRules', 'scheduledAnnouncementMessage']);
+        const extraLongTextKeys = new Set(['commandsAllowedChannelIds', 'antiSpamIgnoreChannels', 'antiLinksAllowedDomains', 'antiLinksIgnoreChannels', 'antiLinksIgnoreRoleIds', 'blockedWords', 'pollChannelIds', 'gameChannelIds', 'ticketPanelDescription', 'ticketWelcomeMessage', 'suggestionReviewMessage', 'azkarMessage', 'quranMessage', 'antiNukeAllowlistedUserIds', 'antiNukeAllowlistedRoleIds', 'antiRaidLockdownExcludeChannelIds', 'antiBotApprovedIds', 'antiImpersonationStaffRoleIds', 'customEmbedDescription', 'autoReplyRules', 'scheduledAnnouncementMessage']);
         const activeAdvancedSettingKeys = new Set(advancedSettingGroups.flatMap((group) => group.items.map(([key]) => key)));
-        const extraTextLimits = { autoReplyRules: 4000, antiRaidLockdownExcludeChannelIds: 500, antiRaidAlertRoleId: 24, autoReplyIgnoreChannelIds: 500, scheduledAnnouncementChannelId: 24, scheduledAnnouncementMessage: 1500, scheduledAnnouncementTitle: 100, scheduledAnnouncementImageUrl: 500, commandsRoleId: 24, commandsAllowedChannelIds: 500, antiSpamWarning: 180, antiSpamIgnoreChannels: 500, antiLinksAllowedDomains: 500, antiLinksWarning: 180, antiLinksIgnoreChannels: 500, antiLinksIgnoreRoleIds: 500, modLogChannelId: 24, welcomeChannelId: 24, welcomeMessage: 500, welcomeRoleId: 24, welcomeDmMessage: 500, welcomeEmbedTitle: 256, welcomeEmbedImageUrl: 500, welcomeEmbedFooter: 200, farewellChannelId: 24, farewellMessage: 500, farewellEmbedTitle: 256, farewellEmbedImageUrl: 500, farewellEmbedFooter: 200, verificationRoleId: 24, autoRoleId: 24, blockedWords: 1000, supportChannelId: 24, antiRaidAlertChannelId: 24, antiNukeAlertChannelId: 24, antiNukeAlertRoleId: 24, antiNukeAllowlistedUserIds: 500, antiNukeAllowlistedRoleIds: 500, inviteRewardRoleId: 24, ticketPanelChannelId: 24, ticketCategoryId: 24, ticketSupportRoleId: 24, ticketTranscriptChannelId: 24, ticketPanelTitle: 100, ticketPanelDescription: 1000, ticketPanelButtonLabel: 80, ticketPanelButtonEmoji: 32, ticketReasonTitle: 100, ticketReasonPlaceholder: 100, ticketWelcomeTitle: 100, ticketWelcomeMessage: 1500, ticketWelcomeImageUrl: 500, ticketCloseButtonLabel: 80, ticketCloseMessage: 300, ticketConfirmationMessage: 200, ticketNamePrefix: 24, suggestionChannelId: 24, suggestionReviewChannelId: 24, suggestionEmbedTitle: 100, suggestionEmbedImageUrl: 500, suggestionUpvoteLabel: 40, suggestionDownvoteLabel: 40, suggestionUpvoteEmoji: 32, suggestionDownvoteEmoji: 32, suggestionConfirmationMessage: 200, suggestionReviewMessage: 300, levelAnnouncementChannelId: 24, levelUpMessage: 300, azkarChannelId: 24, azkarMessage: 1500, quranChannelId: 24, quranMessage: 1500, customEmbedChannelId: 24, customEmbedTitle: 256, customEmbedDescription: 4000, customEmbedThumbnailUrl: 500, customEmbedImageUrl: 500 };
+        const extraTextLimits = { autoReplyRules: 4000, antiBotApprovedIds: 1000, antiImpersonationStaffRoleIds: 500, antiRaidLockdownExcludeChannelIds: 500, antiRaidAlertRoleId: 24, autoReplyIgnoreChannelIds: 500, scheduledAnnouncementChannelId: 24, scheduledAnnouncementMessage: 1500, scheduledAnnouncementTitle: 100, scheduledAnnouncementImageUrl: 500, commandsRoleId: 24, commandsAllowedChannelIds: 500, gameChannelIds: 500, antiSpamWarning: 180, antiSpamIgnoreChannels: 500, antiLinksAllowedDomains: 500, antiLinksWarning: 180, antiLinksIgnoreChannels: 500, antiLinksIgnoreRoleIds: 500, modLogChannelId: 24, welcomeChannelId: 24, welcomeMessage: 500, welcomeRoleId: 24, welcomeDmMessage: 500, welcomeEmbedTitle: 256, welcomeEmbedImageUrl: 500, welcomeEmbedFooter: 200, farewellChannelId: 24, farewellMessage: 500, farewellEmbedTitle: 256, farewellEmbedImageUrl: 500, farewellEmbedFooter: 200, verificationRoleId: 24, autoRoleId: 24, blockedWords: 1000, supportChannelId: 24, antiRaidAlertChannelId: 24, antiNukeAlertChannelId: 24, antiNukeAlertRoleId: 24, antiNukeAllowlistedUserIds: 500, antiNukeAllowlistedRoleIds: 500, inviteRewardRoleId: 24, ticketPanelChannelId: 24, ticketCategoryId: 24, ticketSupportRoleId: 24, ticketTranscriptChannelId: 24, ticketPanelTitle: 100, ticketPanelDescription: 1000, ticketPanelButtonLabel: 80, ticketPanelButtonEmoji: 32, ticketReasonTitle: 100, ticketReasonPlaceholder: 100, ticketWelcomeTitle: 100, ticketWelcomeMessage: 1500, ticketWelcomeImageUrl: 500, ticketCloseButtonLabel: 80, ticketCloseMessage: 300, ticketConfirmationMessage: 200, ticketNamePrefix: 24, suggestionChannelId: 24, suggestionReviewChannelId: 24, suggestionEmbedTitle: 100, suggestionEmbedImageUrl: 500, suggestionUpvoteLabel: 40, suggestionDownvoteLabel: 40, suggestionUpvoteEmoji: 32, suggestionDownvoteEmoji: 32, suggestionConfirmationMessage: 200, suggestionReviewMessage: 300, levelAnnouncementChannelId: 24, levelUpMessage: 300, azkarChannelId: 24, azkarMessage: 1500, quranChannelId: 24, quranMessage: 1500, customEmbedChannelId: 24, customEmbedTitle: 256, customEmbedDescription: 4000, customEmbedThumbnailUrl: 500, customEmbedImageUrl: 500 };
         function settingInstructions(key, labelText) {
+            if (key === 'gamesEnabled') return 'فعّل الخيار ليظهر أمر /games. كل لعبة ترسل جولة تفاعلية بأزرار في القناة، وتخمين الصورة يعرض رسمة مولّدة داخل البوت.';
+            if (key === 'gameChannelIds') return 'اختياري: اكتب معرّفات القنوات المسموحة للألعاب وافصل بينها بفواصل. اتركه فارغًا للسماح باستخدام /games في كل القنوات.';
+            if (key === 'gamesCooldownSeconds') return 'حدد الانتظار بين جولات كل عضو. اكتب 0 لإيقاف الانتظار.';
+            if (key.startsWith('games') && key.endsWith('Enabled')) return 'عطّل هذا الخيار لإخفاء اللعبة من قائمة /games. احفظ الإعدادات بعد التغيير.';
+            if (key === 'antiBotApprovedIds') return 'اكتب معرّفات البوتات التي راجعتها ووافقت عليها، مفصولة بفواصل. البوت غير المعتمد ينبه المشرفين، وإذا أُعطي رتبة خطرة يحاول YS-Bot إزالتها؛ بعد اعتماده أعد منحه الرتبة يدويًا.';
+            if (key === 'antiImpersonationStaffRoleIds') return 'اكتب معرّفات رتب الطاقم الموثوقة مفصولة بفواصل. يفحص YS-Bot الأسماء والصور المشابهة عند دخول عضو أو تغيير الاسم/الصورة ويرسل تنبيهًا للمراجعة فقط.';
+            if (key === 'antiPermissionAbuseRevertEnabled') return 'اختياري: عند تفعيله يحاول YS-Bot إزالة الصلاحيات الإدارية الخطرة التي أُضيفت حديثًا إلى أي رتبة. قد يلغي تعديلًا إداريًا مقصودًا، لذا اتركه مطفأ إذا كنت لا تريد الإلغاء التلقائي.';
+            if (key === 'antiSuspiciousAutoLockdownEnabled') return 'اختياري: عند بلوغ حد المؤشرات يمنع الإرسال مؤقتًا في القنوات النصية ثم يعيد إعداداتها السابقة. يحتاج Manage Channels؛ ابدأ بتركه مطفأ واختبر التنبيهات.';
+            if (key === 'antiMentionRaidTimeoutEnabled') return 'اختياري: بعد تجاوز حد المنشنات يحذف البوت الرسالة ويحاول إسكات العضو للمدة المحددة. يحتاج صلاحية Timeout Members وترتيب رتب مناسب.';
+            if (key === 'antiAltEnabled') return 'يفحص عمر الحساب عند انضمامه ويرسل تنبيهًا إذا كان أصغر من الحد. إذا انضم عدد من الحسابات الحديثة خلال النافذة، يضيف تنبيه موجة محتملة. هذا تقدير قائم على العمر ولا يكشف IP أو يثبت أن الحساب بديل.';
+            if (key === 'antiAltAction') return 'اختر تنبيه فقط (الافتراضي)، أو إسكاتًا مؤقتًا، أو طردًا للحسابات الأحدث من الحد. قد تكون الحسابات الجديدة أعضاء حقيقيين؛ ابدأ بالتنبيه فقط.';
             if (key === 'antiSpamTimeoutEnabled') return 'ميزة Basic إضافية: عند بلوغ حد السبام يحاول البوت إسكات العضو مؤقتًا. يحتاج صلاحية Timeout Members؛ إذا لم تتوفر، يرجع للإجراء العادي المحدد أعلاه.';
             if (key === 'antiSpamTimeoutMinutes') return 'ميزة Basic إضافية: مدة الإسكات من دقيقة إلى 24 ساعة. غيّر المدة فقط إذا فعّلت خيار الإسكات التلقائي.';
             if (key === 'antiRaidMinAccountAgeDays') return 'ميزة Basic إضافية: ضع 0 لإيقاف فحص عمر الحساب. عند وضع رقم، تُفحص الحسابات الأصغر منه إذا كانت حماية الغارات مفعّلة.';
@@ -702,6 +793,8 @@
                     const searchable = `${field.textContent} ${field.querySelector('[data-advanced-setting]')?.value || ''}`.toLocaleLowerCase();
                     const visible = !query || groupMatches || searchable.includes(query);
                     field.hidden = !visible;
+                    const category = field.querySelector('.settings-result-category');
+                    if (category) category.hidden = !query;
                     if (visible) visibleInGroup++;
                 });
                 group.hidden = Boolean(query) && visibleInGroup === 0;
@@ -711,6 +804,12 @@
             });
             count.textContent = query ? (dashboardLanguage === 'ar' ? `${matches} إعداد` : `${matches} settings`) : '';
         }
+        document.getElementById('jump-advanced-security').addEventListener('click', () => {
+            const group = document.getElementById('advanced-protection-settings');
+            if (!group) return;
+            group.open = true;
+            group.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
 
         function requiredPlanForSetting(key) {
             return ({ antiSpamTimeoutEnabled: 'Basic', antiSpamTimeoutMinutes: 'Basic', antiRaidMinAccountAgeDays: 'Basic', antiRaidYoungAccountAction: 'Basic', antiRaidLockdownDurationMinutes: 'VIP', antiRaidLockdownExcludeChannelIds: 'VIP', antiRaidAlertRoleId: 'VIP' })[key] || 'Free';
@@ -727,16 +826,79 @@
             document.querySelector('.guild-plan-status > span').textContent = planLabels.title;
             document.querySelector('.guild-plan-upgrade').textContent = planLabels.upgrade;
             document.getElementById('refresh-guild-plan').textContent = planLabels.refresh;
+            const summaryPlan = document.getElementById('summary-plan');
+            if (summaryPlan) summaryPlan.textContent = chip.textContent;
         }
         document.getElementById('settings-search-input').addEventListener('input', filterAdvancedSettings);
+        const dashboardNewSettingKeys = new Set([
+            'antiMentionRaidEnabled', 'antiMentionRaidBlockEveryone', 'antiMentionRaidBlockHere', 'antiMentionRaidTimeoutEnabled',
+            'antiSuspiciousActivityEnabled', 'antiSuspiciousAutoLockdownEnabled', 'antiPermissionAbuseEnabled',
+            'antiPermissionAbuseRevertEnabled', 'antiBotEnabled', 'antiImpersonationEnabled', 'antiAltEnabled'
+        ]);
+        const dashboardProtectionKeys = new Set([
+            'antiSpamEnabled', 'antiLinksEnabled', 'antiRaidEnabled', 'antiNukeEnabled', 'antiMentionRaidEnabled',
+            'antiSuspiciousActivityEnabled', 'antiPermissionAbuseEnabled', 'antiBotEnabled', 'antiImpersonationEnabled', 'antiAltEnabled'
+        ]);
+        function updateProtectionSummary() {
+            const baseEnabled = ['setting-anti-links', 'setting-anti-spam'].filter((id) => document.getElementById(id)?.checked).length;
+            const advancedEnabled = [...document.querySelectorAll('[data-advanced-setting]')].filter((control) => dashboardProtectionKeys.has(control.dataset.advancedSetting) && control.checked).length;
+            document.getElementById('summary-protections').textContent = `${baseEnabled + advancedEnabled} ${dashboardText('مفعّلة')}`;
+        }
+        function currentGuildSettingsSnapshot() {
+            return JSON.stringify({
+                commandPrefix: document.getElementById('setting-command-prefix')?.value || '',
+                antiSpam: Boolean(document.getElementById('setting-anti-spam')?.checked),
+                antiLinks: Boolean(document.getElementById('setting-anti-links')?.checked),
+                advanced: readAdvancedSettings()
+            });
+        }
+        let savedGuildSettingsSnapshot = null;
+        function refreshGuildSettingsDirtyState() {
+            if (!selectedGuildId || !savedGuildSettingsSnapshot) return;
+            const status = document.getElementById('guild-settings-status');
+            const dirty = currentGuildSettingsSnapshot() !== savedGuildSettingsSnapshot;
+            status.dataset.dirty = String(dirty);
+            status.dataset.saved = String(!dirty);
+            status.textContent = dashboardText(dirty ? 'في تغييرات غير محفوظة' : 'انحفظت الإعدادات بنجاح.');
+            updateProtectionSummary();
+        }
+        const guildSettingsPanel = document.getElementById('server-settings-panel');
+        for (const eventName of ['input', 'change']) guildSettingsPanel.addEventListener(eventName, (event) => {
+            if (event.target.matches('#setting-command-prefix, #setting-anti-spam, #setting-anti-links, [data-advanced-setting], [data-embed-field], #custom-embed-count')) refreshGuildSettingsDirtyState();
+        });
+        document.getElementById('dashboard-nav').addEventListener('click', (event) => {
+            const button = event.target.closest('[data-dashboard-jump]');
+            if (!button) return;
+            if (!selectedGuildId) { document.getElementById('guild-list').scrollIntoView({ behavior:'smooth', block:'start' }); return; }
+            const destination = button.dataset.dashboardJump;
+            if (destination === 'backups') {
+                document.querySelector('.server-backup-tool')?.scrollIntoView({ behavior:'smooth', block:'start' });
+                return;
+            }
+            const groups = [...document.querySelectorAll('.advanced-group')];
+            const target = groups.find((group) => group.dataset.dashboardCategory === destination);
+            if (target) {
+                target.open = true;
+                target.scrollIntoView({ behavior:'smooth', block:'start' });
+            }
+        });
         function renderAdvancedSettings(values = {}) {
             const root = document.getElementById('advanced-settings-groups');
             root.replaceChildren();
             advancedSettingGroups.forEach((group) => {
                 const section = document.createElement('details');
                 section.className = 'advanced-group';
+                if (group.id) section.id = group.id;
+                section.dataset.groupTitle = group.title;
+                section.dataset.dashboardCategory = group.title.includes('الترحيب') ? 'welcome' : group.title.includes('التذاكر') ? 'tickets' : /الحماية|السبام|الروابط|الفلاتر|الإشراف/.test(group.title) ? 'protection' : 'other';
                 const heading = document.createElement('summary');
                 heading.textContent = dashboardText(group.title);
+                if (group.id === 'advanced-protection-settings') {
+                    const newGroupBadge = document.createElement('small');
+                    newGroupBadge.className = 'settings-new-badge';
+                    newGroupBadge.textContent = dashboardText('جديد');
+                    heading.appendChild(newGroupBadge);
+                }
                 if (group.title === 'إضافات الخطط المدفوعة') {
                     section.open = true;
                     const tiers = document.createElement('small');
@@ -744,6 +906,7 @@
                     tiers.textContent = 'Basic · VIP';
                     heading.appendChild(tiers);
                 }
+                if (group.id === 'advanced-protection-settings' && !window.matchMedia('(max-width: 780px)').matches) section.open = true;
                 section.appendChild(heading);
                 if (group.note) {
                     const note = document.createElement('p');
@@ -758,11 +921,22 @@
                     label.className = 'advanced-field';
                     const labelTextNode = document.createElement('span');
                     labelTextNode.textContent = dashboardLabel(key, labelText);
+                    const category = document.createElement('small');
+                    category.className = 'settings-result-category';
+                    category.hidden = true;
+                    category.textContent = `${dashboardText('الفئة')}: ${dashboardText(group.title)}`;
                     const badge = document.createElement('small');
                     badge.className = 'settings-coming-soon';
                     badge.textContent = dashboardText(activeAdvancedSettingKeys.has(key) ? 'يعمل الآن' : 'قيد الربط');
                     if (activeAdvancedSettingKeys.has(key)) badge.classList.add('current');
                     label.append(labelTextNode, badge);
+                    if (dashboardNewSettingKeys.has(key)) {
+                        const newBadge = document.createElement('small');
+                        newBadge.className = 'settings-new-badge';
+                        newBadge.textContent = dashboardText('جديد');
+                        label.appendChild(newBadge);
+                    }
+                    label.appendChild(category);
                     const requiredPlan = requiredPlanForSetting(key);
                     const isLocked = lockedSettingKeys.has(key);
                     if (isLocked) {
@@ -1011,21 +1185,42 @@
         async function openGuildSettings(guild) {
             selectedGuildId = guild.id;
             selectedGuild = guild;
+            savedGuildSettingsSnapshot = null;
+            document.getElementById('summary-bot-card').dataset.state = 'loading';
+            document.getElementById('summary-bot-status').textContent = dashboardText('جارٍ تحميل إعدادات البوت');
+            document.getElementById('summary-plan').textContent = '—';
+            document.getElementById('summary-protections').textContent = `0 ${dashboardText('مفعّلة')}`;
             document.getElementById('server-settings-title').textContent = dashboardText('إعدادات السيرفر');
             document.getElementById('selected-guild-name').textContent = guild.name;
             const panel = document.getElementById('server-settings-panel');
             const status = document.getElementById('guild-settings-status');
             const saveButton = document.getElementById('save-guild-settings');
             panel.hidden = false;
+            document.getElementById('server-management-layout').dataset.view = 'settings';
+            panel.setAttribute('aria-busy', 'true');
             document.getElementById('dashboard-nav-server-settings').disabled = false;
+            document.querySelectorAll('[data-dashboard-jump]').forEach((button) => { button.disabled = false; });
             document.getElementById('dashboard-nav-hint').textContent = dashboardText('انتقل مباشرة إلى إعدادات السيرفر المحدد');
             status.style.color = '#9aabba';
             status.textContent = dashboardText('جاري تحميل الإعدادات...');
             saveButton.disabled = true;
+            const settingsRoot = document.getElementById('advanced-settings-groups');
+            document.getElementById('settings-search-input').value = '';
+            renderAdvancedSettings({});
+            const loadingCard = document.createElement('div');
+            loadingCard.className = 'settings-load-card';
+            loadingCard.setAttribute('role', 'status');
+            loadingCard.innerHTML = `<span class="settings-load-spinner" aria-hidden="true"></span><span>${dashboardText('يتم الاتصال بـ Discord وتحميل إعدادات السيرفر...')}</span>`;
+            settingsRoot.prepend(loadingCard);
+            panel.querySelectorAll('.settings-grid input, .setting-prefix input, #settings-search-input, #advanced-settings-groups input, #advanced-settings-groups select, #advanced-settings-groups textarea').forEach((control) => { control.disabled = true; });
             panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const requestController = new AbortController();
+            const timeoutId = setTimeout(() => requestController.abort(), 20000);
             try {
                 const response = await fetch(`/api/guild-settings/${encodeURIComponent(guild.id)}`, {
-                    headers: { authorization: `Bearer ${localStorage.getItem('discord_token')}` }
+                    headers: { authorization: `Bearer ${localStorage.getItem('discord_token')}` },
+                    signal: requestController.signal,
+                    cache: 'no-store'
                 });
                 const settings = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(settings.error || 'تعذر تحميل الإعدادات');
@@ -1036,16 +1231,42 @@
                 document.getElementById('setting-anti-spam').checked = Boolean(settings.antiSpam);
                 document.getElementById('setting-anti-links').checked = Boolean(settings.antiLinks);
                 renderAdvancedSettings(settings.advancedSettings || {});
-                await loadServerBackups(guild.id).catch((error) => { document.getElementById('server-backup-error').textContent = error.message; });
+                document.getElementById('setting-command-prefix').disabled = false;
+                document.getElementById('setting-anti-spam').disabled = false;
+                document.getElementById('setting-anti-links').disabled = false;
+                document.getElementById('settings-search-input').disabled = false;
+                panel.setAttribute('aria-busy', 'false');
+                savedGuildSettingsSnapshot = currentGuildSettingsSnapshot();
+                status.dataset.dirty = 'false';
+                status.dataset.saved = 'true';
+                document.getElementById('summary-bot-card').dataset.state = 'ready';
+                document.getElementById('summary-bot-status').textContent = dashboardText('إعدادات السيرفر محمّلة');
+                updateProtectionSummary();
                 status.textContent = dashboardLanguage === 'en' ? 'Saved settings loaded.' : 'تم تحميل الإعدادات المحفوظة.';
                 status.style.color = '#71e0cc';
+                loadServerBackups(guild.id).catch((error) => { document.getElementById('server-backup-error').textContent = error.message; });
             } catch (error) {
-                status.textContent = error.message;
+                if (selectedGuildId !== guild.id) return;
+                status.textContent = error.name === 'AbortError' ? dashboardText('انتهت مهلة تحميل إعدادات السيرفر. جرّب إعادة المحاولة.') : error.message;
                 status.style.color = '#fca5a5';
+                document.getElementById('summary-bot-card').dataset.state = 'error';
+                document.getElementById('summary-bot-status').textContent = dashboardText('تعذر تحميل الإعدادات');
+                panel.setAttribute('aria-busy', 'false');
+                loadingCard.remove();
+                const errorCard = document.createElement('div');
+                errorCard.className = 'settings-load-card';
+                errorCard.innerHTML = `<span>${error.name === 'AbortError' ? dashboardText('انتهت مهلة التحميل. جرّب إعادة المحاولة مع اتصال مستقر.') : dashboardText('تعذر تحميل الإعدادات. أعد المحاولة أو حدّث الصفحة.')}</span><button type="button" data-retry-guild-settings>${dashboardText('إعادة المحاولة')}</button>`;
+                settingsRoot.prepend(errorCard);
             } finally {
-                saveButton.disabled = false;
+                clearTimeout(timeoutId);
+                if (selectedGuildId === guild.id) saveButton.disabled = false;
             }
         }
+
+        document.getElementById('advanced-settings-groups').addEventListener('click', (event) => {
+            if (!event.target.closest('[data-retry-guild-settings]') || !selectedGuild) return;
+            openGuildSettings(selectedGuild);
+        });
 
         function serverBackupHeaders() {
             return { authorization: `Bearer ${localStorage.getItem('discord_token')}` };
@@ -1235,6 +1456,7 @@
             saveButton.disabled = true;
             status.textContent = dashboardLanguage === 'en' ? 'Saving...' : 'جاري الحفظ...';
             status.style.color = '#9aabba';
+            const submittedSettingsSnapshot = currentGuildSettingsSnapshot();
             try {
                 const advancedSettings = readAdvancedSettings();
                 const response = await fetch(`/api/guild-settings/${encodeURIComponent(selectedGuildId)}`, {
@@ -1252,8 +1474,12 @@
                 });
                 const result = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(result.error || 'تعذر حفظ الإعدادات');
+                savedGuildSettingsSnapshot = submittedSettingsSnapshot;
+                status.dataset.dirty = 'false';
+                status.dataset.saved = 'true';
                 status.textContent = dashboardLanguage === 'en' ? 'Settings saved successfully.' : 'انحفظت الإعدادات بنجاح.';
                 status.style.color = '#71e0cc';
+                refreshGuildSettingsDirtyState();
                 let configuredEmbeds = [];
                 try { configuredEmbeds = JSON.parse(advancedSettings.customEmbedsJson || '[]'); } catch {}
                 const embedsToSend = Array.isArray(configuredEmbeds) ? configuredEmbeds.filter((embed) => embed.title?.trim() || embed.description?.trim()) : [];

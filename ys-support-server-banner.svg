@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">YS-Bot support server banner</title>
+  <desc id="desc">YS-Bot support banner with English help text and the support website URL.</desc>
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1920" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#071522"/>
+      <stop offset=".52" stop-color="#0a1a2b"/>
+      <stop offset="1" stop-color="#111b38"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="510" y1="180" x2="1510" y2="930" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67efd7"/>
+      <stop offset=".48" stop-color="#48c6d5"/>
+      <stop offset="1" stop-color="#5e7dff"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="1040" y1="220" x2="1490" y2="890" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#15384a" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#101d35" stop-opacity=".82"/>
+    </linearGradient>
+    <radialGradient id="tealGlow" cx="0" cy="0" r="1" gradientTransform="matrix(0 470 -650 0 1310 490)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#24cfb7" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#24cfb7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blueGlow" cx="0" cy="0" r="1" gradientTransform="matrix(0 420 -560 0 1800 790)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#536dff" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#536dff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0v48" fill="none" stroke="#9ad9e7" stroke-opacity=".035" stroke-width="1"/>
+      <circle cx="1" cy="1" r="1.4" fill="#8de9dc" fill-opacity=".15"/>
+    </pattern>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="36"/>
+    </filter>
+  </defs>
+
+  <!-- Keep the upper edge quiet so Discord's server title stays readable. -->
+  <rect width="1920" height="1080" fill="url(#base)"/>
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+  <rect width="1920" height="155" fill="#071522" fill-opacity=".42"/>
+  <ellipse cx="1300" cy="510" rx="660" ry="460" fill="url(#tealGlow)"/>
+  <ellipse cx="1780" cy="800" rx="560" ry="430" fill="url(#blueGlow)"/>
+  <circle cx="1290" cy="525" r="230" fill="#35d3c0" fill-opacity=".15" filter="url(#blur)"/>
+
+  <!-- Soft layered arcs suggest a secure, connected community. -->
+  <g fill="none" stroke="url(#brand)">
+    <circle cx="1280" cy="565" r="424" stroke-opacity=".13" stroke-width="2"/>
+    <circle cx="1280" cy="565" r="376" stroke-opacity=".12" stroke-width="1.5" stroke-dasharray="3 17"/>
+    <circle cx="1280" cy="565" r="323" stroke-opacity=".1" stroke-width="1"/>
+    <path d="M0 782h355l77-77h212m1276-278h-155l-73 73h-130" stroke-opacity=".2" stroke-width="2"/>
+    <path d="M0 858h278l104-104h146m1392 118h-221l-91-91h-146" stroke-opacity=".12" stroke-width="2"/>
+    <path d="M226 318h232l71 71h144m1247-191h-195l-93 93h-111" stroke-opacity=".1" stroke-width="2"/>
+  </g>
+
+  <!-- Abstract shield artwork; intentionally contains no text or logo. -->
+  <g>
+    <path d="M1280 204 1585 326v243c0 206-117 354-305 462-188-108-305-256-305-462V326l305-122Z" fill="#061421" fill-opacity=".7" stroke="url(#brand)" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M1280 246 1543 351v217c0 174-97 301-263 402-166-101-263-228-263-402V351l263-105Z" fill="url(#shield)" stroke="#82e9df" stroke-opacity=".2" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M1280 322 1470 399v167c0 123-66 218-190 299-124-81-190-176-190-299V399l190-77Z" fill="none" stroke="url(#brand)" stroke-opacity=".64" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="1280" cy="535" r="113" fill="#071522" fill-opacity=".66" stroke="#79eada" stroke-opacity=".36" stroke-width="3"/>
+    <circle cx="1280" cy="535" r="82" fill="none" stroke="url(#brand)" stroke-opacity=".56" stroke-width="3" stroke-dasharray="2 13"/>
+    <path d="M1280 466 1298 516l50 19-50 18-18 51-18-51-50-18 50-19 18-50Z" fill="url(#brand)" fill-opacity=".9" stroke="#c4fff3" stroke-opacity=".72" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="1280" cy="535" r="10" fill="#e5fff8"/>
+  </g>
+
+  <g fill="#87f2dc">
+    <circle cx="1017" cy="296" r="5"/><circle cx="1514" cy="788" r="5"/>
+    <circle cx="963" cy="691" r="3.5"/><circle cx="1652" cy="378" r="3.5"/>
+    <circle cx="1422" cy="197" r="3"/><circle cx="1080" cy="861" r="3"/>
+    <circle cx="1768" cy="624" r="3"/><circle cx="786" cy="495" r="2.5"/>
+  </g>
+
+  <!-- Support message -->
+  <g font-family="Arial,Helvetica,sans-serif">
+    <rect x="148" y="321" width="284" height="48" rx="24" fill="#103342" fill-opacity=".8" stroke="#59ddca" stroke-opacity=".38" stroke-width="1.5"/>
+    <circle cx="176" cy="345" r="6" fill="#6cebd5"/>
+    <text x="196" y="352" fill="#9de9df" font-size="17" font-weight="700" letter-spacing="3">YS-BOT SUPPORT</text>
+
+    <text x="148" y="470" fill="#f3fbff" font-size="72" font-weight="800" letter-spacing="-1.5">We're here</text>
+    <text x="148" y="554" fill="#f3fbff" font-size="72" font-weight="800" letter-spacing="-1.5">to help.</text>
+    <path d="M153 588h170" stroke="url(#brand)" stroke-width="5" stroke-linecap="round"/>
+
+    <text x="150" y="645" fill="#c1d2df" font-size="25" font-weight="500">Setup help, security guidance,</text>
+    <text x="150" y="683" fill="#c1d2df" font-size="25" font-weight="500">and answers for your server.</text>
+
+    <rect x="148" y="744" width="432" height="74" rx="18" fill="#0c2434" stroke="#3c9f9e" stroke-opacity=".48" stroke-width="2"/>
+    <circle cx="184" cy="781" r="17" fill="#163c4a" stroke="#52d9c7" stroke-opacity=".58" stroke-width="1.5"/>
+    <path d="M176 782v-3a8 8 0 0 1 16 0v3m-16 0h-2a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h2v-8Zm16 0h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-2v-8Z" fill="none" stroke="#8bf3e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="218" y="790" fill="#e8fffb" font-size="23" font-weight="700">ys-bot.vercel.app/support</text>
+    <path d="M537 772h16m-7-7 7 7-7 7" fill="none" stroke="#71e8d3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <path d="M0 1022c315-86 548-73 787-17 193 45 369 47 558-4 206-56 372-54 575-5" fill="none" stroke="url(#brand)" stroke-opacity=".2" stroke-width="2"/>
+</svg>

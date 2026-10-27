@@ -47,7 +47,13 @@ app.use(async (req, res, next) => {
     next();
 });
 
-const servePublicFile = express.static(__dirname, { dotfiles: 'deny', index: false });
+const servePublicFile = express.static(__dirname, {
+    dotfiles: 'deny',
+    index: false,
+    setHeaders(res, filePath) {
+        if (path.basename(filePath) === 'dashboard.html') res.setHeader('Cache-Control', 'no-store, max-age=0');
+    }
+});
 const PUBLIC_FILES = new Set([
     '/index.html', '/dashboard.html', '/privacy.html', '/wallet.html', '/emoji-pack.html', '/style.css', '/button-effects.js', '/ys-bot-avatar.svg',
     '/emojis/ys-logo.svg', '/emojis/ys-check.svg', '/emojis/ys-error.svg', '/emojis/ys-warning.svg',
@@ -166,7 +172,8 @@ async function getAuthenticatedDiscordUser(req, res) {
 
     try {
         const response = await axios.get('https://discord.com/api/users/@me', {
-            headers: { authorization: `Bearer ${accessToken}` }
+            headers: { authorization: `Bearer ${accessToken}` },
+            timeout: 10000
         });
         return response.data;
     } catch (error) {
@@ -177,18 +184,23 @@ async function getAuthenticatedDiscordUser(req, res) {
 }
 
 async function getManageableDiscordGuild(req, res, guildId) {
-    const user = await getAuthenticatedDiscordUser(req, res);
-    if (!user) return null;
     if (!/^\d{17,20}$/.test(String(guildId || ''))) {
         res.status(400).json({ error: 'معرّف السيرفر غير صالح' });
         return null;
     }
     const accessToken = req.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!accessToken) {
+        res.status(401).json({ error: 'يجب تسجيل الدخول عبر Discord' });
+        return null;
+    }
     try {
-        const response = await axios.get('https://discord.com/api/users/@me/guilds', {
-            headers: { authorization: `Bearer ${accessToken}` }
-        });
-        const guild = response.data.find((item) => item.id === String(guildId));
+        const requestOptions = { headers: { authorization: `Bearer ${accessToken}` }, timeout: 8000 };
+        const [userResponse, guildsResponse] = await Promise.all([
+            axios.get('https://discord.com/api/users/@me', requestOptions),
+            axios.get('https://discord.com/api/users/@me/guilds', requestOptions)
+        ]);
+        const user = userResponse.data;
+        const guild = guildsResponse.data.find((item) => item.id === String(guildId));
         const isOwner = guild?.owner === true;
         const hasAdmin = guild && (BigInt(guild.permissions || '0') & 8n) === 8n;
         if (!guild || (!isOwner && !hasAdmin)) {
@@ -1038,10 +1050,10 @@ app.post('/api/ai-assistant', async (req, res) => {
 Verified YS-Bot product knowledge:
 - The website is ys-bot.vercel.app. Sign-in uses Discord. In dashboard.html, the user signs in, selects a server they manage, edits that server's settings, and presses “حفظ الإعدادات” (Save settings). Saving sends settings to the bot service; it does not install the bot or grant Discord permissions.
 - Personal settings include the user's profile statistics-card theme. The /profile command displays the selected member's card. The theme is a personal preference, not a server-wide setting. Custom uploads and some themes are VIP-locked if the dashboard marks them so.
-- Main dashboard groups include command permissions, anti-spam, link filtering, message filters, event logs, welcome/farewell, verification and roles, moderation, anti-raid, anti-nuke, tickets/suggestions, polls/levels, embeds, adhkar/Quran scheduling, and server-structure backup/restore. The dashboard explicitly marks some settings “يعمل الآن” (active) and others “قيد الربط” (saved but not applied by the bot); always tell users to check that label and never claim an in-progress setting operates.
+- Main dashboard groups include command permissions, anti-spam, link filtering, message filters, event logs, welcome/farewell, verification and roles, moderation, anti-raid, anti-nuke, tickets/suggestions, polls/levels, interactive games, embeds, adhkar/Quran scheduling, and server-structure backup/restore. Game settings enable or disable ten interactive games, optionally restrict them to channel IDs, and set a per-member cooldown. The image-guess game creates its own YS-themed PNG card. The dashboard explicitly marks some settings “يعمل الآن” (active) and others “قيد الربط” (saved but not applied by the bot); always tell users to check that label and never claim an in-progress setting operates.
 - Core anti-link filtering deletes matching member messages and exempts administrators. Core anti-spam deletes messages starting at the fifth within eight seconds and exempts administrators. These require the bot in the server and Manage Messages permission. Actual behavior can also depend on saved per-server settings.
 - Anti-Nuke needs View Audit Log and the permission for the selected response. Recommend starting with alert-only, setting conservative limits, and checking allowlists carefully. Temporary raid lockdown needs Manage Channels. Welcome/farewell, verification, and automatic member roles need Server Members Intent enabled in Discord Developer Portal as well as the necessary bot permissions.
-- Slash commands currently registered in bot.js: /ticket [reason], /suggest text, /poll question, /warn member [reason] (Manage Messages), /verify, /support, /invites [member; moderators can inspect another member], /profile [user], /embed (Manage Server), /help, /plan, and /anticrash (Manage Server), /add-2fa site_name secret_key (private), and /get-2fa (private). Slash replies automatically use a matching YS icon as a PNG attachment/thumbnail without uploading a custom emoji to the server. /ticket and /suggest require their respective dashboard features/channels to be configured. /embed sends the configured embed; it is not a general-purpose message editor.
+- Slash commands currently registered in bot.js: /ticket [reason], /suggest text, /poll question, /games (opens a menu with trivia, image guessing, scrambled words, riddles, quick math, memory, rock-paper-scissors, dice, tic-tac-toe, and emoji puzzles), /warn member [reason] (Manage Messages), /verify, /support, /invites [member; moderators can inspect another member], /profile [user], /embed (Manage Server), /help, /plan, and /anticrash (Manage Server), /add-2fa site_name secret_key (private), and /get-2fa (private). Slash replies automatically use a matching YS icon as a PNG attachment/thumbnail without uploading a custom emoji to the server. /ticket and /suggest require their respective dashboard features/channels to be configured. /embed sends the configured embed; it is not a general-purpose message editor.
 - Text prefix commands currently implemented: <prefix>help, <prefix>plan, <prefix>anticrash, and <prefix>support. The prefix defaults to ! and can be changed in the dashboard. The anticrash command is available to Basic/VIP subscriptions. Do not invent other commands.
 - Server backup copies roles, channels, categories, role permissions, and YS-Bot settings. It does not copy messages, members, member-role assignments, or individual member channel permissions. Restore recreates missing items and updates matching items; it does not delete existing items. Restore needs Manage Roles and Manage Channels.
 - Prices, entitlement status, payment state, a user's live settings, and bot uptime are not visible to you. Do not guess or promise purchases, refunds, uptime, or account-specific results. Refer billing/support issues to the support server https://discord.gg/r9YQMhkZJm.

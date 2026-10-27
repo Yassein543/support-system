@@ -1,6 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="جارٍ التحميل">
-  <defs><linearGradient id="g" x1="27" y1="20" x2="103" y2="108" gradientUnits="userSpaceOnUse"><stop stop-color="#65f0d5"/><stop offset="1" stop-color="#607dff"/></linearGradient></defs>
-  <circle cx="64" cy="64" r="49" fill="#0c1a29" stroke="#294459" stroke-width="8"/>
-  <g transform-origin="64px 64px"><path d="M64 15a49 49 0 0 1 49 49" fill="none" stroke="url(#g)" stroke-width="9" stroke-linecap="round"/><animateTransform attributeName="transform" type="rotate" from="0 64 64" to="360 64 64" dur="1.15s" repeatCount="indefinite"/></g>
-  <circle cx="64" cy="64" r="9" fill="url(#g)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">YS-Bot loading</title>
+  <defs>
+    <linearGradient id="ys-loading-ring" x1="19" y1="24" x2="109" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#63ead0"/>
+      <stop offset="1" stop-color="#5684ff"/>
+    </linearGradient>
+    <radialGradient id="ys-loading-core" cx=".32" cy=".25" r=".85">
+      <stop stop-color="#8ef8e2"/>
+      <stop offset=".55" stop-color="#53c5ee"/>
+      <stop offset="1" stop-color="#557bff"/>
+    </radialGradient>
+    <radialGradient id="ys-loading-bg" cx=".34" cy=".22" r=".95">
+      <stop stop-color="#112b3b"/>
+      <stop offset="1" stop-color="#0a1726"/>
+    </radialGradient>
+  </defs>
+
+  <!-- The familiar YS dark badge, with a clearer spinner track. -->
+  <circle cx="64" cy="64" r="56" fill="#071421" stroke="#1b3548" stroke-width="2"/>
+  <circle cx="64" cy="64" r="48" fill="url(#ys-loading-bg)" stroke="#28465b" stroke-width="7"/>
+  <circle cx="64" cy="64" r="39" fill="none" stroke="#173047" stroke-width="5"/>
+
+  <g>
+    <path d="M64 25a39 39 0 0 1 38.2 31" fill="none" stroke="url(#ys-loading-ring)" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="102.2" cy="56" r="4.5" fill="#87f3dc"/>
+    <animateTransform attributeName="transform" type="rotate" from="0 64 64" to="360 64 64" dur="1.25s" repeatCount="indefinite"/>
+  </g>
+  <g opacity=".72">
+    <path d="M64 25a39 39 0 0 0-26.5 10.4" fill="none" stroke="#4ca9ef" stroke-width="4" stroke-linecap="round"/>
+    <animateTransform attributeName="transform" type="rotate" from="360 64 64" to="0 64 64" dur="2s" repeatCount="indefinite"/>
+  </g>
+
+  <circle cx="64" cy="64" r="12" fill="url(#ys-loading-core)"/>
+  <circle cx="60.5" cy="60.5" r="3" fill="#e7fff9" fill-opacity=".86"/>
+  <circle cx="64" cy="64" r="17" fill="none" stroke="#63dfd0" stroke-opacity=".2" stroke-width="2">
+    <animate attributeName="r" values="15;19;15" dur="1.8s" repeatCount="indefinite"/>
+    <animate attributeName="stroke-opacity" values=".28;.06;.28" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
 </svg>

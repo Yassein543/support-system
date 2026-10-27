@@ -1,9 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="روبوت">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">روبوت YS-Bot</title>
   <defs>
-    <linearGradient id="ring" x1="20" y1="15" x2="108" y2="113" gradientUnits="userSpaceOnUse"><stop stop-color="#70f1da"/><stop offset="1" stop-color="#557cff"/></linearGradient>
-    <radialGradient id="glow" cx=".3" cy=".24" r=".8"><stop stop-color="#1eb9a7"/><stop offset="1" stop-color="#4774ed"/></radialGradient>
+    <linearGradient id="ys-robot-ring" x1="18" y1="17" x2="109" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#70f1da"/>
+      <stop offset="1" stop-color="#557cff"/>
+    </linearGradient>
+    <linearGradient id="ys-robot-face" x1="38" y1="31" x2="91" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#123447"/>
+      <stop offset="1" stop-color="#0c2032"/>
+    </linearGradient>
+    <linearGradient id="ys-robot-body" x1="38" y1="83" x2="91" y2="109" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102b3e"/>
+      <stop offset="1" stop-color="#0b1d30"/>
+    </linearGradient>
+    <radialGradient id="ys-robot-halo" cx=".32" cy=".22" r=".9">
+      <stop stop-color="#1eb9a7" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#4774ed" stop-opacity=".12"/>
+    </radialGradient>
   </defs>
-  <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ring)" stroke-width="3.5"/>
-  <circle cx="64" cy="64" r="46" fill="url(#glow)" opacity=".13"/>
-  <g fill="none" stroke="#e8fffb" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M64 25V17m-6 0h12"/><rect x="32" y="29" width="64" height="49" rx="15"/><path d="M24 48h8m64 0h8"/><circle cx="48" cy="49" r="4" fill="#6af0d7" stroke="none"/><circle cx="80" cy="49" r="4" fill="#6af0d7" stroke="none"/><path d="M48 66q16 9 32 0M42 83h44l8 25H34l8-25Z"/><rect x="54" y="89" width="20" height="11" rx="3" fill="#6af0d7" fill-opacity=".45"/><path d="M34 88H24V72m70 16h10V72M48 108v7m32-7v7"/></g>
+
+  <!-- YS signature badge -->
+  <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ys-robot-ring)" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="48" fill="url(#ys-robot-halo)"/>
+
+  <!-- Antenna -->
+  <path d="M64 27V19" stroke="#dffff9" stroke-width="4.5" stroke-linecap="round"/>
+  <rect x="57" y="14" width="14" height="7" rx="3.5" fill="url(#ys-robot-ring)"/>
+
+  <!-- Head and side sensors -->
+  <rect x="31" y="29" width="66" height="51" rx="17" fill="url(#ys-robot-face)" stroke="#e5fff9" stroke-width="4.5"/>
+  <rect x="23" y="47" width="9" height="10" rx="4.5" fill="url(#ys-robot-ring)"/>
+  <rect x="96" y="47" width="9" height="10" rx="4.5" fill="url(#ys-robot-ring)"/>
+
+  <!-- Friendly face -->
+  <circle cx="48" cy="49" r="4.2" fill="#69ead3"/>
+  <circle cx="80" cy="49" r="4.2" fill="#69ead3"/>
+  <path d="M48 65q16 10 32 0" fill="none" stroke="#dffff9" stroke-width="3.8" stroke-linecap="round"/>
+
+  <!-- Connected arms and compact body -->
+  <path d="M42 85H27V72m59 13h15V72" fill="none" stroke="#dffff9" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M44 82h40l10 26H34l10-26Z" fill="url(#ys-robot-body)" stroke="url(#ys-robot-ring)" stroke-width="3.5" stroke-linejoin="round"/>
+  <rect x="53" y="89" width="22" height="12" rx="4" fill="#5ee1cd" fill-opacity=".22" stroke="#73ead9" stroke-opacity=".7" stroke-width="1.5"/>
+  <path d="M49 109v6m30-6v6" stroke="#dffff9" stroke-width="4.5" stroke-linecap="round"/>
 </svg>

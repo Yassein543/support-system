@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { Client, GatewayIntentBits, AuditLogEvent, EmbedBuilder, SlashCommandBuilder, REST, Routes, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder, Partials, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, AuditLogEvent, EmbedBuilder, SlashCommandBuilder, REST, Routes, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, AttachmentBuilder, Partials, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const fs = require('fs');
 const { exec } = require('child_process');
@@ -303,6 +303,121 @@ const textCooldowns = new Map();
 const duplicateMessages = new Map();
 const channelSlowmodeOriginals = new Map();
 const verificationTimers = new Map();
+const suspiciousSignals = new Map();
+const mentionRaidEvents = new Map();
+const altJoinEvents = new Map();
+const gameCooldowns = new Map();
+
+const SECURITY_SENSITIVE_PERMISSIONS = [
+    PermissionFlagsBits.Administrator, PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageRoles,
+    PermissionFlagsBits.ManageChannels, PermissionFlagsBits.BanMembers, PermissionFlagsBits.KickMembers,
+    PermissionFlagsBits.ManageWebhooks
+];
+
+function splitSettingIds(value) {
+    return String(value || '').split(/[\s,،]+/).map((id) => id.trim()).filter(Boolean);
+}
+
+async function sendSecurityAlert(guild, advanced, text) {
+    const channelId = advanced.antiNukeAlertChannelId || advanced.modLogChannelId;
+    const channel = channelId ? await guild.channels.fetch(channelId).catch(() => null) : null;
+    if (channel?.isTextBased()) await channel.send({ content: `🛡️ **YS Security** · ${text}`, allowedMentions: { parse: [] } }).catch(() => {});
+}
+
+async function checkStaffImpersonation(member, advanced) {
+    if (!advanced.antiImpersonationEnabled) return;
+    const trustedRoleIds = splitSettingIds(advanced.antiImpersonationStaffRoleIds);
+    if (!trustedRoleIds.length) return;
+    const trustedStaff = member.guild.members.cache.filter((staff) => staff.id !== member.id && trustedRoleIds.some((id) => staff.roles.cache.has(id)));
+    const confusables = { а:'a', е:'e', о:'o', р:'p', с:'c', х:'x', у:'y', і:'i', к:'k', м:'m', т:'t', в:'b', н:'h', ј:'j', α:'a', β:'b', ε:'e', ι:'i', κ:'k', μ:'m', ν:'n', ο:'o', ρ:'p', τ:'t', υ:'y', χ:'x' };
+    const normalize = (value) => Array.from(String(value || '').normalize('NFKD').toLocaleLowerCase())
+        .filter((character) => !/[\u0300-\u036f\u200b-\u200f\u202a-\u202e\ufeff]/u.test(character))
+        .map((character) => confusables[character] || character).join('').replace(/[\s._-]+/g, '');
+    const username = normalize(member.user.username);
+    const displayName = normalize(member.displayName);
+    const candidate = trustedStaff.find((staff) => {
+        const staffUsername = normalize(staff.user.username);
+        const staffGlobalName = normalize(staff.user.globalName);
+        const nameMatch = username === staffUsername || username === staffGlobalName
+            || displayName === normalize(staff.displayName) || displayName === staffGlobalName;
+        const avatarMatch = Boolean(staff.user.avatar && member.user.avatar && staff.user.avatar === member.user.avatar);
+        return nameMatch || avatarMatch;
+    });
+    if (candidate) await sendSecurityAlert(member.guild, advanced, `احتمال انتحال: الحساب <@${member.id}> يشبه عضو الطاقم <@${candidate.id}> بالاسم أو الصورة. التنبيه للمراجعة فقط.`);
+}
+
+async function restoreSuspiciousLockdown(guild, lockdown) {
+    const everyoneId = guild.roles.everyone.id;
+    for (const saved of lockdown?.channels || []) {
+        const channel = await guild.channels.fetch(saved.channelId).catch(() => null);
+        if (!channel?.permissionOverwrites) continue;
+        if (saved.hadOverwrite) await channel.permissionOverwrites.edit(everyoneId, { SendMessages: saved.previous }, { reason: 'YS-Bot suspicious activity lockdown ended' }).catch(() => {});
+        else await channel.permissionOverwrites.delete(everyoneId, 'YS-Bot suspicious activity lockdown ended').catch(() => {});
+    }
+}
+
+async function applySuspiciousLockdown(guild, durationMinutes) {
+    const everyoneId = guild.roles.everyone.id;
+    const changed = [];
+    for (const channel of guild.channels.cache.values()) {
+        if (![ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(channel.type)) continue;
+        const overwrite = channel.permissionOverwrites.cache.get(everyoneId);
+        const previous = overwrite?.deny.has(PermissionFlagsBits.SendMessages) ? false : overwrite?.allow.has(PermissionFlagsBits.SendMessages) ? true : null;
+        const applied = await channel.permissionOverwrites.edit(everyoneId, { SendMessages: false }, { reason: 'YS-Bot suspicious activity temporary lockdown' }).then(() => true).catch(() => false);
+        if (applied) changed.push({ channel, previous, hadOverwrite: Boolean(overwrite) });
+    }
+    if (!changed.length) return false;
+    const duration = Math.max(1, Math.min(60, Number(durationMinutes) || 5)) * 60000;
+    const state = guildState(guild.id);
+    state.temporarySuspiciousLockdown = {
+        expiresAt: Date.now() + duration,
+        channels: changed.map(({ channel, previous, hadOverwrite }) => ({ channelId: channel.id, previous, hadOverwrite }))
+    };
+    saveBotState();
+    setTimeout(async () => {
+        await restoreSuspiciousLockdown(guild, state.temporarySuspiciousLockdown);
+        delete state.temporarySuspiciousLockdown;
+        saveBotState();
+    }, duration);
+    return true;
+}
+
+async function recordSuspiciousSignal(guild, advanced, description) {
+    if (!advanced.antiSuspiciousActivityEnabled) return;
+    const now = Date.now();
+    const key = guild.id;
+    const windowMs = Math.max(5, Number(advanced.antiSuspiciousActivityWindowSeconds) || 30) * 1000;
+    const events = (suspiciousSignals.get(key) || []).filter((event) => now - event.time < windowMs);
+    events.push({ time: now, description });
+    suspiciousSignals.set(key, events);
+    const threshold = Math.max(2, Number(advanced.antiSuspiciousActivityThreshold) || 4);
+    const alreadyAlerted = events.some((event) => event.alerted);
+    if (events.length < threshold || alreadyAlerted) return;
+    events[events.length - 1].alerted = true;
+    await sendSecurityAlert(guild, advanced, `نشاط مشبوه: ${events.slice(-threshold).map((event) => event.description).join('، ')} خلال ${advanced.antiSuspiciousActivityWindowSeconds || 30} ثانية. راجع سجل التدقيق.`);
+    if (advanced.antiSuspiciousAutoLockdownEnabled) {
+        const applied = await applySuspiciousLockdown(guild, advanced.antiSuspiciousLockdownDurationMinutes);
+        await sendSecurityAlert(guild, advanced, applied ? `فُعّل قفل مؤقت للقنوات النصية لمدة ${advanced.antiSuspiciousLockdownDurationMinutes || 5} دقائق بسبب تراكم المؤشرات.` : 'تعذر تطبيق القفل المؤقت؛ تحقق من صلاحية Manage Channels وترتيب صلاحيات البوت.');
+    }
+}
+
+const suspiciousAuditLabels = new Map([
+    [AuditLogEvent.ChannelDelete, 'حذف قناة'], [AuditLogEvent.RoleDelete, 'حذف رتبة'],
+    [AuditLogEvent.RoleUpdate, 'تغيير إعدادات رتبة'], [AuditLogEvent.MemberRoleUpdate, 'تغيير رتب عضو'],
+    [AuditLogEvent.MemberBanAdd, 'حظر عضو'], [AuditLogEvent.MemberKick, 'طرد عضو'],
+    [AuditLogEvent.WebhookCreate, 'إنشاء Webhook'], [AuditLogEvent.WebhookDelete, 'حذف Webhook']
+].filter(([action]) => action !== undefined));
+
+client.on('guildAuditLogEntryCreate', async (entry, guild) => {
+    try {
+        const label = suspiciousAuditLabels.get(entry.action);
+        if (!label || !guild) return;
+        const settings = await loadGuildSettings(guild.id);
+        await recordSuspiciousSignal(guild, settings.advancedSettings || {}, `${label}${entry.executorId ? ` بواسطة ${entry.executorId}` : ''}`);
+    } catch (error) {
+        console.error(`Suspicious activity audit handler failed:`, error.message);
+    }
+});
 
 async function getSubscription(guildId) {
     if (process.env.BOT_API_SECRET) {
@@ -349,6 +464,13 @@ function buildProtectionStatusEmbed(guildSettings, language = 'ar') {
 // تسجيل أوامر السلاش أوتوماتيكياً فور تشغيل البوت
 client.on('ready', async () => {
     console.log(`🤖 YS-Bot جاهز ويعمل باسم: ${client.user.tag}`);
+    for (const guild of client.guilds.cache.values()) {
+        const state = guildState(guild.id);
+        if (!state.temporarySuspiciousLockdown) continue;
+        await restoreSuspiciousLockdown(guild, state.temporarySuspiciousLockdown);
+        delete state.temporarySuspiciousLockdown;
+        saveBotState();
+    }
 
     const commands = [
         new SlashCommandBuilder()
@@ -378,6 +500,9 @@ client.on('ready', async () => {
             .setName('poll')
             .setDescription('إنشاء تصويت بسيط')
             .addStringOption(option => option.setName('question').setDescription('سؤال التصويت').setMaxLength(250).setRequired(true)),
+        new SlashCommandBuilder()
+            .setName('games')
+            .setDescription('افتح قائمة ألعاب YS-Bot التفاعلية'),
         new SlashCommandBuilder()
             .setName('warn')
             .setDescription('تسجيل تحذير لعضو')
@@ -1085,6 +1210,306 @@ async function submitPoll(interaction) {
     await interaction.editReply(`تم نشر التصويت: ${poll}`);
 }
 
+const GAME_OPTIONS = [
+    { id:'trivia', flag:'gamesTriviaEnabled', name:'معلومات عامة', description:'أسئلة سريعة بأربع إجابات' },
+    { id:'image', flag:'gamesImageGuessEnabled', name:'خمّن الصورة', description:'شاهد رسمة YS وحاول معرفة الشيء' },
+    { id:'scramble', flag:'gamesScrambleEnabled', name:'ترتيب الحروف', description:'رتّب الحروف لاكتشاف الكلمة' },
+    { id:'riddle', flag:'gamesRiddleEnabled', name:'الألغاز', description:'ألغاز قصيرة وتحديات ذهنية' },
+    { id:'math', flag:'gamesMathEnabled', name:'الحساب السريع', description:'حل مسألة قبل نفاد الوقت' },
+    { id:'memory', flag:'gamesMemoryEnabled', name:'اختبار الذاكرة', description:'تذكّر تسلسل الألوان' },
+    { id:'rps', flag:'gamesRpsEnabled', name:'حجر ورقة مقص', description:'تحدّ البوت بجولة سريعة' },
+    { id:'dice', flag:'gamesDiceEnabled', name:'تحدي النرد', description:'توقّع نتيجة رمية النرد' },
+    { id:'ttt', flag:'gamesTicTacToeEnabled', name:'إكس أو', description:'العب إكس أو ضد البوت' },
+    { id:'emoji', flag:'gamesEmojiPuzzleEnabled', name:'لغز الإيموجي', description:'خمن العبارة من الصورة الرمزية' }
+];
+
+function getGameMenuOptions(advanced) {
+    return GAME_OPTIONS.filter((game) => advanced[game.flag] !== false);
+}
+
+async function showGamesMenu(interaction, settings) {
+    if (!interaction.guild) return interaction.reply({ content:'استخدم /games داخل سيرفر Discord.', ephemeral:true });
+    const advanced = settings?.advancedSettings || {};
+    if (advanced.gamesEnabled === false) return interaction.reply({ content:'قائمة الألعاب متوقفة من لوحة تحكم السيرفر.', ephemeral:true });
+    const allowedChannels = String(advanced.gameChannelIds || '').split(/[\s,]+/).filter(Boolean);
+    if (allowedChannels.length && !allowedChannels.includes(interaction.channelId)) {
+        return interaction.reply({ content:`الألعاب متاحة في القنوات التالية فقط: ${allowedChannels.map((id) => `<#${id}>`).join(' ')}`, ephemeral:true });
+    }
+    const games = getGameMenuOptions(advanced);
+    if (!games.length) return interaction.reply({ content:'ما في ألعاب مفعّلة حاليًا. فعّل الألعاب من لوحة التحكم.', ephemeral:true });
+    const menu = new StringSelectMenuBuilder()
+        .setCustomId('ys_games_menu')
+        .setPlaceholder('اختار لعبة من القائمة')
+        .addOptions(games.map((game) => ({ label:game.name, description:game.description, value:game.id })))
+        .setMinValues(1).setMaxValues(1);
+    const embed = new EmbedBuilder()
+        .setColor(0x35cdb7)
+        .setTitle('🎮 ألعاب YS-Bot')
+        .setDescription(`اختار تحدّي وابدأ اللعب! عندك **${games.length} ألعاب** متنوعة، منها تخمين الصورة والذاكرة وإكس أو.\n\n${games.map((game) => `• **${game.name}** — ${game.description}`).join('\n')}`)
+        .setFooter({ text:'كل جولة مستقلة • YS-Bot Games' });
+    return interaction.reply({ embeds:[embed], components:[new ActionRowBuilder().addComponents(menu)] });
+}
+
+function randomGameItem(items) { return items[Math.floor(Math.random() * items.length)]; }
+
+function imageGuessArtwork(item) {
+    const canvas = createCanvas(720, 360);
+    const ctx = canvas.getContext('2d');
+    const background = ctx.createLinearGradient(0, 0, 720, 360);
+    background.addColorStop(0, '#10293b'); background.addColorStop(1, '#111a38');
+    ctx.fillStyle = background; ctx.fillRect(0, 0, 720, 360);
+    ctx.fillStyle = 'rgba(83,223,202,.09)'; ctx.beginPath(); ctx.arc(610, 65, 128, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(92,132,255,.12)'; ctx.beginPath(); ctx.arc(120, 290, 150, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#a4b8c8'; ctx.font = '700 18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('YS-BOT  •  GUESS THE PICTURE', 360, 43);
+    ctx.save(); ctx.translate(360, 188); ctx.fillStyle = '#61e4cf'; ctx.strokeStyle = '#e8fffb'; ctx.lineWidth = 8; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.shadowColor = 'rgba(58,221,196,.3)'; ctx.shadowBlur = 28;
+    if (item === 'moon') {
+        ctx.beginPath(); ctx.arc(0, 0, 86, 0, Math.PI * 2); ctx.fill();
+        ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(40, -28, 78, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#ffe58a'; ctx.beginPath(); ctx.arc(100, -64, 7, 0, Math.PI * 2); ctx.fill();
+    } else if (item === 'rocket') {
+        ctx.beginPath(); ctx.moveTo(0,-112); ctx.quadraticCurveTo(71,-52,52,45); ctx.lineTo(0,88); ctx.lineTo(-52,45); ctx.quadraticCurveTo(-71,-52,0,-112); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#122139'; ctx.beginPath(); ctx.arc(0,-20,20,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#ffbd72'; ctx.beginPath(); ctx.moveTo(-22,72); ctx.lineTo(0,122); ctx.lineTo(22,72); ctx.fill();
+    } else if (item === 'crown') {
+        ctx.beginPath(); ctx.moveTo(-100,55); ctx.lineTo(-78,-54); ctx.lineTo(-25,-4); ctx.lineTo(0,-94); ctx.lineTo(31,-4); ctx.lineTo(82,-54); ctx.lineTo(100,55); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#ffe58a'; for (const x of [-78,0,82]) { ctx.beginPath(); ctx.arc(x, -58, 10, 0, Math.PI*2); ctx.fill(); }
+    } else if (item === 'football') {
+        ctx.save(); ctx.rotate(-.38); ctx.beginPath(); ctx.ellipse(0,0,116,67,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle='#122139'; ctx.lineWidth=8; ctx.beginPath(); ctx.moveTo(-18,-62); ctx.lineTo(-18,62); ctx.moveTo(8,-58); ctx.lineTo(8,58); ctx.stroke(); ctx.restore();
+    } else if (item === 'cat') {
+        ctx.beginPath(); ctx.moveTo(-82,-48); ctx.lineTo(-68,-112); ctx.lineTo(-18,-75); ctx.quadraticCurveTo(0,-81,18,-75); ctx.lineTo(68,-112); ctx.lineTo(82,-48); ctx.quadraticCurveTo(102,72,0,87); ctx.quadraticCurveTo(-102,72,-82,-48); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#122139'; for (const x of [-30,30]) { ctx.beginPath(); ctx.arc(x,-15,9,0,Math.PI*2); ctx.fill(); }
+        ctx.beginPath(); ctx.arc(0,13,7,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#122139'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(0,20); ctx.lineTo(0,34); ctx.moveTo(0,34); ctx.quadraticCurveTo(-16,45,-25,34); ctx.moveTo(0,34); ctx.quadraticCurveTo(16,45,25,34); ctx.stroke();
+    } else if (item === 'pizza') {
+        ctx.beginPath(); ctx.moveTo(-102,-73); ctx.lineTo(104,47); ctx.quadraticCurveTo(0,115,-102,-73); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle='#ffbd72'; ctx.lineWidth=15; ctx.beginPath(); ctx.moveTo(-102,-73); ctx.quadraticCurveTo(8,-31,104,47); ctx.stroke();
+        ctx.fillStyle='#ff7e83'; for (const [x,y] of [[-35,-16],[11,6],[38,44],[-18,40]]) { ctx.beginPath(); ctx.arc(x,y,9,0,Math.PI*2); ctx.fill(); }
+    } else if (item === 'robot') {
+        ctx.beginPath(); ctx.roundRect(-90,-72,180,150,36); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle='#e8fffb'; ctx.beginPath(); ctx.moveTo(0,-72); ctx.lineTo(0,-101); ctx.stroke();
+        ctx.fillStyle='#ffe58a'; ctx.beginPath(); ctx.arc(0,-109,10,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#122139'; for (const x of [-38,38]) { ctx.beginPath(); ctx.arc(x,-12,12,0,Math.PI*2); ctx.fill(); }
+        ctx.strokeStyle='#122139'; ctx.lineWidth=7; ctx.beginPath(); ctx.moveTo(-34,37); ctx.quadraticCurveTo(0,63,34,37); ctx.stroke();
+    } else {
+        ctx.beginPath(); ctx.moveTo(0,-110); ctx.lineTo(-100,55); ctx.lineTo(100,55); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,-51); ctx.lineTo(-78,76); ctx.lineTo(78,76); ctx.closePath(); ctx.fill();
+        ctx.fillStyle='#ffbd72'; ctx.fillRect(-14,66,28,54);
+    }
+    ctx.restore();
+    ctx.fillStyle = '#d4e7ef'; ctx.font = '600 16px sans-serif'; ctx.fillText('Can you name it?', 360, 326);
+    return canvas.toBuffer('image/png');
+}
+
+function questionGame(interaction, title, prompt, choices, answer, imageItem = null) {
+    const correct = choices.indexOf(answer);
+    const row = new ActionRowBuilder().addComponents(choices.map((choice, index) => new ButtonBuilder()
+        .setCustomId(`ys_game_answer:${interaction.user.id}:${correct}:${index}`)
+        .setLabel(String(choice).slice(0, 80)).setStyle(ButtonStyle.Secondary)));
+    const embed = new EmbedBuilder().setColor(0x35cdb7).setTitle(title).setDescription(prompt).setFooter({ text:'اختار إجابتك • YS-Bot Games' });
+    const payload = { embeds:[embed], components:[row] };
+    if (imageItem) {
+        const fileName='ys-game-picture.png';
+        embed.setImage(`attachment://${fileName}`);
+        payload.files=[new AttachmentBuilder(imageGuessArtwork(imageItem), { name:fileName })];
+    }
+    return interaction.update(payload);
+}
+
+function ticTacToeWinner(board) {
+    const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for (const [a,b,c] of lines) if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+    return board.every(Boolean) ? 'draw' : null;
+}
+
+function ticTacToeRows(board, userId, disabled = false) {
+    return [0,1,2].map((row) => new ActionRowBuilder().addComponents([0,1,2].map((column) => {
+        const index=row*3+column;
+        return new ButtonBuilder().setCustomId(`ys_game_ttt:${userId}:${index}`).setLabel(board[index] || '·')
+            .setStyle(board[index] === 'X' ? ButtonStyle.Success : board[index] === 'O' ? ButtonStyle.Danger : ButtonStyle.Secondary)
+            .setDisabled(disabled || Boolean(board[index]));
+    })));
+}
+
+function chooseTicTacToeMove(board) {
+    const open=board.map((value,index)=>value ? -1 : index).filter((index)=>index >= 0);
+    const winningMove=(mark)=>open.find((index)=>{ const next=[...board]; next[index]=mark; return ticTacToeWinner(next)===mark; });
+    const move=winningMove('O') ?? winningMove('X');
+    if (move !== undefined) return move;
+    if (open.includes(4)) return 4;
+    const corners=open.filter((index)=>[0,2,6,8].includes(index));
+    return randomGameItem(corners.length ? corners : open);
+}
+
+async function startTicTacToe(interaction) {
+    const board=Array(9).fill(null);
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('❎ إكس أو ضد البوت').setDescription('أنت **X** والبوت **O**. اختار مربعًا للبدء.');
+    await interaction.update({ embeds:[embed], components:ticTacToeRows(board, interaction.user.id) });
+    const message=await interaction.fetchReply();
+    const collector=message.createMessageComponentCollector({ time:90000, filter:(button)=>button.user.id===interaction.user.id && button.customId.startsWith(`ys_game_ttt:${interaction.user.id}:`) });
+    collector.on('collect', async (button) => {
+        const index=Number(button.customId.split(':')[2]);
+        if (!Number.isInteger(index) || board[index]) return button.reply({ content:'هذا المربع مستخدم، اختار غيره.', ephemeral:true });
+        board[index]='X';
+        let result=ticTacToeWinner(board);
+        if (!result) { board[chooseTicTacToeMove(board)]='O'; result=ticTacToeWinner(board); }
+        const status=result==='X' ? 'فزت! جولة حلوة 🎉' : result==='O' ? 'فاز البوت هالمرة 🤖' : result==='draw' ? 'تعادل! جولة متوازنة 🤝' : 'دورك — أنت X';
+        embed.setDescription(status);
+        await button.update({ embeds:[embed], components:ticTacToeRows(board, interaction.user.id, Boolean(result)) });
+        if (result) collector.stop('finished');
+    });
+    collector.on('end', async (_, reason) => {
+        if (reason === 'time') {
+            embed.setDescription('انتهى وقت الجولة. استخدم /games لبدء لعبة جديدة.');
+            await interaction.editReply({ embeds:[embed], components:ticTacToeRows(board, interaction.user.id, true) }).catch(()=>{});
+        }
+    });
+}
+
+async function startMemoryGame(interaction) {
+    const colors=[{id:'red',name:'أحمر',emoji:'🔴',style:ButtonStyle.Danger},{id:'blue',name:'أزرق',emoji:'🔵',style:ButtonStyle.Primary},{id:'green',name:'أخضر',emoji:'🟢',style:ButtonStyle.Success},{id:'yellow',name:'أصفر',emoji:'🟡',style:ButtonStyle.Secondary}];
+    const sequence=Array.from({length:4},()=>randomGameItem(colors).id);
+    const colorButtons=()=>new ActionRowBuilder().addComponents(colors.map((color)=>new ButtonBuilder().setCustomId(`ys_game_memory:${interaction.user.id}:${color.id}`).setLabel(color.name).setEmoji(color.emoji).setStyle(color.style)));
+    const colorNames=sequence.map((id)=>colors.find((color)=>color.id===id).emoji).join('  ');
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('🧠 اختبار الذاكرة').setDescription(`احفظ هذا التسلسل:\n\n# ${colorNames}\n\nراح تختفي الألوان بعد لحظات.`);
+    await interaction.update({ embeds:[embed], components:[] });
+    await new Promise((resolve)=>setTimeout(resolve,2600));
+    embed.setDescription('كرر التسلسل بالترتيب. اضغط أول لون ثم اللي بعده.\n\nالتقدم: **0 / 4**');
+    await interaction.editReply({ embeds:[embed], components:[colorButtons()] }).catch(()=>null);
+    const message=await interaction.fetchReply().catch(()=>null);
+    if (!message) return;
+    let progress=0;
+    const collector=message.createMessageComponentCollector({ time:60000, filter:(button)=>button.user.id===interaction.user.id && button.customId.startsWith(`ys_game_memory:${interaction.user.id}:`) });
+    collector.on('collect', async (button)=>{
+        const chosen=button.customId.split(':')[2];
+        if (chosen!==sequence[progress]) {
+            embed.setDescription(`التسلسل الصحيح كان: ${colorNames}\n\nقريب! جرّب مرة ثانية.`);
+            await button.update({ embeds:[embed], components:[] });
+            collector.stop('finished'); return;
+        }
+        progress++;
+        if (progress===sequence.length) {
+            embed.setDescription('ذاكرتك قوية! حفظت التسلسل كاملًا **4 / 4** ✨');
+            await button.update({ embeds:[embed], components:[] });
+            collector.stop('finished'); return;
+        }
+        embed.setDescription(`ممتاز، كمل التسلسل.\n\nالتقدم: **${progress} / 4**`);
+        await button.update({ embeds:[embed], components:[colorButtons()] });
+    });
+    collector.on('end',async(_,reason)=>{ if(reason==='time'){embed.setDescription(`انتهى وقت اللعبة. التسلسل كان: ${colorNames}`); await interaction.editReply({embeds:[embed],components:[]}).catch(()=>{});} });
+}
+
+async function launchSelectedGame(interaction) {
+    if (!interaction.guild) return interaction.update({ content:'الألعاب متاحة داخل السيرفر فقط.', embeds:[], components:[] });
+    const settings=await loadGuildSettings(interaction.guild.id);
+    const advanced=settings.advancedSettings || {};
+    if (advanced.gamesEnabled===false) return interaction.update({ content:'الألعاب متوقفة من لوحة تحكم السيرفر.', embeds:[], components:[] });
+    const game=GAME_OPTIONS.find((item)=>item.id===interaction.values[0]);
+    if (!game || advanced[game.flag]===false) return interaction.update({ content:'هذه اللعبة غير مفعّلة حاليًا.', embeds:[], components:[] });
+    const allowedChannels=String(advanced.gameChannelIds || '').split(/[\s,]+/).filter(Boolean);
+    if (allowedChannels.length && !allowedChannels.includes(interaction.channelId)) return interaction.update({ content:`الألعاب متاحة في: ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`, embeds:[], components:[] });
+    const cooldownMs=Math.max(0,Number(advanced.gamesCooldownSeconds ?? 8))*1000;
+    const cooldownKey=`${interaction.guild.id}:${interaction.user.id}`;
+    const remaining=cooldownMs-(Date.now()-(gameCooldowns.get(cooldownKey)||0));
+    if (remaining>0) return interaction.update({ content:`استنى ${Math.ceil(remaining/1000)} ثواني قبل ما تبدأ لعبة ثانية.`, embeds:[], components:[] });
+    const startedAt=Date.now();
+    gameCooldowns.set(cooldownKey,startedAt);
+    if (cooldownMs) {
+        const cooldownTimer=setTimeout(()=>{if(gameCooldowns.get(cooldownKey)===startedAt)gameCooldowns.delete(cooldownKey);},cooldownMs);
+        cooldownTimer.unref?.();
+    }
+
+    if (game.id==='memory') return startMemoryGame(interaction);
+    if (game.id==='ttt') return startTicTacToe(interaction);
+    if (game.id==='rps') {
+        const choices=[['rock','حجر','🪨'],['paper','ورقة','📄'],['scissors','مقص','✂️']];
+        const row=new ActionRowBuilder().addComponents(choices.map(([id,name,emoji])=>new ButtonBuilder().setCustomId(`ys_game_rps:${interaction.user.id}:${id}`).setLabel(name).setEmoji(emoji).setStyle(ButtonStyle.Secondary)));
+        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('✊ حجر ورقة مقص').setDescription('اختار حركتك، والبوت يلعب ضدك.');
+        return interaction.update({embeds:[embed],components:[row]});
+    }
+    if (game.id==='dice') {
+        const row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ys_game_dice:${interaction.user.id}:low`).setLabel('أتوقع 1–3').setStyle(ButtonStyle.Primary),new ButtonBuilder().setCustomId(`ys_game_dice:${interaction.user.id}:high`).setLabel('أتوقع 4–6').setStyle(ButtonStyle.Success));
+        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('🎲 تحدي النرد').setDescription('توقّع نتيجة رمية النرد: منخفض (1–3) أو مرتفع (4–6).');
+        return interaction.update({embeds:[embed],components:[row]});
+    }
+
+    if (game.id==='trivia') {
+        const q=randomGameItem([
+            {prompt:'ما أكبر كوكب في المجموعة الشمسية؟',choices:['الأرض','المشتري','المريخ','زحل'],answer:'المشتري'},
+            {prompt:'كم عدد أضلاع الشكل السداسي؟',choices:['5','6','7','8'],answer:'6'},
+            {prompt:'ما عاصمة اليابان؟',choices:['سيول','بكين','طوكيو','بانكوك'],answer:'طوكيو'},
+            {prompt:'ما الغاز الذي تمتصه النباتات من الهواء؟',choices:['الأكسجين','الهيليوم','ثاني أكسيد الكربون','الهيدروجين'],answer:'ثاني أكسيد الكربون'},
+            {prompt:'كم دقيقة في ساعتين ونصف؟',choices:['120','140','150','180'],answer:'150'}
+        ]);
+        return questionGame(interaction,'🌍 معلومات عامة',q.prompt,q.choices,q.answer);
+    }
+    if (game.id==='image') {
+        const gallery=[['moon','القمر'],['rocket','الصاروخ'],['crown','التاج'],['football','كرة القدم'],['cat','القطة'],['pizza','البيتزا'],['robot','الروبوت'],['tree','الشجرة']];
+        const chosen=randomGameItem(gallery);
+        const choices=[chosen[1],...gallery.filter((item)=>item[0]!==chosen[0]).sort(()=>Math.random()-.5).slice(0,3).map((item)=>item[1])].sort(()=>Math.random()-.5);
+        return questionGame(interaction,'🖼️ خمّن الصورة','شو الشيء اللي بتمثله رسمة YS؟',choices,chosen[1],chosen[0]);
+    }
+    if (game.id==='scramble') {
+        const word=randomGameItem([{word:'كوكب',choices:['كوكب','مكتب','مركب','كوبك']},{word:'روبوت',choices:['روبوت','ربوتو','روبوب','بوتر']},{word:'مجرة',choices:['مجرة','مجرد','مرجة','مجره']},{word:'سحابة',choices:['سحابة','سباحة','سحارة','ساحة']}]);
+        const letters=Array.from(word.word).reverse().join('  ');
+        return questionGame(interaction,'🔤 ترتيب الحروف',`رتّب الحروف لتكتشف الكلمة:\n\n# ${letters}`,word.choices,word.word);
+    }
+    if (game.id==='riddle') {
+        const q=randomGameItem([
+            {prompt:'له أسنان كثيرة لكنه لا يعض، ما هو؟',choices:['المشط','التمساح','المفتاح','المنشار'],answer:'المشط'},
+            {prompt:'كلما أخذت منه كبر، ما هو؟',choices:['الحفرة','العمر','الكتاب','الظل'],answer:'الحفرة'},
+            {prompt:'يكتب ولا يقرأ، ما هو؟',choices:['القلم','الكتاب','الطالب','المدرسة'],answer:'القلم'},
+            {prompt:'ما الشيء الذي له عين ولا يرى؟',choices:['الإبرة','العاصفة','الكاميرا','السمكة'],answer:'الإبرة'}
+        ]);
+        return questionGame(interaction,'🧩 لغز سريع',q.prompt,q.choices,q.answer);
+    }
+    if (game.id==='math') {
+        const a=2+Math.floor(Math.random()*18), b=2+Math.floor(Math.random()*18), answer=a+b;
+        const choices=[answer,answer+2,answer-3,answer+5].sort(()=>Math.random()-.5).map(String);
+        return questionGame(interaction,'⚡ الحساب السريع',`كم ناتج **${a} + ${b}**؟`,choices,String(answer));
+    }
+    if (game.id==='emoji') {
+        const q=randomGameItem([
+            {picture:'🚰  +  🌹',answer:'ماء الورد',choices:['ماء الورد','شاي بالنعناع','قهوة عربية','عصير تفاح']},
+            {picture:'🧊  +  🍵',answer:'شاي مثلج',choices:['شاي مثلج','حليب ساخن','قهوة سادة','عصير برتقال']},
+            {picture:'☀️  +  🌻',answer:'عباد الشمس',choices:['عباد الشمس','قمر كامل','حديقة ليلية','زهرة الثلج']},
+            {picture:'🐝  +  🍯',answer:'عسل النحل',choices:['عسل النحل','خبز بالعسل','حليب النحل','سكر بني']}
+        ]);
+        return questionGame(interaction,'✨ لغز الإيموجي',`# ${q.picture}\n\nما العبارة المقصودة؟`,q.choices,q.answer);
+    }
+}
+
+async function handleGameButton(interaction) {
+    const parts=interaction.customId.split(':');
+    if ((parts[0]==='ys_game_memory' || parts[0]==='ys_game_ttt') && interaction.user.id!==parts[1]) {
+        return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
+    }
+    if (parts[0]==='ys_game_answer') {
+        const [,ownerId,correctIndex,chosenIndex]=parts;
+        if (interaction.user.id!==ownerId) return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
+        const correct=Number(correctIndex)===Number(chosenIndex);
+        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setColor(correct?0x23b887:0xed6673).setFooter({text:correct?'إجابة صحيحة! أحسنت 🎉':'مو هي الإجابة هالمرة، جرّب لعبة ثانية!'});
+        const rows=interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(true).setStyle(Number(component.customId.split(':')[3])===Number(correctIndex)?ButtonStyle.Success:ButtonStyle.Secondary))));
+        return interaction.update({embeds:[embed],components:rows});
+    }
+    if (parts[0]==='ys_game_rps') {
+        const [,ownerId,choice]=parts;
+        if (interaction.user.id!==ownerId) return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
+        const bot=randomGameItem(['rock','paper','scissors']);
+        const labels={rock:'🪨 حجر',paper:'📄 ورقة',scissors:'✂️ مقص'};
+        const outcome=choice===bot?'تعادل!':(choice==='rock'&&bot==='scissors')||(choice==='paper'&&bot==='rock')||(choice==='scissors'&&bot==='paper')?'فزت على البوت! 🎉':'البوت فاز هالمرة 🤖';
+        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setDescription(`أنت: **${labels[choice]}**\nالبوت: **${labels[bot]}**\n\n${outcome}`);
+        return interaction.update({embeds:[embed],components:interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(true))))});
+    }
+    if (parts[0]==='ys_game_dice') {
+        const [,ownerId,guess]=parts;
+        if (interaction.user.id!==ownerId) return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
+        const roll=1+Math.floor(Math.random()*6), actual=roll<=3?'low':'high';
+        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setDescription(`طلعت النتيجة **${roll}** 🎲\n\n${guess===actual?'توقّعك صح! 🎉':'ما زبطت هالمرة، جرّب جولة ثانية!'}`);
+        return interaction.update({embeds:[embed],components:interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(true))))});
+    }
+    return;
+}
+
 async function warnMember(interaction) {
     await interaction.deferReply({ ephemeral: true });
     if (!interaction.guild || !interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages)) return interaction.editReply('تحتاج صلاحية إدارة الرسائل لإصدار تحذير.');
@@ -1168,7 +1593,7 @@ async function getReplyMessages(userId, forcedLanguage) {
 
 const slashEmojiBufferCache = new Map();
 const SLASH_COMMAND_EMOJI = Object.freeze({
-    help: 'ys-info', plan: 'ys-premium', anticrash: 'ys-shield', profile: 'ys-stats',
+    help: 'ys-info', plan: 'ys-premium', anticrash: 'ys-shield', profile: 'ys-stats', games: 'ys-sparkles',
     ticket: 'ys-ticket-open', suggest: 'ys-suggestion', poll: 'ys-poll', warn: 'ys-warning',
     verify: 'ys-shield-check', support: 'ys-support', invites: 'ys-users', embed: 'ys-message'
 });
@@ -1223,7 +1648,9 @@ function addSlashReplyEmoji(interaction) {
 
 // معالجة أوامر السلاش (Interaction)
 client.on('interactionCreate', async (interaction) => {
+    if (interaction.isStringSelectMenu() && interaction.customId === 'ys_games_menu') return launchSelectedGame(interaction);
     if (interaction.isButton()) {
+        if (interaction.customId.startsWith('ys_game_')) return handleGameButton(interaction);
         if (interaction.customId === 'ys_ticket_open') return createTicket(interaction);
         if (interaction.customId === 'ys_ticket_close') return closeTicket(interaction);
         if (interaction.customId.startsWith('ys_suggest_vote:')) return handleSuggestionVote(interaction);
@@ -1255,6 +1682,7 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.commandName === 'ticket') return createTicket(interaction);
     if (interaction.commandName === 'suggest') return submitSuggestion(interaction);
     if (interaction.commandName === 'poll') return submitPoll(interaction);
+    if (interaction.commandName === 'games') return showGamesMenu(interaction, guildSettings);
     if (interaction.commandName === 'warn') return warnMember(interaction);
     if (interaction.commandName === 'verify') return verifyMember(interaction);
     if (interaction.commandName === 'support') return showSupportChannel(interaction);
@@ -1267,8 +1695,8 @@ client.on('interactionCreate', async (interaction) => {
             .setColor(0x35cdb7)
             .setTitle(english ? 'YS-Bot commands' : 'أوامر YS-Bot')
             .setDescription(english
-                ? '`/profile` member stats · `/ticket` open support ticket · `/suggest` submit suggestion · `/poll` create poll · `/warn` warn a member · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send the configured embed.'
-                : '`/profile` إحصاءات عضو · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
+                ? '`/profile` member stats · `/games` open interactive games · `/ticket` open support ticket · `/suggest` submit suggestion · `/poll` create poll · `/warn` warn a member · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send the configured embed.'
+                : '`/profile` إحصاءات عضو · `/games` قائمة الألعاب التفاعلية · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
             .setFooter({ text: english ? 'YS-Bot • Use / to browse commands' : 'YS-Bot • اكتب / لاستعراض الأوامر' });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -1527,6 +1955,38 @@ async function handleRaidJoin(member, settings) {
     return false;
 }
 
+async function handleAntiAltJoin(member, advanced) {
+    if (!advanced.antiAltEnabled || member.user.bot) return false;
+    const createdAt = Number(member.user?.createdTimestamp || 0);
+    if (!createdAt) return false;
+    const ageDays = (Date.now() - createdAt) / 86400000;
+    const minimumAge = Math.max(1, Math.min(365, Number(advanced.antiAltMinAccountAgeDays) || 14));
+    if (ageDays >= minimumAge) return false;
+
+    const now = Date.now();
+    const windowSeconds = Math.max(10, Math.min(600, Number(advanced.antiAltWindowSeconds) || 60));
+    const recent = (altJoinEvents.get(member.guild.id) || []).filter((join) => now - join.time < windowSeconds * 1000);
+    recent.push({ id: member.id, time: now, ageDays });
+    altJoinEvents.set(member.guild.id, recent);
+    const clusterLimit = Math.max(2, Math.min(20, Number(advanced.antiAltClusterLimit) || 3));
+    const clusterNote = recent.length >= clusterLimit
+        ? ` رُصدت ${recent.length} حسابات حديثة خلال ${windowSeconds} ثانية؛ قد تكون موجة حسابات بديلة.`
+        : '';
+    const action = ['timeout', 'kick'].includes(advanced.antiAltAction) ? advanced.antiAltAction : 'alert';
+    await sendSecurityAlert(member.guild, advanced, `Anti-Alt: انضم الحساب <@${member.id}> وعمره ${ageDays.toFixed(1)} يوم، أقل من الحد المحدد (${minimumAge} يوم). هذا مؤشر اشتباه بالعمر فقط وليس إثباتًا أنه حساب بديل.${clusterNote}`);
+
+    if (action === 'timeout' && member.moderatable) {
+        const timeoutMinutes = Math.max(1, Math.min(1440, Number(advanced.antiAltTimeoutMinutes) || 10));
+        const timedOut = await member.timeout(timeoutMinutes * 60 * 1000, `YS-Bot Anti-Alt: account younger than ${minimumAge} days`).then(() => true).catch(() => false);
+        if (timedOut) await sendSecurityAlert(member.guild, advanced, `تم إسكات <@${member.id}> لمدة ${timeoutMinutes} دقيقة كإجراء Anti-Alt.`);
+    } else if (action === 'kick' && member.kickable) {
+        const kicked = await member.kick(`YS-Bot Anti-Alt: account younger than ${minimumAge} days`).then(() => true).catch(() => false);
+        if (kicked) return true;
+    }
+    await recordSuspiciousSignal(member.guild, advanced, 'انضمام حساب حديث جدًا');
+    return false;
+}
+
 const antiNukeAuditEvents = {
     [AuditLogEvent.ChannelCreate]: ['antiNukeChannelCreateEnabled', 'antiNukeChannelCreateLimit', 'إنشاء قناة'],
     [AuditLogEvent.ChannelDelete]: ['antiNukeChannelDeleteEnabled', 'antiNukeChannelDeleteLimit', 'حذف قناة'],
@@ -1620,6 +2080,22 @@ client.on('guildAuditLogEntryCreate', async (entry, guild) => {
 client.on('guildMemberAdd', async (member) => {
     const settings = await loadGuildSettings(member.guild.id);
     const advanced = settings.advancedSettings || {};
+    await recordSuspiciousSignal(member.guild, advanced, `انضمام ${member.user.bot ? 'بوت' : 'عضو'} جديد`);
+
+    if (member.user.bot && advanced.antiBotEnabled) {
+        const approved = splitSettingIds(advanced.antiBotApprovedIds).includes(member.id);
+        const riskyRoles = member.roles.cache.filter((role) => SECURITY_SENSITIVE_PERMISSIONS.some((permission) => role.permissions.has(permission)));
+        if (!approved && riskyRoles.size) {
+            const removed = await member.roles.remove([...riskyRoles.keys()], 'YS-Bot: unapproved bot received sensitive permissions').then(() => true).catch(() => false);
+            await sendSecurityAlert(member.guild, advanced, `انضم البوت **${member.user.tag}** ومعه رتب حساسة ${removed ? 'وأزيلت الرتب التي أمكن إزالتها' : 'لكن تعذرت إزالة الرتب؛ راجع صلاحيات البوت وترتيب الرتب'}. أضف معرّفه لقائمة المعتمدين بعد المراجعة.`);
+        } else if (!approved) {
+            await sendSecurityAlert(member.guild, advanced, `انضم بوت جديد: **${member.user.tag}**. راجعه قبل منحه صلاحيات حساسة.`);
+        }
+    }
+
+    await checkStaffImpersonation(member, advanced);
+    const removedByAntiAlt = await handleAntiAltJoin(member, advanced);
+    if (removedByAntiAlt) return;
     const removedByYoungAccountProtection = await handleRaidJoin(member, settings);
     if (removedByYoungAccountProtection) return;
 
@@ -1687,11 +2163,44 @@ client.on('guildMemberRemove', async (member) => {
 client.on('guildMemberUpdate', async (before, after) => {
     const added = after.roles.cache.filter((role) => !before.roles.cache.has(role.id));
     const removed = before.roles.cache.filter((role) => !after.roles.cache.has(role.id));
-    if (!added.size && !removed.size) return;
     const settings = await loadGuildSettings(after.guild.id);
-    if (!settings.advancedSettings?.logRoleChanges) return;
+    const advanced = settings.advancedSettings || {};
+    const dangerousAdded = added.filter((role) => SECURITY_SENSITIVE_PERMISSIONS.some((permission) => role.permissions.has(permission)));
+    if (dangerousAdded.size && advanced.antiPermissionAbuseEnabled) {
+        await sendSecurityAlert(after.guild, advanced, `مُنحت <@${after.id}> رتبة بصلاحيات حساسة: ${dangerousAdded.map((role) => role.name).join('، ')}. راجع سجل التدقيق.`);
+    }
+    if (after.user.bot && advanced.antiBotEnabled && dangerousAdded.size && !splitSettingIds(advanced.antiBotApprovedIds).includes(after.id)) {
+        const removedSuccessfully = await after.roles.remove([...dangerousAdded.keys()], 'YS-Bot: remove sensitive permissions from an unapproved bot').then(() => true).catch(() => false);
+        await sendSecurityAlert(after.guild, advanced, `محاولة منح بوت غير معتمد **${after.user.tag}** رتبة حساسة${removedSuccessfully ? '؛ أزيلت الرتبة' : '؛ تعذرت إزالتها، تحقق من ترتيب الرتب'}.`);
+    }
+    await checkStaffImpersonation(after, advanced);
+    if ((!added.size && !removed.size) || !advanced.logRoleChanges) return;
     const changes = [...added.map((role) => `+ ${role.name}`), ...removed.map((role) => `- ${role.name}`)].join(', ');
     await sendGuildLog(after.guild, settings, `تغيّرت رتب <@${after.id}>: ${changes}`, 0x8b5cf6);
+});
+
+client.on('guildRoleUpdate', async (before, after) => {
+    const addedPermissions = SECURITY_SENSITIVE_PERMISSIONS.filter((permission) => !before.permissions.has(permission) && after.permissions.has(permission));
+    if (!addedPermissions.length) return;
+    const settings = await loadGuildSettings(after.guild.id);
+    const advanced = settings.advancedSettings || {};
+    if (advanced.antiPermissionAbuseEnabled) {
+        const permissionNames = addedPermissions.map((permission) => Object.entries(PermissionFlagsBits).find(([, value]) => value === permission)?.[0] || 'صلاحية خطرة');
+        await sendSecurityAlert(after.guild, advanced, `أُضيفت صلاحيات خطرة إلى رتبة **${after.name}**: ${permissionNames.join('، ')}. راجع سجل التدقيق.`);
+        if (advanced.antiPermissionAbuseRevertEnabled) {
+            const reverted = await after.setPermissions(after.permissions.remove(...addedPermissions), 'YS-Bot reverted newly added sensitive permissions').then(() => true).catch(() => false);
+            await sendSecurityAlert(after.guild, advanced, reverted ? `أُزيلت الصلاحيات الخطرة الجديدة من رتبة **${after.name}**.` : `تعذر إلغاء الصلاحيات في رتبة **${after.name}**؛ امنح البوت Manage Roles وارفع رتبته.`);
+        }
+    }
+});
+
+client.on('userUpdate', async (before, after) => {
+    for (const guild of client.guilds.cache.values()) {
+        const member = guild.members.cache.get(after.id);
+        if (!member) continue;
+        const settings = await loadGuildSettings(guild.id);
+        await checkStaffImpersonation(member, settings.advancedSettings || {});
+    }
 });
 
 client.on('channelCreate', async (channel) => {
@@ -1796,6 +2305,38 @@ client.on('messageCreate', async (message) => {
     }
 
     const plainText = message.content.trim();
+    if (advanced.antiMentionRaidEnabled && !isModerator) {
+        const hasEveryone = /@everyone\b/i.test(message.content);
+        const hasHere = /@here\b/i.test(message.content);
+        const configuredMassMention = (hasEveryone && advanced.antiMentionRaidBlockEveryone !== false)
+            || (hasHere && advanced.antiMentionRaidBlockHere !== false);
+        const mentionTokens = message.content.match(/<@!?\d+>|<@&\d+>/g) || [];
+        const mentionCount = Math.max(mentionTokens.length, message.mentions.users.size + message.mentions.roles.size);
+        const mentionLimitHit = mentionCount >= Number(advanced.antiMentionRaidLimit || 5);
+        const mentionKey = `${message.guild.id}:${message.author.id}`;
+        let messageBurstHit = false;
+        if (mentionCount > 0 && !configuredMassMention && !mentionLimitHit) {
+            const now = Date.now();
+            const windowMs = Math.max(3, Number(advanced.antiMentionRaidWindowSeconds) || 10) * 1000;
+            const times = (mentionRaidEvents.get(mentionKey) || []).filter((time) => now - time < windowMs);
+            times.push(now);
+            mentionRaidEvents.set(mentionKey, times);
+            if (mentionRaidEvents.size > 8000) mentionRaidEvents.delete(mentionRaidEvents.keys().next().value);
+            messageBurstHit = times.length >= Math.max(2, Number(advanced.antiMentionRaidMessageLimit) || 4);
+        }
+        if (configuredMassMention || mentionLimitHit || messageBurstHit) {
+            await recordSuspiciousSignal(message.guild, advanced, `إغراق منشنات من ${message.author.tag}`);
+            const timeoutMinutes = Math.max(1, Math.min(1440, Number(advanced.antiMentionRaidTimeoutMinutes) || 3));
+            const timedOut = Boolean(advanced.antiMentionRaidTimeoutEnabled && message.member?.moderatable)
+                && await message.member.timeout(timeoutMinutes * 60000, 'YS-Bot anti-mention raid protection').then(() => true).catch(() => false);
+            await postWarning(message, settings, timedOut
+                ? `تم إسكاتك ${timeoutMinutes} دقيقة بسبب إغراق المنشنات.`
+                : 'تم حذف الرسالة لحماية السيرفر من إغراق المنشنات.', 'delete');
+            mentionRaidEvents.delete(mentionKey);
+            return;
+        }
+    }
+
     if (advanced.capsFilterEnabled && plainText.length >= Number(advanced.capsMinimumLength || 12)) {
         const letters = plainText.match(/[A-Za-z]/g) || [];
         const upper = plainText.match(/[A-Z]/g) || [];
