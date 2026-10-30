@@ -66,10 +66,11 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildInvites,
+        GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages
     ],
-    partials: [Partials.Message, Partials.Channel, Partials.User]
+    partials: [Partials.Message, Partials.Channel, Partials.User, Partials.Reaction]
 });
 
 const dbPath = './subscriptions.json';
@@ -99,7 +100,282 @@ function guildState(guildId) {
     data.backups ||= {};
     data.suggestionVotes ||= {};
     data.religiousReminders ||= {};
+    data.starboard ||= {};
+    data.counting ||= { current: 0, lastUserId: null };
     return data;
+}
+
+async function submitReport(interaction, settings) {
+    const advanced = settings?.advancedSettings || {};
+    if (!interaction.guild) return interaction.reply({ content: 'استخدم /report داخل السيرفر.', ephemeral: true });
+    if (!advanced.reportEnabled || !advanced.reportChannelId) return interaction.reply({ content: 'نظام البلاغات غير مفعّل في إعدادات هذا السيرفر.', ephemeral: true });
+    const reportedUser = interaction.options.getUser('member', true);
+    const reason = interaction.options.getString('reason', true).trim();
+    if (reportedUser.id === interaction.user.id) return interaction.reply({ content: 'ما تقدر ترفع بلاغًا على نفسك.', ephemeral: true });
+    if (reportedUser.bot) return interaction.reply({ content: 'اختر عضوًا حقيقيًا للإبلاغ عنه.', ephemeral: true });
+    const reportedMember = await interaction.guild.members.fetch(reportedUser.id).catch(() => null);
+    if (!reportedMember) return interaction.reply({ content: 'العضو المحدد ليس في هذا السيرفر.', ephemeral: true });
+    const channel = await interaction.guild.channels.fetch(advanced.reportChannelId).catch(() => null);
+    if (!channel?.isTextBased()) return interaction.reply({ content: 'قناة البلاغات غير صالحة. راجع إعداداتها مع مشرف السيرفر.', ephemeral: true });
+    const embed = new EmbedBuilder()
+        .setColor(0xf59e0b)
+        .setTitle('بلاغ عضو جديد')
+        .addFields(
+            { name: 'مقدم البلاغ', value: `<@${interaction.user.id}> · ${interaction.user.tag}` },
+            { name: 'العضو المُبلّغ عنه', value: `<@${reportedUser.id}> · ${reportedUser.tag}` },
+            { name: 'السبب', value: reason.slice(0, 1000) }
+        )
+        .setFooter({ text: `القناة: #${interaction.channel?.name || 'غير معروفة'} · راجع البلاغ قبل اتخاذ إجراء` })
+        .setTimestamp();
+    const sent = await channel.send({ embeds: [embed], allowedMentions: { parse: [] } }).then(() => true).catch(() => false);
+    if (!sent) return interaction.reply({ content: 'تعذر إرسال البلاغ. تحقق من صلاحية البوت في قناة البلاغات.', ephemeral: true });
+    return interaction.reply({ content: 'وصل بلاغك لفريق الإشراف للمراجعة. شكرًا لمساعدتك.', ephemeral: true });
+}
+
+async function syncStarboardReaction(reaction) {
+    if (reaction.partial) await reaction.fetch().catch(() => null);
+    const message = reaction.message;
+    if (message?.partial) await message.fetch().catch(() => null);
+    if (!message?.guild || !message.author || message.author.bot) return;
+    const settings = await loadGuildSettings(message.guild.id);
+    const advanced = settings.advancedSettings || {};
+    if (!advanced.starboardEnabled || !advanced.starboardChannelId) return;
+    const wantedEmoji = String(advanced.starboardEmoji || '⭐').trim();
+    const customId = wantedEmoji.match(/:(\d{17,20})>/)?.[1] || (/^\d{17,20}$/.test(wantedEmoji) ? wantedEmoji : null);
+    const customName = wantedEmoji.match(/<a?:([\w~]+):\d{17,20}>/)?.[1];
+    const isWantedEmoji = reaction.emoji.id
+        ? customId === reaction.emoji.id || wantedEmoji === reaction.emoji.toString() || (customName && customName === reaction.emoji.name)
+        : wantedEmoji === reaction.emoji.name;
+    if (!isWantedEmoji || reaction.count < Math.max(1, Number(advanced.starboardThreshold) || 3)) return;
+    if (message.channel.id === advanced.starboardChannelId) return;
+    const board = await message.guild.channels.fetch(advanced.starboardChannelId).catch(() => null);
+    if (!board?.isTextBased()) return;
+    const card = new EmbedBuilder()
+        .setColor(0xf5c451)
+        .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
+        .setDescription((message.content || 'رسالة مميزة').slice(0, 4000))
+        .addFields({ name: 'المصدر', value: `<#${message.channel.id}>` })
+        .setTimestamp(message.createdAt)
+        .setURL(message.url);
+    const firstImage = message.attachments.find((attachment) => attachment.contentType?.startsWith('image/'));
+    if (firstImage) card.setImage(firstImage.url);
+    const data = guildState(message.guild.id);
+    const existingId = data.starboard[message.id];
+    if (existingId) {
+        const existing = await board.messages.fetch(existingId).catch(() => null);
+        if (existing) return existing.edit({ content: `${reaction.emoji} **${reaction.count}** · [الانتقال إلى الرسالة](${message.url})`, embeds: [card], allowedMentions: { parse: [] } }).catch(() => {});
+    }
+    const posted = await board.send({ content: `${reaction.emoji} **${reaction.count}** · [الانتقال إلى الرسالة](${message.url})`, embeds: [card], allowedMentions: { parse: [] } }).catch(() => null);
+    if (posted) { data.starboard[message.id] = posted.id; saveBotState(); }
+}
+
+async function handleCountingMessage(message, settings) {
+    const advanced = settings?.advancedSettings || {};
+    if (!advanced.countingEnabled || !advanced.countingChannelId || message.channel.id !== advanced.countingChannelId) return false;
+    const data = guildState(message.guild.id);
+    const state = data.counting;
+    const submitted = message.content.trim();
+    const number = /^\d{1,9}$/.test(submitted) ? Number(submitted) : NaN;
+    const expected = Number(state.current || 0) + 1;
+    const valid = Number.isSafeInteger(number) && number === expected && state.lastUserId !== message.author.id;
+    if (valid) {
+        state.current = number;
+        state.lastUserId = message.author.id;
+        saveBotState();
+        await message.react('✅').catch(() => {});
+        return true;
+    }
+    if (message.deletable) await message.delete().catch(() => {});
+    const previous = Number(state.current || 0);
+    state.current = 0;
+    state.lastUserId = null;
+    saveBotState();
+    if (previous > 0) {
+        const notice = await message.channel.send(`انكسر العد عند **${previous}**؛ يبدأ من جديد بالرقم **1**.`).catch(() => null);
+        if (notice) setTimeout(() => notice.delete().catch(() => {}), 7000);
+    }
+    return true;
+}
+
+const FEATURE_COMMAND_SETTINGS = {
+    ping: 'featurePingEnabled', serverinfo: 'featureServerInfoEnabled', userinfo: 'featureUserInfoEnabled',
+    avatar: 'featureAvatarEnabled', servericon: 'featureServerIconEnabled', membercount: 'featureMemberCountEnabled',
+    roleinfo: 'featureRoleInfoEnabled', channelinfo: 'featureChannelInfoEnabled', botinfo: 'featureBotInfoEnabled',
+    quote: 'featureQuoteEnabled', choose: 'featureChooseEnabled', roll: 'featureRollEnabled', coinflip: 'featureCoinflipEnabled',
+    nickname: 'featureNicknameEnabled', announce: 'featureAnnounceEnabled', say: 'featureSayEnabled', lock: 'featureLockEnabled',
+    unlock: 'featureUnlockEnabled', slowmode: 'featureSlowmodeEnabled', rolelist: 'featureRoleListEnabled'
+};
+
+async function handleFeatureCommand(interaction, settings) {
+    const settingKey = FEATURE_COMMAND_SETTINGS[interaction.commandName];
+    if (!settingKey) return false;
+    if (!interaction.guild) {
+        await interaction.reply({ content: 'هذا الأمر يعمل داخل السيرفر فقط.', ephemeral: true });
+        return true;
+    }
+    if (settings?.advancedSettings?.[settingKey] === false) {
+        await interaction.reply({ content: 'هذا الأمر معطّل من لوحة تحكم السيرفر.', ephemeral: true });
+        return true;
+    }
+    const guild = interaction.guild;
+    const embed = new EmbedBuilder().setColor(0x35cdb7).setFooter({ text: 'YS-Bot' });
+    const noMentions = { parse: [] };
+    const safeText = (text) => String(text || '').replace(/@(everyone|here)/gi, '@\u200b$1').slice(0, 1800);
+    const channelOption = () => interaction.options.getChannel('channel') || interaction.channel;
+
+    switch (interaction.commandName) {
+        case 'ping':
+            return interaction.reply({ content: `🏓 Pong · **${Math.max(0, Math.round(client.ws.ping))}ms**`, ephemeral: true });
+        case 'serverinfo': {
+            const owner = await guild.fetchOwner().catch(() => null);
+            embed.setTitle(`معلومات ${guild.name}`)
+                .addFields(
+                    { name: 'المالك', value: owner ? `<@${owner.id}>` : 'غير متاح', inline: true },
+                    { name: 'الأعضاء', value: String(guild.memberCount), inline: true },
+                    { name: 'القنوات', value: String(guild.channels.cache.size), inline: true },
+                    { name: 'الرتب', value: String(Math.max(0, guild.roles.cache.size - 1)), inline: true },
+                    { name: 'تاريخ الإنشاء', value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:D>`, inline: true }
+                );
+            if (guild.iconURL()) embed.setThumbnail(guild.iconURL({ size: 256 }));
+            return interaction.reply({ embeds: [embed], allowedMentions: noMentions });
+        }
+        case 'userinfo': {
+            const user = interaction.options.getUser('user') || interaction.user;
+            const member = await guild.members.fetch(user.id).catch(() => null);
+            embed.setTitle(`معلومات ${user.tag}`)
+                .setThumbnail(user.displayAvatarURL({ size: 256 }))
+                .addFields(
+                    { name: 'معرّف الحساب', value: user.id, inline: true },
+                    { name: 'إنشاء الحساب', value: `<t:${Math.floor(user.createdTimestamp / 1000)}:D>`, inline: true },
+                    { name: 'الانضمام للسيرفر', value: member?.joinedTimestamp ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:D>` : 'ليس عضوًا في السيرفر', inline: true },
+                    { name: 'عدد الرتب', value: String(Math.max(0, (member?.roles.cache.size || 1) - 1)), inline: true }
+                );
+            return interaction.reply({ embeds: [embed], allowedMentions: noMentions });
+        }
+        case 'avatar': {
+            const user = interaction.options.getUser('user') || interaction.user;
+            embed.setTitle(`صورة ${user.tag}`).setImage(user.displayAvatarURL({ size: 1024 }));
+            return interaction.reply({ embeds: [embed] });
+        }
+        case 'servericon': {
+            const icon = guild.iconURL({ size: 1024 });
+            if (!icon) return interaction.reply({ content: 'هذا السيرفر لا يملك أيقونة حاليًا.', ephemeral: true });
+            embed.setTitle(`أيقونة ${guild.name}`).setImage(icon);
+            return interaction.reply({ embeds: [embed] });
+        }
+        case 'membercount':
+            return interaction.reply({ content: `عدد أعضاء **${guild.name}** الآن: **${guild.memberCount}**`, allowedMentions: noMentions });
+        case 'roleinfo': {
+            const role = interaction.options.getRole('role', true);
+            const permissions = role.permissions.toArray().slice(0, 12).map((permission) => `\`${permission}\``).join('، ') || 'لا توجد صلاحيات خاصة';
+            embed.setTitle(`معلومات رتبة ${role.name}`).setColor(role.color || 0x35cdb7)
+                .addFields(
+                    { name: 'الأعضاء', value: String(role.members.size), inline: true },
+                    { name: 'اللون', value: role.hexColor, inline: true },
+                    { name: 'تاريخ الإنشاء', value: `<t:${Math.floor(role.createdTimestamp / 1000)}:D>`, inline: true },
+                    { name: 'الصلاحيات (أول 12)', value: permissions }
+                );
+            return interaction.reply({ embeds: [embed], allowedMentions: noMentions });
+        }
+        case 'channelinfo': {
+            const channel = interaction.options.getChannel('channel') || interaction.channel;
+            if (!channel) return interaction.reply({ content: 'ما قدرت أحدد القناة.', ephemeral: true });
+            embed.setTitle(`معلومات #${channel.name || 'قناة'}`)
+                .addFields(
+                    { name: 'المعرّف', value: channel.id, inline: true },
+                    { name: 'النوع', value: String(channel.type), inline: true },
+                    { name: 'تاريخ الإنشاء', value: channel.createdTimestamp ? `<t:${Math.floor(channel.createdTimestamp / 1000)}:D>` : 'غير متاح', inline: true }
+                );
+            if (channel.topic) embed.setDescription(channel.topic.slice(0, 1000));
+            return interaction.reply({ embeds: [embed], allowedMentions: noMentions });
+        }
+        case 'botinfo': {
+            const uptimeSeconds = Math.floor((client.uptime || 0) / 1000);
+            embed.setTitle('معلومات YS-Bot').setThumbnail(client.user.displayAvatarURL({ size: 256 }))
+                .addFields(
+                    { name: 'السيرفرات', value: String(client.guilds.cache.size), inline: true },
+                    { name: 'زمن الاتصال', value: `${Math.max(0, Math.round(client.ws.ping))}ms`, inline: true },
+                    { name: 'وقت التشغيل', value: `${Math.floor(uptimeSeconds / 3600)} ساعة و${Math.floor((uptimeSeconds % 3600) / 60)} دقيقة`, inline: true }
+                );
+            return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
+        case 'quote': {
+            const reference = interaction.options.getString('message_link', true).trim();
+            const linkMatch = reference.match(/discord(?:app)?\.com\/channels\/(\d{17,20})\/(\d{17,20})\/(\d{17,20})/i);
+            const idMatch = reference.match(/^\d{17,20}$/);
+            if (linkMatch && linkMatch[1] !== guild.id) return interaction.reply({ content: 'رابط الرسالة يجب أن يكون من هذا السيرفر.', ephemeral: true });
+            if (!linkMatch && !idMatch) return interaction.reply({ content: 'أرسل رابط رسالة Discord أو معرّف رسالة من هذه القناة.', ephemeral: true });
+            const sourceChannelId = linkMatch?.[2] || interaction.channelId;
+            const sourceMessageId = linkMatch?.[3] || reference;
+            const sourceChannel = await guild.channels.fetch(sourceChannelId).catch(() => null);
+            if (!sourceChannel?.messages?.fetch) return interaction.reply({ content: 'القناة في الرابط غير متاحة.', ephemeral: true });
+            const source = await sourceChannel.messages.fetch(sourceMessageId).catch(() => null);
+            if (!source) return interaction.reply({ content: 'تعذر جلب الرسالة. تأكد من الرابط وصلاحيات رؤية القناة.', ephemeral: true });
+            const authorOptions = { name: source.author?.tag || 'عضو' };
+            if (source.author?.displayAvatarURL()) authorOptions.iconURL = source.author.displayAvatarURL();
+            embed.setAuthor(authorOptions)
+                .setDescription((source.content || 'رسالة بدون نص').slice(0, 3900))
+                .addFields({ name: 'المصدر', value: `<#${source.channelId}> · <t:${Math.floor(source.createdTimestamp / 1000)}:R>` })
+                .setURL(source.url);
+            const image = source.attachments.find((file) => file.contentType?.startsWith('image/'));
+            if (image) embed.setImage(image.url);
+            return interaction.reply({ embeds: [embed], allowedMentions: noMentions });
+        }
+        case 'choose': {
+            const options = interaction.options.getString('options', true).split(/[\n,،]/).map((item) => item.trim()).filter(Boolean).slice(0, 30);
+            if (options.length < 2) return interaction.reply({ content: 'اكتب خيارين على الأقل وافصل بينهم بفاصلة.', ephemeral: true });
+            return interaction.reply({ content: `اختياري العشوائي: **${safeText(options[Math.floor(Math.random() * options.length)])}**`, allowedMentions: noMentions });
+        }
+        case 'roll': {
+            const sides = interaction.options.getInteger('sides') || 6;
+            const result = Math.floor(Math.random() * sides) + 1;
+            return interaction.reply({ content: `🎲 النتيجة: **${result}** من **${sides}**`, allowedMentions: noMentions });
+        }
+        case 'coinflip':
+            return interaction.reply({ content: `🪙 طلعت: **${Math.random() < 0.5 ? 'صورة' : 'كتابة'}**`, allowedMentions: noMentions });
+        case 'nickname': {
+            const name = interaction.options.getString('name', true).trim();
+            const member = await guild.members.fetch(interaction.user.id).catch(() => null);
+            if (!member?.manageable) return interaction.reply({ content: 'ما أقدر أغيّر لقبك. تأكد أن رتبة البوت أعلى من رتبتك وأن لديه Manage Nicknames.', ephemeral: true });
+            const changed = await member.setNickname(name || null, 'Member requested a nickname change').then(() => true).catch(() => false);
+            return interaction.reply({ content: changed ? `تم تغيير لقبك إلى **${safeText(name || interaction.user.username)}**.` : 'تعذر تغيير لقبك. راجع ترتيب الرتب وصلاحيات البوت.', ephemeral: true });
+        }
+        case 'announce':
+        case 'say': {
+            const requiredPermission = interaction.commandName === 'announce' ? PermissionFlagsBits.ManageGuild : PermissionFlagsBits.ManageMessages;
+            if (!interaction.memberPermissions?.has(requiredPermission)) return interaction.reply({ content: 'ما عندك الصلاحية المطلوبة لهذا الأمر.', ephemeral: true });
+            const channel = interaction.commandName === 'announce' ? interaction.options.getChannel('channel', true) : channelOption();
+            if (!channel?.isTextBased() || typeof channel.send !== 'function') return interaction.reply({ content: 'اختر قناة نصية صالحة.', ephemeral: true });
+            const text = safeText(interaction.options.getString('message', true));
+            const sent = await channel.send({ content: text, allowedMentions: noMentions }).then(() => true).catch(() => false);
+            return interaction.reply({ content: sent ? 'تم الإرسال.' : 'تعذر الإرسال؛ تأكد من صلاحية البوت في القناة.', ephemeral: true });
+        }
+        case 'lock':
+        case 'unlock': {
+            if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels)) return interaction.reply({ content: 'تحتاج صلاحية Manage Channels.', ephemeral: true });
+            const channel = channelOption();
+            if (!channel?.isTextBased() || !channel.permissionOverwrites?.edit) return interaction.reply({ content: 'اختر قناة نصية عادية أو إعلانات.', ephemeral: true });
+            const isLock = interaction.commandName === 'lock';
+            const success = await channel.permissionOverwrites.edit(guild.roles.everyone.id, { SendMessages: isLock ? false : true }, { reason: `YS-Bot /${interaction.commandName} by ${interaction.user.tag}` }).then(() => true).catch(() => false);
+            return interaction.reply({ content: success ? (isLock ? `تم قفل الإرسال في <#${channel.id}>.` : `تم فتح الإرسال في <#${channel.id}>.`) : 'تعذر تعديل صلاحيات القناة. تأكد من صلاحية البوت وترتيب أدواره.', ephemeral: true });
+        }
+        case 'slowmode': {
+            if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels)) return interaction.reply({ content: 'تحتاج صلاحية Manage Channels.', ephemeral: true });
+            const channel = channelOption();
+            if (!channel?.setRateLimitPerUser) return interaction.reply({ content: 'اختر قناة نصية عادية أو إعلانات.', ephemeral: true });
+            const seconds = interaction.options.getInteger('seconds', true);
+            const success = await channel.setRateLimitPerUser(seconds, `YS-Bot slowmode by ${interaction.user.tag}`).then(() => true).catch(() => false);
+            return interaction.reply({ content: success ? `تم ضبط مهلة الكتابة في <#${channel.id}> إلى **${seconds}** ثانية.` : 'تعذر ضبط الوضع البطيء؛ تحقق من صلاحية Manage Channels.', ephemeral: true });
+        }
+        case 'rolelist': {
+            const roles = guild.roles.cache.filter((role) => role.id !== guild.id && !role.managed).sort((a, b) => b.position - a.position).first(20);
+            embed.setTitle(`رتب ${guild.name}`).setDescription(roles.length ? roles.map((role) => `• <@&${role.id}> · ${role.members.size} عضو`).join('\n') : 'لا توجد رتب مخصصة.');
+            if (guild.iconURL()) embed.setThumbnail(guild.iconURL({ size: 256 }));
+            return interaction.reply({ embeds: [embed], allowedMentions: noMentions });
+        }
+        default:
+            return false;
+    }
 }
 
 async function sendGuildLog(guild, settings, text, color = 0x64748b) {
@@ -502,12 +778,37 @@ client.on('ready', async () => {
             .setDescription('إرسال اقتراح للسيرفر')
             .addStringOption(option => option.setName('text').setDescription('اكتب اقتراحك').setMaxLength(1000).setRequired(true)),
         new SlashCommandBuilder()
+            .setName('report')
+            .setDescription('إرسال بلاغ خاص إلى فريق الإشراف')
+            .addUserOption(option => option.setName('member').setDescription('العضو الذي تريد الإبلاغ عنه').setRequired(true))
+            .addStringOption(option => option.setName('reason').setDescription('سبب البلاغ').setMaxLength(1000).setRequired(true)),
+        new SlashCommandBuilder()
             .setName('poll')
             .setDescription('إنشاء تصويت بسيط')
             .addStringOption(option => option.setName('question').setDescription('سؤال التصويت').setMaxLength(250).setRequired(true)),
         new SlashCommandBuilder()
             .setName('games')
             .setDescription('افتح قائمة ألعاب YS-Bot التفاعلية'),
+        new SlashCommandBuilder().setName('ping').setDescription('عرض زمن استجابة YS-Bot'),
+        new SlashCommandBuilder().setName('serverinfo').setDescription('عرض معلومات هذا السيرفر'),
+        new SlashCommandBuilder().setName('userinfo').setDescription('عرض معلومات عضو في السيرفر').addUserOption(option => option.setName('user').setDescription('العضو المطلوب')),
+        new SlashCommandBuilder().setName('avatar').setDescription('عرض صورة عضو').addUserOption(option => option.setName('user').setDescription('العضو المطلوب')),
+        new SlashCommandBuilder().setName('servericon').setDescription('عرض أيقونة السيرفر'),
+        new SlashCommandBuilder().setName('membercount').setDescription('عرض عدد أعضاء السيرفر'),
+        new SlashCommandBuilder().setName('roleinfo').setDescription('عرض معلومات رتبة').addRoleOption(option => option.setName('role').setDescription('الرتبة المطلوبة').setRequired(true)),
+        new SlashCommandBuilder().setName('channelinfo').setDescription('عرض معلومات قناة').addChannelOption(option => option.setName('channel').setDescription('القناة المطلوبة')),
+        new SlashCommandBuilder().setName('botinfo').setDescription('عرض معلومات تشغيل YS-Bot'),
+        new SlashCommandBuilder().setName('quote').setDescription('عرض اقتباس من رسالة').addStringOption(option => option.setName('message_link').setDescription('رابط الرسالة أو معرّفها في هذه القناة').setMaxLength(200).setRequired(true)),
+        new SlashCommandBuilder().setName('choose').setDescription('اختيار عشوائي من قائمة').addStringOption(option => option.setName('options').setDescription('خيارات مفصولة بفواصل').setMaxLength(500).setRequired(true)),
+        new SlashCommandBuilder().setName('roll').setDescription('رمي نرد عشوائي').addIntegerOption(option => option.setName('sides').setDescription('عدد أوجه النرد').setMinValue(2).setMaxValue(1000)),
+        new SlashCommandBuilder().setName('coinflip').setDescription('رمي قطعة نقدية'),
+        new SlashCommandBuilder().setName('nickname').setDescription('تغيير لقبك في السيرفر').addStringOption(option => option.setName('name').setDescription('اللقب الجديد').setMaxLength(32).setRequired(true)),
+        new SlashCommandBuilder().setName('announce').setDescription('إرسال إعلان إداري في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild).addChannelOption(option => option.setName('channel').setDescription('قناة الإعلان').setRequired(true)).addStringOption(option => option.setName('message').setDescription('محتوى الإعلان').setMaxLength(1500).setRequired(true)),
+        new SlashCommandBuilder().setName('say').setDescription('إرسال رسالة عبر البوت').setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).addStringOption(option => option.setName('message').setDescription('محتوى الرسالة').setMaxLength(1500).setRequired(true)).addChannelOption(option => option.setName('channel').setDescription('القناة المستهدفة')),
+        new SlashCommandBuilder().setName('lock').setDescription('قفل الإرسال في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).addChannelOption(option => option.setName('channel').setDescription('القناة المطلوب قفلها')),
+        new SlashCommandBuilder().setName('unlock').setDescription('فتح الإرسال في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).addChannelOption(option => option.setName('channel').setDescription('القناة المطلوب فتحها')),
+        new SlashCommandBuilder().setName('slowmode').setDescription('تعيين الوضع البطيء لقناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).addIntegerOption(option => option.setName('seconds').setDescription('مدة الانتظار بالثواني').setMinValue(0).setMaxValue(21600).setRequired(true)).addChannelOption(option => option.setName('channel').setDescription('القناة المستهدفة')),
+        new SlashCommandBuilder().setName('rolelist').setDescription('عرض قائمة رتب السيرفر'),
         new SlashCommandBuilder()
             .setName('warn')
             .setDescription('تسجيل تحذير لعضو')
@@ -1950,8 +2251,10 @@ client.on('interactionCreate', async (interaction) => {
     if (guildSettings?.advancedSettings) addSlashReplyEmoji(interaction);
 
     if (interaction.commandName === 'profile') return showUserProfile(interaction);
+    if (FEATURE_COMMAND_SETTINGS[interaction.commandName]) return handleFeatureCommand(interaction, guildSettings);
     if (interaction.commandName === 'ticket') return createTicket(interaction);
     if (interaction.commandName === 'suggest') return submitSuggestion(interaction);
+    if (interaction.commandName === 'report') return submitReport(interaction, guildSettings);
     if (interaction.commandName === 'poll') return submitPoll(interaction);
     if (interaction.commandName === 'games') return showGamesMenu(interaction, guildSettings);
     if (interaction.commandName === 'warn') return warnMember(interaction);
@@ -1967,8 +2270,8 @@ client.on('interactionCreate', async (interaction) => {
             .setColor(0x35cdb7)
             .setTitle(english ? 'YS-Bot commands' : 'أوامر YS-Bot')
             .setDescription(english
-                ? '`/profile` member stats · `/games` open interactive games · `/ticket` open support ticket · `/suggest` submit suggestion · `/poll` create poll · `/warn` warn a member · `/clear` delete recent messages · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send the configured embed.'
-                : '`/profile` إحصاءات عضو · `/games` قائمة الألعاب التفاعلية · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/clear` مسح رسائل حديثة · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
+                ? '`/ping` latency · `/serverinfo` server details · `/userinfo` member details · `/avatar` avatar · `/servericon` server icon · `/membercount` member count · `/roleinfo` role details · `/channelinfo` channel details · `/botinfo` bot uptime · `/quote` quote a message · `/choose` random choice · `/roll` dice · `/coinflip` coin toss · `/nickname` change your nickname · `/announce` admin announcement · `/say` send as bot · `/lock` and `/unlock` channel · `/slowmode` channel slowmode · `/rolelist` roles · `/profile` member stats · `/games` interactive games · `/ticket` support ticket · `/suggest` submit suggestion · `/report` private report · `/poll` create poll · `/warn` warn a member · `/clear` delete recent messages · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send configured embed.'
+                : '`/ping` سرعة البوت · `/serverinfo` معلومات السيرفر · `/userinfo` معلومات عضو · `/avatar` صورة العضو · `/servericon` أيقونة السيرفر · `/membercount` عدد الأعضاء · `/roleinfo` معلومات رتبة · `/channelinfo` معلومات قناة · `/botinfo` وقت تشغيل البوت · `/quote` اقتباس رسالة · `/choose` اختيار عشوائي · `/roll` نرد · `/coinflip` عملة · `/nickname` تغيير لقبك · `/announce` إعلان إداري · `/say` إرسال باسم البوت · `/lock` و`/unlock` قفل وفتح قناة · `/slowmode` الوضع البطيء · `/rolelist` قائمة الرتب · `/profile` إحصاءات عضو · `/games` ألعاب تفاعلية · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/report` بلاغ خاص للمشرفين · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/clear` مسح رسائل حديثة · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
             .setFooter({ text: english ? 'YS-Bot • Use / to browse commands' : 'YS-Bot • اكتب / لاستعراض الأوامر' });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -2422,6 +2725,12 @@ client.on('guildMemberAdd', async (member) => {
     if (advanced.welcomeSendDm && advanced.welcomeDmMessage) await member.send(formatMemberText(advanced.welcomeDmMessage, member)).catch(() => {});
 });
 
+client.on('messageReactionAdd', async (reaction, user) => {
+    if (user.bot) return;
+    try { await syncStarboardReaction(reaction); }
+    catch (error) { console.error('Starboard reaction handler failed:', error.message); }
+});
+
 client.on('guildMemberRemove', async (member) => {
     const settings = await loadGuildSettings(member.guild.id);
     const advanced = settings.advancedSettings || {};
@@ -2517,6 +2826,7 @@ client.on('messageCreate', async (message) => {
 
     const settings = await loadGuildSettings(message.guild.id);
     const advanced = settings.advancedSettings || {};
+    if (await handleCountingMessage(message, settings)) return;
     const canDeleteMessages = message.guild.members.me?.permissionsIn(message.channel).has(PermissionFlagsBits.ManageMessages);
     const isModerator = message.member?.permissions.has(PermissionFlagsBits.ManageMessages);
     const bypassLink = isModerator || (message.member?.roles.cache.some((role) => (advanced.antiLinksIgnoreRoleIds || '').split(/[\s,]+/).includes(role.id)) ?? false);
