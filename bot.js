@@ -6,7 +6,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const path = require('path');
 const { SUPPORTED_LANGUAGES, PROFILE_CARD_THEMES, getBotLanguage: getBotLanguageFromDb, getProfileCardTheme: getProfileCardThemeFromDb, getProfileCardImage: getProfileCardImageFromDb } = require('./services/user-preferences');
-const { recordBotCommandUser: recordBotCommandUserInDb, getBotUserStats: getBotUserStatsFromDb } = require('./services/ip-ban-service');
+const { recordBotCommandUser: recordBotCommandUserInDb, getBotUserStats: getBotUserStatsFromDb, isDiscordUserBanned: isDiscordUserBannedInDb } = require('./services/ip-ban-service');
 const { DEFAULT_SETTINGS, getGuildSettings } = require('./services/guild-settings');
 const { isPremiumOwnerActive } = require('./services/subscription-service');
 
@@ -204,14 +204,18 @@ async function createProfileCard(user, member, stats, guildStats, language = 'ar
         ctx.beginPath(); ctx.roundRect(x, y, tileWidth, 144, 20);
         ctx.fillStyle = theme.tile; ctx.fill();
         ctx.strokeStyle = theme.tileBorder; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.fillStyle = theme.label; ctx.font = '700 15px Arial'; ctx.fillText(label, x + 20, y + 32);
-        ctx.fillStyle = theme.value; ctx.font = '700 36px Arial'; ctx.fillText(String(value), x + 20, y + 83, tileWidth - 40);
-        ctx.fillStyle = theme.caption; ctx.font = '600 13px Arial'; ctx.fillText(caption, x + 20, y + 119);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = theme.label; ctx.font = '700 22px Arial'; ctx.fillText(label, x + 20, y + 36, tileWidth - 40);
+        const valueText = String(value);
+        ctx.fillStyle = theme.value;
+        ctx.font = `700 ${valueText.length > 9 ? 27 : valueText.length > 6 ? 34 : 43}px Arial`;
+        ctx.fillText(valueText, x + 20, y + 88, tileWidth - 40);
+        ctx.fillStyle = theme.caption; ctx.font = '600 18px Arial'; ctx.fillText(caption, x + 20, y + 124, tileWidth - 40);
     });
 
     const accountDays = Math.max(0, Math.floor((Date.now() - user.createdTimestamp) / 86400000));
     const memberDays = member.joinedTimestamp ? Math.max(0, Math.floor((Date.now() - member.joinedTimestamp) / 86400000)) : 0;
-    ctx.fillStyle = theme.soft; ctx.font = '500 16px Arial';
+    ctx.fillStyle = theme.soft; ctx.font = '600 19px Arial';
     ctx.fillText(`${labels.accountAge}  ${accountDays} ${labels.days}`, 78, 548);
     ctx.fillText(`${labels.memberFor}  ${memberDays} ${labels.days}`, 420, 548);
     ctx.textAlign = 'right'; ctx.fillStyle = theme.footer; ctx.font = '700 17px Arial';
@@ -307,6 +311,7 @@ const suspiciousSignals = new Map();
 const mentionRaidEvents = new Map();
 const altJoinEvents = new Map();
 const gameCooldowns = new Map();
+const gameAnswerCollectors = new Map();
 
 const SECURITY_SENSITIVE_PERMISSIONS = [
     PermissionFlagsBits.Administrator, PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageRoles,
@@ -510,6 +515,11 @@ client.on('ready', async () => {
             .addUserOption(option => option.setName('member').setDescription('العضو').setRequired(true))
             .addStringOption(option => option.setName('reason').setDescription('سبب التحذير').setMaxLength(300)),
         new SlashCommandBuilder()
+            .setName('clear')
+            .setDescription('مسح عدد محدد من الرسائل في هذه القناة')
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+            .addIntegerOption(option => option.setName('amount').setDescription('عدد الرسائل (1 إلى 100)').setMinValue(1).setMaxValue(100).setRequired(true)),
+        new SlashCommandBuilder()
             .setName('verify')
             .setDescription('تأكيد التحقق من حسابك'),
         new SlashCommandBuilder()
@@ -590,6 +600,8 @@ let userTrackingWarningShown = false;
 let guildSettingsWarningShown = false;
 let guildSettingsBridgeConnected = false;
 const guildSettingsCache = new Map();
+const discordAccountBanCache = new Map();
+let accountBanLookupWarningShown = false;
 const recentMessages = new Map();
 const autoReplyCooldowns = new Map();
 const spamNoticeTimes = new Map();
@@ -676,6 +688,28 @@ async function recordBotCommandUser(user, guildId) {
         method: 'POST',
         body: JSON.stringify({ userId: user.id, username: user.username, guildId })
     });
+}
+
+async function getDiscordAccountBan(userId) {
+    const cached = discordAccountBanCache.get(String(userId));
+    if (cached && cached.expiresAt > Date.now()) return cached.ban;
+    try {
+        let ban;
+        if (process.env.BOT_API_SECRET) {
+            const response = await botBridgeRequest(`/api/internal/bot/account-ban/${encodeURIComponent(userId)}`);
+            const result = await response.json();
+            ban = result.banned ? { reason: result.reason || '' } : null;
+        } else ban = await isDiscordUserBannedInDb(userId);
+        discordAccountBanCache.set(String(userId), { ban, expiresAt: Date.now() + 30000 });
+        if (discordAccountBanCache.size > 10000) discordAccountBanCache.delete(discordAccountBanCache.keys().next().value);
+        return ban;
+    } catch (error) {
+        if (!accountBanLookupWarningShown) {
+            console.error('Account restriction status unavailable; bot commands will continue:', error.message);
+            accountBanLookupWarningShown = true;
+        }
+        return null;
+    }
 }
 
 const COLOR_VALUES = { teal: 0x18b6a0, blue: 0x5865f2, purple: 0x8b5cf6, green: 0x22c55e, red: 0xef4444, gold: 0xf59e0b };
@@ -1211,23 +1245,44 @@ async function submitPoll(interaction) {
 }
 
 const GAME_OPTIONS = [
-    { id:'trivia', flag:'gamesTriviaEnabled', name:'معلومات عامة', description:'سباق أسئلة سريع بين أعضاء السيرفر', command:'quiz', categories:['group','solo'] },
-    { id:'picture', flag:'gamesPictureGuessEnabled', name:'خمّن الرسمة', description:'خمن رسمة YS المصنوعة خصيصًا للعبة', command:'picture', categories:['group','solo'] },
-    { id:'difference', flag:'gamesSpotDifferenceEnabled', name:'اكتشف الاختلاف', description:'قارن بطاقتين مرسومتين واختر موضع الاختلاف', command:'difference', categories:['group','solo'] },
-    { id:'scramble', flag:'gamesScrambleEnabled', name:'ترتيب الحروف', description:'رتّب الحروف لاكتشاف الكلمة', command:'scramble', categories:['group','solo'] },
-    { id:'riddle', flag:'gamesRiddleEnabled', name:'الألغاز', description:'حل لغزًا قبل بقية الأعضاء', command:'riddle', categories:['group','solo'] },
-    { id:'math', flag:'gamesMathEnabled', name:'الحساب السريع', description:'أسرع إجابة صحيحة تكسب الجولة', command:'mathgame', categories:['group','solo'] },
-    { id:'memory', flag:'gamesMemoryEnabled', name:'الذاكرة البصرية', description:'احفظ نمط الألوان المرسوم ثم أعده', command:'memory', categories:['solo'] },
-    { id:'rps', flag:'gamesRpsEnabled', name:'حجر ورقة مقص', description:'تحدّ البوت بجولة سريعة', command:'rps', categories:['bot'] },
-    { id:'dice', flag:'gamesDiceEnabled', name:'تحدي النرد', description:'توقّع نتيجة رمية البوت', command:'dice', categories:['bot'] },
-    { id:'ttt', flag:'gamesTicTacToeEnabled', name:'إكس أو', description:'العب إكس أو ضد البوت', command:'tictactoe', categories:['bot'] },
-    { id:'emoji', flag:'gamesEmojiPuzzleEnabled', name:'لغز الإيموجي', description:'خمن العبارة من مجموعة إيموجي', command:'emojipuzzle', categories:['group','solo'] }
+    { id:'trivia', flag:'gamesTriviaEnabled', name:'معلومات عامة', nameEn:'General Knowledge', description:'سباق أسئلة سريع بين أعضاء السيرفر', descriptionEn:'Race other members to answer a quick quiz', command:'quiz', categories:['group','solo'] },
+    { id:'picture', flag:'gamesPictureGuessEnabled', name:'خمّن الرسمة', nameEn:'Guess the Drawing', description:'خمن رسمة YS المصنوعة خصيصًا للعبة', descriptionEn:'Guess original artwork drawn for the game', command:'picture', categories:['group','solo'] },
+    { id:'difference', flag:'gamesSpotDifferenceEnabled', name:'اكتشف الاختلاف', nameEn:'Spot the Difference', description:'قارن بطاقتين مرسومتين واختر موضع الاختلاف', descriptionEn:'Compare two illustrated cards and find the odd shape', command:'difference', categories:['group','solo'] },
+    { id:'scramble', flag:'gamesScrambleEnabled', name:'ترتيب الحروف', nameEn:'Word Scramble', description:'رتّب الحروف لاكتشاف الكلمة', descriptionEn:'Rearrange letters to reveal the word', command:'scramble', categories:['group','solo'] },
+    { id:'riddle', flag:'gamesRiddleEnabled', name:'الألغاز', nameEn:'Riddles', description:'حل لغزًا قبل بقية الأعضاء', descriptionEn:'Solve a riddle before the other players', command:'riddle', categories:['group','solo'] },
+    { id:'math', flag:'gamesMathEnabled', name:'الحساب السريع', nameEn:'Quick Math', description:'أسرع إجابة صحيحة تكسب الجولة', descriptionEn:'The fastest correct answer wins', command:'mathgame', categories:['group','solo'] },
+    { id:'memory', flag:'gamesMemoryEnabled', name:'الذاكرة البصرية', nameEn:'Visual Memory', description:'احفظ نمط الألوان المرسوم ثم أعده', descriptionEn:'Memorize and repeat the illustrated color sequence', command:'memory', categories:['solo'] },
+    { id:'rps', flag:'gamesRpsEnabled', name:'حجر ورقة مقص', nameEn:'Rock Paper Scissors', description:'تحدّ البوت بجولة سريعة', descriptionEn:'Challenge the bot to a quick round', command:'rps', categories:['bot'] },
+    { id:'dice', flag:'gamesDiceEnabled', name:'تحدي النرد', nameEn:'Dice Challenge', description:'توقّع نتيجة رمية البوت', descriptionEn:'Predict the bot’s dice roll', command:'dice', categories:['bot'] },
+    { id:'ttt', flag:'gamesTicTacToeEnabled', name:'إكس أو', nameEn:'Tic-Tac-Toe', description:'العب إكس أو ضد البوت', descriptionEn:'Play tic-tac-toe against the bot', command:'tictactoe', categories:['bot'] },
+    { id:'emoji', flag:'gamesEmojiPuzzleEnabled', name:'لغز الإيموجي', nameEn:'Emoji Puzzle', description:'خمن العبارة من مجموعة إيموجي', descriptionEn:'Guess the phrase represented by emojis', command:'emojipuzzle', categories:['group','solo'] },
+    { id:'truefalse', flag:'gamesTrueFalseEnabled', name:'صح أو خطأ', nameEn:'True or False', description:'اختبر معلوماتك في جولة سريعة', descriptionEn:'Test what you know in a quick round', command:'truefalse', categories:['group','solo'] },
+    { id:'geography', flag:'gamesGeographyEnabled', name:'تحدي العواصم', nameEn:'Capital Cities', description:'اختر عاصمة الدولة الصحيحة', descriptionEn:'Choose the correct capital city', command:'capitals', categories:['group','solo'] },
+    { id:'wordguess', flag:'gamesWordGuessEnabled', name:'خمن الكلمة', nameEn:'Guess the Word', description:'اكتشف الكلمة من التلميح', descriptionEn:'Identify the word from its clue', command:'wordguess', categories:['group','solo'] },
+    { id:'typing', flag:'gamesTypingEnabled', name:'تحدي الكتابة', nameEn:'Typing Sprint', description:'اكتب العبارة بأسرع وقت', descriptionEn:'Type the phrase as quickly as you can', command:'typing', categories:['group','solo'] },
+    { id:'oddone', flag:'gamesOddOneEnabled', name:'اختر المختلف', nameEn:'Odd One Out', description:'حدد العنصر الذي لا ينتمي للمجموعة', descriptionEn:'Find the item that does not belong', command:'oddone', categories:['group','solo'] },
+    { id:'numberguess', flag:'gamesNumberGuessEnabled', name:'خمن الرقم', nameEn:'Number Guess', description:'خمن الرقم السري من بين الخيارات', descriptionEn:'Guess the secret number from the choices', command:'numberguess', categories:['bot'] },
+    { id:'coin', flag:'gamesCoinEnabled', name:'تحدي العملة', nameEn:'Coin Flip', description:'توقع وجه العملة قبل رميها', descriptionEn:'Predict the coin before it is flipped', command:'coin', categories:['bot'] },
+    { id:'higherlower', flag:'gamesHigherLowerEnabled', name:'أعلى أو أقل', nameEn:'Higher or Lower', description:'توقع إن كان الرقم التالي أعلى أو أقل', descriptionEn:'Predict if the next number is higher or lower', command:'higherlower', categories:['bot'] }
 ];
 const GAME_CATEGORIES = [
-    { id:'group', name:'ألعاب جماعية', description:'تحديات يتنافس فيها أعضاء القناة' },
-    { id:'solo', name:'ألعاب فردية', description:'جولات خاصة بلا منافسة مباشرة' },
-    { id:'bot', name:'العب مع البوت', description:'تحديات مباشرة ضد YS-Bot' }
+    { id:'group', name:'ألعاب جماعية', nameEn:'Group Games', description:'تحديات يتنافس فيها أعضاء القناة', descriptionEn:'Challenges for members to play together' },
+    { id:'solo', name:'ألعاب فردية', nameEn:'Solo Games', description:'جولات خاصة بلا منافسة مباشرة', descriptionEn:'Play a round on your own' },
+    { id:'bot', name:'العب مع البوت', nameEn:'Play with the Bot', description:'تحديات مباشرة ضد YS-Bot', descriptionEn:'Challenge YS-Bot directly' }
 ];
+
+const GAME_UI = {
+    ar: { title:'مركز ألعاب YS-Bot', chooseType:'اختار نوع الألعاب', chooseGame:'اختار لعبة من القائمة', menu:'اختار ألعاب جماعية أو فردية أو تحدّ البوت.', prefix:'بادئة أوامر هذا السيرفر', example:'مثال', available:'الألعاب المتاحة', count:'لعبة متاحة', footer:'YS-Bot Games • اختر نوع اللعب للمتابعة', pick:'تقدر تختار اللعبة من القائمة أو تستخدم أمرها مباشرة.', onlyGuild:'استخدم /games داخل سيرفر Discord.', disabled:'قائمة الألعاب متوقفة من لوحة تحكم السيرفر.', none:'ما في ألعاب مفعّلة حاليًا. فعّل الألعاب من لوحة التحكم.', channel:'الألعاب متاحة في القنوات التالية فقط:' },
+    en: { title:'YS-Bot Games Hub', chooseType:'Choose a game category', chooseGame:'Choose a game', menu:'Choose group games, solo games, or challenge the bot.', prefix:'This server’s command prefix', example:'Example', available:'Available games', count:'games available', footer:'YS-Bot Games • Choose a category to continue', pick:'Choose a game from the menu or use its prefix command.', onlyGuild:'Use /games inside a Discord server.', disabled:'The games menu is disabled in the server dashboard.', none:'No games are enabled. Enable games in the dashboard.', channel:'Games are only available in these channels:' }
+};
+
+function gameLanguage(settingsOrAdvanced) {
+    const advanced = settingsOrAdvanced?.advancedSettings || settingsOrAdvanced || {};
+    return advanced.commandLanguage === 'en' ? 'en' : 'ar';
+}
+function gameLabel(item, field, language) {
+    return language === 'en' ? (item[`${field}En`] || item[field]) : item[field];
+}
 
 function getGameMenuOptions(advanced) {
     return GAME_OPTIONS.filter((game) => advanced[game.flag] !== false);
@@ -1235,42 +1290,44 @@ function getGameMenuOptions(advanced) {
 
 async function showGamesMenu(interaction, settings) {
     const respond = (payload) => interaction.deferred || interaction.replied ? interaction.editReply(payload) : interaction.reply(payload);
-    if (!interaction.guild) return respond({ content:'استخدم /games داخل سيرفر Discord.', ephemeral:true });
+    const language=gameLanguage(settings), ui=GAME_UI[language];
+    if (!interaction.guild) return respond({ content:ui.onlyGuild, ephemeral:true });
     const advanced = settings?.advancedSettings || {};
-    if (advanced.gamesEnabled === false) return respond({ content:'قائمة الألعاب متوقفة من لوحة تحكم السيرفر.', ephemeral:true });
+    if (advanced.gamesEnabled === false) return respond({ content:ui.disabled, ephemeral:true });
     const allowedChannels = String(advanced.gameChannelIds || '').split(/[\s,]+/).filter(Boolean);
     if (allowedChannels.length && !allowedChannels.includes(interaction.channelId)) {
-        return respond({ content:`الألعاب متاحة في القنوات التالية فقط: ${allowedChannels.map((id) => `<#${id}>`).join(' ')}`, ephemeral:true });
+        return respond({ content:`${ui.channel} ${allowedChannels.map((id) => `<#${id}>`).join(' ')}`, ephemeral:true });
     }
     const games = getGameMenuOptions(advanced);
-    if (!games.length) return respond({ content:'ما في ألعاب مفعّلة حاليًا. فعّل الألعاب من لوحة التحكم.', ephemeral:true });
+    if (!games.length) return respond({ content:ui.none, ephemeral:true });
     const prefix = settings?.commandPrefix || '!';
     const categories = GAME_CATEGORIES.filter((category) => games.some((game) => game.categories.includes(category.id)));
     const menu = new StringSelectMenuBuilder()
         .setCustomId('ys_games_category')
-        .setPlaceholder('اختار نوع الألعاب')
-        .addOptions(categories.map((category) => ({ label:category.name, description:category.description, value:category.id })))
+        .setPlaceholder(ui.chooseType)
+        .addOptions(categories.map((category) => ({ label:gameLabel(category,'name',language), description:gameLabel(category,'description',language), value:category.id })))
         .setMinValues(1).setMaxValues(1);
     const embed = new EmbedBuilder()
         .setColor(0x35cdb7)
-        .setTitle('🎮 مركز ألعاب YS-Bot')
-        .setDescription(`اختار منيو الألعاب الجماعية أو الفردية أو العب ضد البوت.\n\nالأوامر النصية تستخدم بادئة هذا السيرفر: **${prefix}**\nمثال: \`${prefix}games\` و \`${prefix}picture\`\n\nعدد الألعاب المتاحة: **${games.length}**`)
-        .setFooter({ text:'YS-Bot Games • اختر نوع اللعب للمتابعة' });
+        .setTitle(`🎮 ${ui.title}`)
+        .setDescription(`${ui.menu}\n\n${ui.prefix}: **${prefix}**\n${ui.example}: \`${prefix}games\` و \`${prefix}picture\`\n\n${ui.available}: **${games.length} ${ui.count}**`)
+        .setFooter({ text:ui.footer });
     return respond({ embeds:[embed], components:[new ActionRowBuilder().addComponents(menu)] });
 }
 
 async function sendGamesMenu(message, settings) {
     const advanced=settings?.advancedSettings || {};
-    if (advanced.gamesEnabled===false) return message.reply('قائمة الألعاب متوقفة من لوحة تحكم السيرفر.');
+    const language=gameLanguage(settings), ui=GAME_UI[language];
+    if (advanced.gamesEnabled===false) return message.reply(ui.disabled);
     const games=getGameMenuOptions(advanced);
-    if (!games.length) return message.reply('ما في ألعاب مفعّلة حاليًا. فعّل الألعاب من لوحة التحكم.');
+    if (!games.length) return message.reply(ui.none);
     const prefix=settings.commandPrefix || '!';
     const categories=GAME_CATEGORIES.filter((category)=>games.some((game)=>game.categories.includes(category.id)));
-    const menu=new StringSelectMenuBuilder().setCustomId('ys_games_category').setPlaceholder('اختار نوع الألعاب')
-        .addOptions(categories.map((category)=>({label:category.name,description:category.description,value:category.id}))).setMinValues(1).setMaxValues(1);
-    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('🎮 مركز ألعاب YS-Bot')
-        .setDescription(`اختار منيو الألعاب الجماعية أو الفردية أو العب ضد البوت.\n\nبادئة أوامر هذا السيرفر: **${prefix}**\nمثال: \`${prefix}games\` و \`${prefix}picture\`\nعدد الألعاب المتاحة: **${games.length}**`)
-        .setFooter({text:'YS-Bot Games • اختر نوع اللعب للمتابعة'});
+    const menu=new StringSelectMenuBuilder().setCustomId('ys_games_category').setPlaceholder(ui.chooseType)
+        .addOptions(categories.map((category)=>({label:gameLabel(category,'name',language),description:gameLabel(category,'description',language),value:category.id}))).setMinValues(1).setMaxValues(1);
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(`🎮 ${ui.title}`)
+        .setDescription(`${ui.menu}\n\n${ui.prefix}: **${prefix}**\n${ui.example}: \`${prefix}games\` و \`${prefix}picture\`\n\n${ui.available}: **${games.length} ${ui.count}**`)
+        .setFooter({text:ui.footer});
     return message.reply({embeds:[embed],components:[new ActionRowBuilder().addComponents(menu)]});
 }
 
@@ -1279,19 +1336,20 @@ async function showGamesCategory(interaction) {
     if (!interaction.guild) return respond({content:'الألعاب متاحة داخل السيرفر فقط.',embeds:[],components:[]});
     const settings=await loadGuildSettings(interaction.guild.id);
     const advanced=settings.advancedSettings || {};
+    const language=gameLanguage(settings), ui=GAME_UI[language];
     const categoryId=interaction.values[0];
-    if (advanced.gamesEnabled===false) return respond({content:'الألعاب متوقفة من لوحة تحكم السيرفر.',embeds:[],components:[]});
+    if (advanced.gamesEnabled===false) return respond({content:language==='en'?'Games are disabled in the server dashboard.':'الألعاب متوقفة من لوحة تحكم السيرفر.',embeds:[],components:[]});
     const allowedChannels=String(advanced.gameChannelIds||'').split(/[\s,]+/).filter(Boolean);
-    if (allowedChannels.length&&!allowedChannels.includes(interaction.channelId)) return respond({content:`الألعاب متاحة في: ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`,embeds:[],components:[]});
+    if (allowedChannels.length&&!allowedChannels.includes(interaction.channelId)) return respond({content:`${ui.channel} ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`,embeds:[],components:[]});
     const category=GAME_CATEGORIES.find((item)=>item.id===categoryId);
     const games=getGameMenuOptions(advanced).filter((game)=>game.categories.includes(categoryId));
-    if (!category||!games.length) return respond({content:'ما في ألعاب متاحة بهذا القسم حاليًا.',embeds:[],components:[]});
+    if (!category||!games.length) return respond({content:language==='en'?'No games are available in this category.':'ما في ألعاب متاحة بهذا القسم حاليًا.',embeds:[],components:[]});
     const prefix=settings.commandPrefix || '!';
-    const menu=new StringSelectMenuBuilder().setCustomId(`ys_games_pick:${categoryId}:${interaction.user.id}`).setPlaceholder('اختار لعبة من القائمة')
-        .addOptions(games.map((game)=>({label:game.name,description:`${game.description} • ${prefix}${game.command}`.slice(0,100),value:game.id}))).setMinValues(1).setMaxValues(1);
-    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(`🎮 ${category.name}`)
-        .setDescription(`${games.map((game)=>`• **${game.name}** — ${game.description}\n  الأمر: \`${prefix}${game.command}\``).join('\n')}\n\nتقدر تختار اللعبة من القائمة أو تستخدم أمرها مباشرة.`)
-        .setFooter({text:`بادئة السيرفر الحالية: ${prefix} • YS-Bot Games`});
+    const menu=new StringSelectMenuBuilder().setCustomId(`ys_games_pick:${categoryId}:${interaction.user.id}`).setPlaceholder(ui.chooseGame)
+        .addOptions(games.map((game)=>({label:gameLabel(game,'name',language),description:`${gameLabel(game,'description',language)} • ${prefix}${game.command}`.slice(0,100),value:game.id}))).setMinValues(1).setMaxValues(1);
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(`🎮 ${gameLabel(category,'name',language)}`)
+        .setDescription(`${games.map((game)=>`• **${gameLabel(game,'name',language)}** — ${gameLabel(game,'description',language)}\n  ${language==='en'?'Command':'الأمر'}: \`${prefix}${game.command}\``).join('\n')}\n\n${ui.pick}`)
+        .setFooter({text:`${ui.prefix}: ${prefix} • YS-Bot Games`});
     return respond({embeds:[embed],components:[new ActionRowBuilder().addComponents(menu)]});
 }
 
@@ -1303,19 +1361,20 @@ function deliverGamePayload(target, payload) {
     return target.reply(payload);
 }
 
-function drawGameCard(kind, value = null) {
+function drawGameCard(kind, value = null, language='ar') {
+    const en=language==='en';
     const canvas=createCanvas(760,390),ctx=canvas.getContext('2d');
     const bg=ctx.createLinearGradient(0,0,760,390);bg.addColorStop(0,'#0c1b2a');bg.addColorStop(1,'#172849');ctx.fillStyle=bg;ctx.fillRect(0,0,760,390);
     ctx.fillStyle='rgba(88,226,205,.08)';ctx.beginPath();ctx.arc(670,65,150,0,Math.PI*2);ctx.fill();
     ctx.textAlign='center';ctx.fillStyle='#b7d1de';ctx.font='700 18px sans-serif';
     if(kind==='memory'){
-        ctx.fillText('YS-BOT  •  VISUAL MEMORY',380,42);
+        ctx.fillText(en?'YS-BOT  •  VISUAL MEMORY':'YS-BOT  •  ذاكرة بصرية',380,42);
         const palette=['#ff6b7a','#45c7ff','#5bddad','#ffcf68'];
         value.forEach((color,index)=>{const x=140+index*160;ctx.shadowColor=palette[color];ctx.shadowBlur=22;ctx.fillStyle=palette[color];ctx.beginPath();ctx.roundRect(x-49,112,98,112,24);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#102033';ctx.font='900 28px sans-serif';ctx.fillText(String(index+1),x,178);});
-        ctx.fillStyle='#d4e7ef';ctx.font='600 16px sans-serif';ctx.fillText('Remember the order',380,315);
+        ctx.fillStyle='#d4e7ef';ctx.font='600 16px sans-serif';ctx.fillText(en?'Remember the order':'احفظ الترتيب',380,315);
         return canvas.toBuffer('image/png');
     }
-    ctx.fillText(kind==='difference'?'YS-BOT  •  FIND THE ODD SHAPE':'YS-BOT  •  PICTURE CHALLENGE',380,40);
+    ctx.fillText(kind==='difference'?(en?'YS-BOT  •  FIND THE ODD SHAPE':'YS-BOT  •  اكتشف الاختلاف'):(en?'YS-BOT  •  PICTURE CHALLENGE':'YS-BOT  •  تحدي الرسمة'),380,40);
     if(kind==='difference'){
         const oddSide=value.side,oddIndex=value.index;
         for(let side=0;side<2;side++){
@@ -1339,20 +1398,53 @@ function drawGameCard(kind, value = null) {
     else if(item==='pizza'){ctx.beginPath();ctx.moveTo(-103,-70);ctx.lineTo(105,47);ctx.quadraticCurveTo(0,115,-103,-70);ctx.fill();ctx.stroke();ctx.fillStyle='#ff7e83';for(const [x,y]of[[-35,-15],[12,8],[40,44],[-18,42]]){ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();}}
     else if(item==='robot'){ctx.beginPath();ctx.roundRect(-90,-78,180,156,34);ctx.fill();ctx.stroke();ctx.strokeStyle='#edfffb';ctx.beginPath();ctx.moveTo(0,-78);ctx.lineTo(0,-112);ctx.stroke();ctx.fillStyle='#ffdb83';ctx.beginPath();ctx.arc(0,-119,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#13233a';for(const x of[-38,38]){ctx.beginPath();ctx.arc(x,-16,11,0,Math.PI*2);ctx.fill();}ctx.strokeStyle='#13233a';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-34,34);ctx.quadraticCurveTo(0,62,34,34);ctx.stroke();}
     else{ctx.beginPath();ctx.moveTo(0,-112);ctx.lineTo(-101,57);ctx.lineTo(101,57);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(0,-48);ctx.lineTo(-79,80);ctx.lineTo(79,80);ctx.closePath();ctx.fill();ctx.fillStyle='#ffbd72';ctx.fillRect(-14,66,28,56);}
-    ctx.restore();ctx.fillStyle='#d4e7ef';ctx.font='600 16px sans-serif';ctx.fillText('Name the drawing',380,355);
+    ctx.restore();ctx.fillStyle='#d4e7ef';ctx.font='600 16px sans-serif';ctx.fillText(en?'Name the drawing':'خمن الرسمة',380,355);
     return canvas.toBuffer('image/png');
 }
 
-function questionGame(target, title, prompt, choices, answer, {group=false,artwork=null} = {}) {
+function questionGame(target, title, prompt, choices, answer, {group=false,artwork=null,language='ar',english=null} = {}) {
+    if(language==='en'&&english){title=english.title||title;prompt=english.prompt||prompt;choices=english.choices||choices;answer=english.answer||answer;}
     const correct = choices.indexOf(answer);
     const ownerId=group?'all':(target.user?.id||target.author?.id);
     const row = new ActionRowBuilder().addComponents(choices.map((choice, index) => new ButtonBuilder()
         .setCustomId(`ys_game_answer:${ownerId}:${correct}:${index}`)
         .setLabel(String(choice).slice(0, 80)).setStyle(ButtonStyle.Secondary)));
-    const embed = new EmbedBuilder().setColor(0x35cdb7).setTitle(title).setDescription(prompt).setFooter({ text:'اختار إجابتك • YS-Bot Games' });
+    const embed = new EmbedBuilder().setColor(0x35cdb7).setTitle(title).setDescription(`${prompt}\n\n${language==='en'?'⏱️ You have 45 seconds.':'⏱️ معك 45 ثانية للإجابة.'}`).setFooter({ text:language==='en'?(group?'First correct answer wins • YS-Bot Games':'Choose an answer • YS-Bot Games'):(group?'أسرع إجابة صحيحة تفوز • YS-Bot Games':'اختار إجابتك • YS-Bot Games') });
     const payload={embeds:[embed],components:[row]};
     if(artwork){const fileName='ys-game-art.png';embed.setImage(`attachment://${fileName}`);payload.files=[new AttachmentBuilder(artwork,{name:fileName})];}
-    return deliverGamePayload(target,payload);
+    return deliverGamePayload(target,payload).then((message)=>{
+        const collector=message.createMessageComponentCollector({time:45000,filter:(button)=>button.customId.startsWith('ys_game_answer:')});
+        gameAnswerCollectors.set(message.id,collector);
+        collector.on('end',async(_,reason)=>{
+            gameAnswerCollectors.delete(message.id);
+            if(reason!=='time')return;
+            const correctText=choices[correct];
+            const result=EmbedBuilder.from(embed).setColor(0x526174).setDescription(`${prompt}\n\n${language==='en'?`⏰ Time is up. The answer was **${correctText}**.`:`⏰ انتهى الوقت. الإجابة الصحيحة: **${correctText}**.`}`);
+            const endedRows=[row].map((actionRow)=>ActionRowBuilder.from(actionRow).setComponents(actionRow.components.map((component,index)=>ButtonBuilder.from(component).setDisabled(true).setStyle(index===correct?ButtonStyle.Success:ButtonStyle.Secondary))));
+            await message.edit({embeds:[result],components:endedRows}).catch(()=>{});
+        });
+        return message;
+    });
+}
+
+async function startTypingGame(target, language='ar', group=false) {
+    const bank=language==='en'?[
+        ['Fast fingers win this round.','Fast fingers win this round.'],['YS Bot brings games to your server.','YS Bot brings games to your server.'],['Quick thinking makes every game better.','Quick thinking makes every game better.']
+    ]:[
+        ['الفوز يحتاج سرعة وتركيز','الفوز يحتاج سرعة وتركيز'],['YS بوت يضيف ألعاب ممتعة لسيرفرك','YS بوت يضيف ألعاب ممتعة لسيرفرك'],['التفكير السريع يجعل اللعبة أحلى','التفكير السريع يجعل اللعبة أحلى']
+    ];
+    const phrase=randomGameItem(bank)[0],user=target.user||target.author;
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(language==='en'?'Typing Sprint':'تحدي الكتابة')
+        .setDescription(`${language==='en'?'Type this phrase exactly:':'اكتب العبارة التالية كما هي:'}\n\n> **${phrase}**\n\n${language==='en'?'The first correct message wins!':'أول رسالة صحيحة تفوز!'}`)
+        .setFooter({text:group?(language==='en'?'Open to everyone':'مفتوح للجميع'):(language==='en'?'Only your answer counts':'تُحتسب إجابتك فقط')});
+    const message=await deliverGamePayload(target,{embeds:[embed],components:[]});
+    const collector=message.channel.createMessageCollector({time:45000,filter:(candidate)=>candidate.content.trim()===phrase&&(!group?candidate.author.id===user.id:true)});
+    collector.on('collect',async(candidate)=>{
+        collector.stop('winner');
+        await message.edit({embeds:[embed.setDescription(language==='en'?`🏁 ${candidate.author} typed it first!`:`🏁 ${candidate.author} كتبها أولًا!`)],components:[]}).catch(()=>{});
+    });
+    collector.on('end',async(_,reason)=>{if(reason==='time')await message.edit({embeds:[embed.setDescription(language==='en'?`Time is up. The phrase was: **${phrase}**`:`انتهى الوقت. العبارة كانت: **${phrase}**`)],components:[]}).catch(()=>{});});
+    return message;
 }
 
 function ticTacToeWinner(board) {
@@ -1380,61 +1472,63 @@ function chooseTicTacToeMove(board) {
     return randomGameItem(corners.length ? corners : open);
 }
 
-async function startTicTacToe(target) {
+async function startTicTacToe(target, language='ar') {
     const user=target.user||target.author;
     const board=Array(9).fill(null);
-    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('إكس أو ضد البوت').setDescription('أنت **X** والبوت **O**. اختار مربعًا للبدء.');
+    const en=language==='en';
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(en?'Tic-Tac-Toe vs Bot':'إكس أو ضد البوت').setDescription(en?'You are **X** and the bot is **O**. Pick a square.':'أنت **X** والبوت **O**. اختار مربعًا للبدء.');
     const message=await deliverGamePayload(target,{ embeds:[embed], components:ticTacToeRows(board,user.id) });
     const collector=message.createMessageComponentCollector({ time:90000, filter:(button)=>button.user.id===user.id && button.customId.startsWith(`ys_game_ttt:${user.id}:`) });
     collector.on('collect', async (button) => {
         const index=Number(button.customId.split(':')[2]);
-        if (!Number.isInteger(index) || board[index]) return button.reply({ content:'هذا المربع مستخدم، اختار غيره.', ephemeral:true });
+        if (!Number.isInteger(index) || board[index]) return button.reply({ content:en?'That square is taken. Choose another.':'هذا المربع مستخدم، اختار غيره.', ephemeral:true });
         board[index]='X';
         let result=ticTacToeWinner(board);
         if (!result) { board[chooseTicTacToeMove(board)]='O'; result=ticTacToeWinner(board); }
-        const status=result==='X' ? 'فزت! جولة حلوة 🎉' : result==='O' ? 'فاز البوت هالمرة 🤖' : result==='draw' ? 'تعادل! جولة متوازنة 🤝' : 'دورك — أنت X';
+        const status=en?(result==='X'?'You win! Great round 🎉':result==='O'?'The bot wins this time 🤖':result==='draw'?'It’s a draw! 🤝':'Your turn — you are X'):(result==='X'?'فزت! جولة حلوة 🎉':result==='O'?'فاز البوت هالمرة 🤖':result==='draw'?'تعادل! جولة متوازنة 🤝':'دورك — أنت X');
         embed.setDescription(status);
         await button.update({ embeds:[embed], components:ticTacToeRows(board, user.id, Boolean(result)) });
         if (result) collector.stop('finished');
     });
     collector.on('end', async (_, reason) => {
         if (reason === 'time') {
-            embed.setDescription('انتهى وقت الجولة. استخدم /games لبدء لعبة جديدة.');
+            embed.setDescription(en?'Time is up. Use /games to start a new game.':'انتهى وقت الجولة. استخدم /games لبدء لعبة جديدة.');
             await message.edit({ embeds:[embed], components:ticTacToeRows(board, user.id, true) }).catch(()=>{});
         }
     });
 }
 
-async function startMemoryGame(target) {
+async function startMemoryGame(target, language='ar') {
     const user=target.user||target.author;
-    const colors=[{name:'أحمر',style:ButtonStyle.Danger},{name:'أزرق',style:ButtonStyle.Primary},{name:'أخضر',style:ButtonStyle.Success},{name:'أصفر',style:ButtonStyle.Secondary}];
+    const en=language==='en';
+    const colors=(en?['Red','Blue','Green','Yellow']:['أحمر','أزرق','أخضر','أصفر']).map((name,index)=>({name,style:[ButtonStyle.Danger,ButtonStyle.Primary,ButtonStyle.Success,ButtonStyle.Secondary][index]}));
     const sequence=Array.from({length:4},()=>Math.floor(Math.random()*colors.length));
     const colorButtons=()=>new ActionRowBuilder().addComponents(colors.map((color,index)=>new ButtonBuilder().setCustomId(`ys_game_memory:${user.id}:${index}`).setLabel(color.name).setStyle(color.style)));
-    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('اختبار الذاكرة البصرية').setDescription('احفظ ترتيب البطاقات المرسومة؛ ستختفي بعد لحظات.');
-    const art=drawGameCard('memory',sequence);
+    const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(en?'Visual Memory':'اختبار الذاكرة البصرية').setDescription(en?'Memorize the illustrated sequence. It will disappear in a moment.':'احفظ ترتيب البطاقات المرسومة؛ ستختفي بعد لحظات.');
+    const art=drawGameCard('memory',sequence,language);
     const message=await deliverGamePayload(target,{embeds:[embed.setImage('attachment://ys-game-memory.png')],components:[],files:[new AttachmentBuilder(art,{name:'ys-game-memory.png'})]});
     await new Promise((resolve)=>setTimeout(resolve,2600));
-    embed.setImage(null).setDescription('كرر ترتيب الألوان بالضغط على أسمائها.\n\nالتقدم: **0 / 4**');
+    embed.setImage(null).setDescription(en?'Repeat the colors in order by clicking their names.\n\nProgress: **0 / 4**':'كرر ترتيب الألوان بالضغط على أسمائها.\n\nالتقدم: **0 / 4**');
     await message.edit({embeds:[embed],components:[colorButtons()],attachments:[]}).catch(()=>null);
     let progress=0;
     const collector=message.createMessageComponentCollector({ time:60000, filter:(button)=>button.user.id===user.id && button.customId.startsWith(`ys_game_memory:${user.id}:`) });
     collector.on('collect', async (button)=>{
         const chosen=Number(button.customId.split(':')[2]);
         if (chosen!==sequence[progress]) {
-            embed.setDescription(`التسلسل الصحيح كان: ${sequence.map((index)=>colors[index].name).join(' ← ')}\n\nقريب! جرّب مرة ثانية.`);
+            embed.setDescription(en?`The sequence was: ${sequence.map((index)=>colors[index].name).join(' → ')}\n\nClose! Try another round.`:`التسلسل الصحيح كان: ${sequence.map((index)=>colors[index].name).join(' ← ')}\n\nقريب! جرّب مرة ثانية.`);
             await button.update({ embeds:[embed], components:[] });
             collector.stop('finished'); return;
         }
         progress++;
         if (progress===sequence.length) {
-            embed.setDescription('ذاكرتك قوية! حفظت التسلسل كاملًا **4 / 4** ✨');
+            embed.setDescription(en?'Great memory! You repeated the full sequence **4 / 4** ✨':'ذاكرتك قوية! حفظت التسلسل كاملًا **4 / 4** ✨');
             await button.update({ embeds:[embed], components:[] });
             collector.stop('finished'); return;
         }
-        embed.setDescription(`ممتاز، كمل التسلسل.\n\nالتقدم: **${progress} / 4**`);
+        embed.setDescription(en?`Nice, keep going.\n\nProgress: **${progress} / 4**`:`ممتاز، كمل التسلسل.\n\nالتقدم: **${progress} / 4**`);
         await button.update({ embeds:[embed], components:[colorButtons()] });
     });
-    collector.on('end',async(_,reason)=>{ if(reason==='time'){embed.setDescription(`انتهى وقت اللعبة. التسلسل كان: ${sequence.map((index)=>colors[index].name).join(' ← ')}`); await message.edit({embeds:[embed],components:[]}).catch(()=>{});} });
+    collector.on('end',async(_,reason)=>{ if(reason==='time'){embed.setDescription(en?`Time is up. Sequence: ${sequence.map((index)=>colors[index].name).join(' → ')}`:`انتهى وقت اللعبة. التسلسل كان: ${sequence.map((index)=>colors[index].name).join(' ← ')}`); await message.edit({embeds:[embed],components:[]}).catch(()=>{});} });
 }
 
 function respondGameStatus(target, content) {
@@ -1449,60 +1543,123 @@ async function launchGameTarget(target, gameId, categoryId) {
     if (!guild) return respondGameStatus(target,'الألعاب متاحة داخل السيرفر فقط.');
     const settings=await loadGuildSettings(guild.id);
     const advanced=settings.advancedSettings||{};
+    const language=gameLanguage(advanced), en=language==='en';
     const game=GAME_OPTIONS.find((item)=>item.id===gameId);
-    if (advanced.gamesEnabled===false) return respondGameStatus(target,'الألعاب متوقفة من لوحة تحكم السيرفر.');
-    if (!game||advanced[game.flag]===false||!game.categories.includes(categoryId)) return respondGameStatus(target,'هذه اللعبة غير مفعّلة أو غير متاحة بهذا القسم.');
+    if (advanced.gamesEnabled===false) return respondGameStatus(target,en?'Games are disabled in the server dashboard.':'الألعاب متوقفة من لوحة تحكم السيرفر.');
+    if (!game||advanced[game.flag]===false||!game.categories.includes(categoryId)) return respondGameStatus(target,en?'This game is disabled or unavailable in this category.':'هذه اللعبة غير مفعّلة أو غير متاحة بهذا القسم.');
     const allowedChannels=String(advanced.gameChannelIds||'').split(/[\s,]+/).filter(Boolean);
-    if (allowedChannels.length&&!allowedChannels.includes(channelId)) return respondGameStatus(target,`الألعاب متاحة في: ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`);
+    if (allowedChannels.length&&!allowedChannels.includes(channelId)) return respondGameStatus(target,`${en?'Games are only available in:':'الألعاب متاحة في:'} ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`);
     const cooldownMs=Math.max(0,Number(advanced.gamesCooldownSeconds??8))*1000;
     const cooldownKey=`${guild.id}:${user.id}`;
     const remaining=cooldownMs-(Date.now()-(gameCooldowns.get(cooldownKey)||0));
-    if (remaining>0) return respondGameStatus(target,`استنى ${Math.ceil(remaining/1000)} ثواني قبل ما تبدأ لعبة ثانية.`);
+    if (remaining>0) return respondGameStatus(target,en?`Wait ${Math.ceil(remaining/1000)} seconds before starting another game.`:`استنى ${Math.ceil(remaining/1000)} ثواني قبل ما تبدأ لعبة ثانية.`);
     const startedAt=Date.now();gameCooldowns.set(cooldownKey,startedAt);
     if(cooldownMs){const timer=setTimeout(()=>{if(gameCooldowns.get(cooldownKey)===startedAt)gameCooldowns.delete(cooldownKey);},cooldownMs);timer.unref?.();}
     const group=categoryId==='group';
-    if(game.id==='memory')return startMemoryGame(target);
-    if(game.id==='ttt')return startTicTacToe(target);
+    if(game.id==='memory')return startMemoryGame(target,language);
+    if(game.id==='ttt')return startTicTacToe(target,language);
     if(game.id==='rps'){
-        const choices=[['rock','حجر','🪨'],['paper','ورقة','📄'],['scissors','مقص','✂️']];
+        const choices=en?[['rock','Rock','🪨'],['paper','Paper','📄'],['scissors','Scissors','✂️']]:[['rock','حجر','🪨'],['paper','ورقة','📄'],['scissors','مقص','✂️']];
         const row=new ActionRowBuilder().addComponents(choices.map(([id,name,emoji])=>new ButtonBuilder().setCustomId(`ys_game_rps:${user.id}:${id}`).setLabel(name).setEmoji(emoji).setStyle(ButtonStyle.Secondary)));
-        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('حجر ورقة مقص').setDescription('اختار حركتك، والبوت يلعب ضدك.');
+        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(en?'Rock Paper Scissors':'حجر ورقة مقص').setDescription(en?'Choose your move and play against the bot.':'اختار حركتك، والبوت يلعب ضدك.');
         return deliverGamePayload(target,{embeds:[embed],components:[row]});
     }
     if(game.id==='dice'){
-        const row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ys_game_dice:${user.id}:low`).setLabel('أتوقع 1–3').setStyle(ButtonStyle.Primary),new ButtonBuilder().setCustomId(`ys_game_dice:${user.id}:high`).setLabel('أتوقع 4–6').setStyle(ButtonStyle.Success));
-        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle('تحدي النرد').setDescription('توقّع نتيجة رمية النرد: منخفض (1–3) أو مرتفع (4–6).');
+        const row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ys_game_dice:${user.id}:low`).setLabel(en?'Guess 1–3':'أتوقع 1–3').setStyle(ButtonStyle.Primary),new ButtonBuilder().setCustomId(`ys_game_dice:${user.id}:high`).setLabel(en?'Guess 4–6':'أتوقع 4–6').setStyle(ButtonStyle.Success));
+        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(en?'Dice Challenge':'تحدي النرد').setDescription(en?'Predict the roll: low (1–3) or high (4–6).':'توقّع نتيجة رمية النرد: منخفض (1–3) أو مرتفع (4–6).');
         return deliverGamePayload(target,{embeds:[embed],components:[row]});
     }
+    if(game.id==='coin'){
+        const row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ys_game_coin:${user.id}:heads`).setLabel(en?'Heads':'صورة').setStyle(ButtonStyle.Primary),new ButtonBuilder().setCustomId(`ys_game_coin:${user.id}:tails`).setLabel(en?'Tails':'كتابة').setStyle(ButtonStyle.Success));
+        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(en?'Coin Flip':'تحدي العملة').setDescription(en?'Pick a side before the coin is flipped.':'اختار وجه العملة قبل رميها.');
+        return deliverGamePayload(target,{embeds:[embed],components:[row]});
+    }
+    if(game.id==='higherlower'){
+        const first=1+Math.floor(Math.random()*99);
+        const row=new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`ys_game_higherlower:${user.id}:${first}:up`).setLabel(en?'Higher':'أعلى').setStyle(ButtonStyle.Success),new ButtonBuilder().setCustomId(`ys_game_higherlower:${user.id}:${first}:down`).setLabel(en?'Lower':'أقل').setStyle(ButtonStyle.Primary));
+        const embed=new EmbedBuilder().setColor(0x35cdb7).setTitle(en?'Higher or Lower':'أعلى أو أقل').setDescription(en?`The number is **${first}**. Will the next number be higher or lower?`:`الرقم هو **${first}**. هل الرقم التالي أعلى أم أقل؟`);
+        return deliverGamePayload(target,{embeds:[embed],components:[row]});
+    }
+    if(game.id==='numberguess'){
+        const answer=1+Math.floor(Math.random()*10),choices=[answer];
+        while(choices.length<4){const candidate=1+Math.floor(Math.random()*10);if(!choices.includes(candidate))choices.push(candidate);}
+        choices.sort(()=>Math.random()-.5);
+        return questionGame(target,en?'Guess the Number':'خمن الرقم',en?'Pick the secret number between 1 and 10.':'اختار الرقم السري من 1 إلى 10.',choices.map(String),String(answer),{language});
+    }
+    if(game.id==='typing')return startTypingGame(target,language,group);
     if(game.id==='trivia'){
-        const q=randomGameItem([{prompt:'ما أكبر كوكب في المجموعة الشمسية؟',choices:['الأرض','المشتري','المريخ','زحل'],answer:'المشتري'},{prompt:'كم عدد أضلاع الشكل السداسي؟',choices:['5','6','7','8'],answer:'6'},{prompt:'ما عاصمة اليابان؟',choices:['سيول','بكين','طوكيو','بانكوك'],answer:'طوكيو'},{prompt:'ما الغاز الذي تمتصه النباتات من الهواء؟',choices:['الأكسجين','الهيليوم','ثاني أكسيد الكربون','الهيدروجين'],answer:'ثاني أكسيد الكربون'},{prompt:'كم دقيقة في ساعتين ونصف؟',choices:['120','140','150','180'],answer:'150'}]);
-        return questionGame(target,'معلومات عامة',q.prompt,q.choices,q.answer,{group});
+        const bank=en?[
+            ['What is the largest planet in our solar system?',['Earth','Jupiter','Mars','Saturn'],'Jupiter'],['How many sides does a hexagon have?',['5','6','7','8'],'6'],['What is the capital of Japan?',['Seoul','Beijing','Tokyo','Bangkok'],'Tokyo'],['Which gas do plants absorb?',['Oxygen','Helium','Carbon dioxide','Hydrogen'],'Carbon dioxide'],['How many minutes are in two and a half hours?',['120','140','150','180'],'150']
+        ]:[
+            ['ما أكبر كوكب في المجموعة الشمسية؟',['الأرض','المشتري','المريخ','زحل'],'المشتري'],['كم عدد أضلاع الشكل السداسي؟',['5','6','7','8'],'6'],['ما عاصمة اليابان؟',['سيول','بكين','طوكيو','بانكوك'],'طوكيو'],['ما الغاز الذي تمتصه النباتات من الهواء؟',['الأكسجين','الهيليوم','ثاني أكسيد الكربون','الهيدروجين'],'ثاني أكسيد الكربون'],['كم دقيقة في ساعتين ونصف؟',['120','140','150','180'],'150']
+        ];
+        const q=randomGameItem(bank);
+        return questionGame(target,en?'General Knowledge':'معلومات عامة',q[0],q[1],q[2],{group,language});
     }
     if(game.id==='picture'){
-        const gallery=[['moon','القمر'],['rocket','الصاروخ'],['crown','التاج'],['ball','كرة القدم'],['cat','القطة'],['pizza','البيتزا'],['robot','الروبوت'],['tree','الشجرة']];
+        const gallery=en?[['moon','the moon'],['rocket','a rocket'],['crown','a crown'],['ball','a ball'],['cat','a cat'],['pizza','pizza'],['robot','a robot'],['tree','a tree']]:[['moon','القمر'],['rocket','الصاروخ'],['crown','التاج'],['ball','كرة القدم'],['cat','القطة'],['pizza','البيتزا'],['robot','الروبوت'],['tree','الشجرة']];
         const chosen=randomGameItem(gallery),choices=[chosen[1],...gallery.filter((item)=>item[0]!==chosen[0]).sort(()=>Math.random()-.5).slice(0,3).map((item)=>item[1])].sort(()=>Math.random()-.5);
-        return questionGame(target,'خمّن الرسمة','شو الشيء اللي بتمثله الرسمة؟',choices,chosen[1],{group,artwork:drawGameCard('picture',chosen[0])});
+        return questionGame(target,en?'Guess the Drawing':'خمّن الرسمة',en?'What does this drawing show?':'شو الشيء اللي بتمثله الرسمة؟',choices,chosen[1],{group,language,artwork:drawGameCard('picture',chosen[0],language)});
     }
     if(game.id==='difference'){
         const artInfo={side:Math.floor(Math.random()*2),index:Math.floor(Math.random()*9)};
         const answer=artInfo.side===0?'A':'B';
-        return questionGame(target,'اكتشف الاختلاف','أي لوحة فيها الشكل المختلف؟ أسرع إجابة صحيحة تفوز.', ['A','B'],answer,{group,artwork:drawGameCard('difference',artInfo)});
+        return questionGame(target,en?'Spot the Difference':'اكتشف الاختلاف',en?'Which board contains the different shape? Fastest correct answer wins.':'أي لوحة فيها الشكل المختلف؟ أسرع إجابة صحيحة تفوز.', ['A','B'],answer,{group,language,artwork:drawGameCard('difference',artInfo,language)});
     }
     if(game.id==='scramble'){
-        const word=randomGameItem([{word:'كوكب',choices:['كوكب','مكتب','مركب','كوبك']},{word:'روبوت',choices:['روبوت','ربوتو','روبوب','بوتر']},{word:'مجرة',choices:['مجرة','مجرد','مرجة','مجره']},{word:'سحابة',choices:['سحابة','سباحة','سحارة','ساحة']}]);
-        return questionGame(target,'ترتيب الحروف',`رتّب الحروف لتكتشف الكلمة:\n\n# ${Array.from(word.word).reverse().join('  ')}`,word.choices,word.word,{group});
+        const bank=en?[{word:'PLANET',choices:['PLANET','PLATE','PLAN','PETAL']},{word:'ROBOT',choices:['ROBOT','BOOTS','BORROW','ROOTS']},{word:'GARDEN',choices:['GARDEN','DANGER','RANGED','GRANDE']},{word:'SERVER',choices:['SERVER','VERSES','SILVER','SEVERE']}]:[{word:'كوكب',choices:['كوكب','مكتب','مركب','كوبك']},{word:'روبوت',choices:['روبوت','ربوتو','روبوب','بوتر']},{word:'مجرة',choices:['مجرة','مجرد','مرجة','مجره']},{word:'سحابة',choices:['سحابة','سباحة','سحارة','ساحة']}];
+        const word=randomGameItem(bank);
+        return questionGame(target,en?'Word Scramble':'ترتيب الحروف',en?`Rearrange these letters:\n\n# ${Array.from(word.word).reverse().join('  ')}`:`رتّب الحروف لتكتشف الكلمة:\n\n# ${Array.from(word.word).reverse().join('  ')}`,word.choices,word.word,{group,language});
     }
     if(game.id==='riddle'){
-        const q=randomGameItem([{prompt:'له أسنان كثيرة لكنه لا يعض، ما هو؟',choices:['المشط','التمساح','المفتاح','المنشار'],answer:'المشط'},{prompt:'كلما أخذت منه كبر، ما هو؟',choices:['الحفرة','العمر','الكتاب','الظل'],answer:'الحفرة'},{prompt:'يكتب ولا يقرأ، ما هو؟',choices:['القلم','الكتاب','الطالب','المدرسة'],answer:'القلم'},{prompt:'ما الشيء الذي له عين ولا يرى؟',choices:['الإبرة','العاصفة','الكاميرا','السمكة'],answer:'الإبرة'}]);
-        return questionGame(target,'لغز سريع',q.prompt,q.choices,q.answer,{group});
+        const bank=en?[['What has keys but cannot open a lock?',['A piano','A map','A clock','A door'],'A piano'],['What gets wetter as it dries?',['A towel','A cloud','A sponge','A river'],'A towel'],['What has a face and two hands but no arms or legs?',['A clock','A robot','A statue','A coin'],'A clock'],['What travels around the world while staying in one corner?',['A stamp','A map','A compass','A letter'],'A stamp']]:[['له أسنان كثيرة لكنه لا يعض، ما هو؟',['المشط','التمساح','المفتاح','المنشار'],'المشط'],['كلما أخذت منه كبر، ما هو؟',['الحفرة','العمر','الكتاب','الظل'],'الحفرة'],['يكتب ولا يقرأ، ما هو؟',['القلم','الكتاب','الطالب','المدرسة'],'القلم'],['ما الشيء الذي له عين ولا يرى؟',['الإبرة','العاصفة','الكاميرا','السمكة'],'الإبرة']];
+        const q=randomGameItem(bank);
+        return questionGame(target,en?'Quick Riddle':'لغز سريع',q[0],q[1],q[2],{group,language});
     }
     if(game.id==='math'){
         const a=2+Math.floor(Math.random()*18),b=2+Math.floor(Math.random()*18),answer=a+b,choices=[answer,answer+2,answer-3,answer+5].sort(()=>Math.random()-.5).map(String);
-        return questionGame(target,'الحساب السريع',`كم ناتج **${a} + ${b}**؟`,choices,String(answer),{group});
+        return questionGame(target,en?'Quick Math':'الحساب السريع',en?`What is **${a} + ${b}**?`:`كم ناتج **${a} + ${b}**؟`,choices,String(answer),{group,language});
     }
     if(game.id==='emoji'){
-        const q=randomGameItem([{picture:'🚰  +  🌹',answer:'ماء الورد',choices:['ماء الورد','شاي بالنعناع','قهوة عربية','عصير تفاح']},{picture:'🧊  +  🍵',answer:'شاي مثلج',choices:['شاي مثلج','حليب ساخن','قهوة سادة','عصير برتقال']},{picture:'☀️  +  🌻',answer:'عباد الشمس',choices:['عباد الشمس','قمر كامل','حديقة ليلية','زهرة الثلج']},{picture:'🐝  +  🍯',answer:'عسل النحل',choices:['عسل النحل','خبز بالعسل','حليب النحل','سكر بني']}]);
-        return questionGame(target,'لغز الإيموجي',`# ${q.picture}\n\nما العبارة المقصودة؟`,q.choices,q.answer,{group});
+        const bank=en?[{picture:'🚰 + 🌹',answer:'Rose water',choices:['Rose water','Mint tea','Arabic coffee','Apple juice']},{picture:'🧊 + 🍵',answer:'Iced tea',choices:['Iced tea','Hot milk','Black coffee','Orange juice']},{picture:'🐝 + 🍯',answer:'Bee honey',choices:['Bee honey','Honey bread','Bee milk','Brown sugar']}]:[{picture:'🚰 + 🌹',answer:'ماء الورد',choices:['ماء الورد','شاي بالنعناع','قهوة عربية','عصير تفاح']},{picture:'🧊 + 🍵',answer:'شاي مثلج',choices:['شاي مثلج','حليب ساخن','قهوة سادة','عصير برتقال']},{picture:'🐝 + 🍯',answer:'عسل النحل',choices:['عسل النحل','خبز بالعسل','حليب النحل','سكر بني']}];
+        const q=randomGameItem(bank);
+        return questionGame(target,en?'Emoji Puzzle':'لغز الإيموجي',en?`# ${q.picture}\n\nWhat phrase do these emojis represent?`:`# ${q.picture}\n\nما العبارة المقصودة؟`,q.choices,q.answer,{group,language});
+    }
+    if(game.id==='truefalse'){
+        const bank=en?[
+            ['The Earth orbits the Sun.',['True','False'],'True'],['Lightning is hotter than the surface of the Sun.',['True','False'],'True'],['A triangle has four sides.',['True','False'],'False'],['Dolphins are mammals.',['True','False'],'True']
+        ]:[
+            ['الأرض تدور حول الشمس.',['صح','خطأ'],'صح'],['البرق أسخن من سطح الشمس.',['صح','خطأ'],'صح'],['المثلث له أربعة أضلاع.',['صح','خطأ'],'خطأ'],['الدلافين من الثدييات.',['صح','خطأ'],'صح']
+        ];
+        const q=randomGameItem(bank);
+        return questionGame(target,en?'True or False':'صح أو خطأ',q[0],q[1],q[2],{group,language});
+    }
+    if(game.id==='geography'){
+        const bank=en?[
+            ['What is the capital of France?',['Paris','Rome','Madrid','Lisbon'],'Paris'],['What is the capital of Egypt?',['Cairo','Rabat','Amman','Tunis'],'Cairo'],['What is the capital of Japan?',['Tokyo','Osaka','Seoul','Kyoto'],'Tokyo'],['What is the capital of Canada?',['Ottawa','Toronto','Vancouver','Montreal'],'Ottawa']
+        ]:[
+            ['ما عاصمة فرنسا؟',['باريس','روما','مدريد','لشبونة'],'باريس'],['ما عاصمة مصر؟',['القاهرة','الرباط','عمّان','تونس'],'القاهرة'],['ما عاصمة اليابان؟',['طوكيو','أوساكا','سيول','كيوتو'],'طوكيو'],['ما عاصمة كندا؟',['أوتاوا','تورونتو','فانكوفر','مونتريال'],'أوتاوا']
+        ];
+        const q=randomGameItem(bank);
+        return questionGame(target,en?'Capital Cities':'تحدي العواصم',q[0],q[1],q[2],{group,language});
+    }
+    if(game.id==='wordguess'){
+        const bank=en?[
+            ['I have pages but I am not a website. What am I?',['A book','A tree','A phone','A window'],'A book'],['I shine at night and change shape during the month.',['The Moon','A lamp','A star','A cloud'],'The Moon'],['I have keys and letters but no doors.',['A keyboard','A piano','A map','A lock'],'A keyboard']
+        ]:[
+            ['عندي صفحات لكني لست موقعًا، ما أنا؟',['كتاب','شجرة','هاتف','نافذة'],'كتاب'],['أضيء في الليل ويتغير شكلي خلال الشهر، ما أنا؟',['القمر','مصباح','نجمة','سحابة'],'القمر'],['عندي مفاتيح وحروف لكن ما عندي أبواب، ما أنا؟',['لوحة مفاتيح','بيانو','خريطة','قفل'],'لوحة مفاتيح']
+        ];
+        const q=randomGameItem(bank);
+        return questionGame(target,en?'Guess the Word':'خمن الكلمة',q[0],q[1],q[2],{group,language});
+    }
+    if(game.id==='oddone'){
+        const bank=en?[
+            ['Which one does not belong?',['Apple','Banana','Carrot','Orange'],'Carrot'],['Which one is not a planet?',['Mars','Venus','Moon','Saturn'],'Moon'],['Which one is not a programming language?',['Python','JavaScript','HTML','Ruby'],'HTML']
+        ]:[
+            ['أي عنصر لا ينتمي للمجموعة؟',['تفاح','موز','جزر','برتقال'],'جزر'],['أي واحد ليس كوكبًا؟',['المريخ','الزهرة','القمر','زحل'],'القمر'],['أي واحد ليس لغة برمجة؟',['بايثون','جافاسكربت','HTML','روبي'],'HTML']
+        ];
+        const q=randomGameItem(bank);
+        return questionGame(target,en?'Odd One Out':'اختر المختلف',q[0],q[1],q[2],{group,language});
     }
 }
 
@@ -1533,22 +1690,45 @@ async function handleGameButton(interaction) {
         }
         const embed=EmbedBuilder.from(interaction.message.embeds[0]).setColor(0x23b887).setFooter({text:ownerId==='all'?`أسرع إجابة صحيحة: ${interaction.user.username} 🎉`:'إجابة صحيحة! أحسنت 🎉'});
         const rows=interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(true).setStyle(Number(component.customId.split(':')[3])===Number(correctIndex)?ButtonStyle.Success:ButtonStyle.Secondary))));
+        gameAnswerCollectors.get(interaction.message.id)?.stop('answered');
         return interaction.update({embeds:[embed],components:rows});
     }
     if (parts[0]==='ys_game_rps') {
         const [,ownerId,choice]=parts;
         if (interaction.user.id!==ownerId) return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
+        const en=/Rock Paper Scissors/i.test(interaction.message.embeds[0]?.title||'');
         const bot=randomGameItem(['rock','paper','scissors']);
-        const labels={rock:'🪨 حجر',paper:'📄 ورقة',scissors:'✂️ مقص'};
-        const outcome=choice===bot?'تعادل!':(choice==='rock'&&bot==='scissors')||(choice==='paper'&&bot==='rock')||(choice==='scissors'&&bot==='paper')?'فزت على البوت! 🎉':'البوت فاز هالمرة 🤖';
-        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setDescription(`أنت: **${labels[choice]}**\nالبوت: **${labels[bot]}**\n\n${outcome}`);
+        const labels=en?{rock:'🪨 Rock',paper:'📄 Paper',scissors:'✂️ Scissors'}:{rock:'🪨 حجر',paper:'📄 ورقة',scissors:'✂️ مقص'};
+        const result=choice===bot?'draw':(choice==='rock'&&bot==='scissors')||(choice==='paper'&&bot==='rock')||(choice==='scissors'&&bot==='paper')?'win':'lose';
+        const outcome=en?(result==='draw'?'It’s a draw!':result==='win'?'You beat the bot! 🎉':'The bot wins this time 🤖'):(result==='draw'?'تعادل!':result==='win'?'فزت على البوت! 🎉':'البوت فاز هالمرة 🤖');
+        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setDescription(en?`You: **${labels[choice]}**\nBot: **${labels[bot]}**\n\n${outcome}`:`أنت: **${labels[choice]}**\nالبوت: **${labels[bot]}**\n\n${outcome}`);
         return interaction.update({embeds:[embed],components:interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(true))))});
     }
     if (parts[0]==='ys_game_dice') {
         const [,ownerId,guess]=parts;
         if (interaction.user.id!==ownerId) return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
+        const en=/Dice Challenge/i.test(interaction.message.embeds[0]?.title||'');
         const roll=1+Math.floor(Math.random()*6), actual=roll<=3?'low':'high';
-        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setDescription(`طلعت النتيجة **${roll}** 🎲\n\n${guess===actual?'توقّعك صح! 🎉':'ما زبطت هالمرة، جرّب جولة ثانية!'}`);
+        const result=guess===actual;
+        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setDescription(en?`The roll is **${roll}** 🎲\n\n${result?'Good prediction! 🎉':'Not this time. Try another round!'}`:`طلعت النتيجة **${roll}** 🎲\n\n${result?'توقّعك صح! 🎉':'ما زبطت هالمرة، جرّب جولة ثانية!'}`);
+        return interaction.update({embeds:[embed],components:interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(true))))});
+    }
+    if (parts[0]==='ys_game_coin') {
+        const [,ownerId,guess]=parts;
+        if(interaction.user.id!==ownerId)return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
+        const en=/Coin Flip/i.test(interaction.message.embeds[0]?.title||''),result=randomGameItem(['heads','tails']),won=guess===result;
+        const face=en?(result==='heads'?'Heads':'Tails'):(result==='heads'?'صورة':'كتابة');
+        const description=en?`The coin landed on **${face}**.\n\n${won?'You guessed right! 🎉':'Not this time—try again!'}`:`طلعت العملة **${face}**.\n\n${won?'توقّعك صح! 🎉':'ما زبطت هالمرة، جرّب مرة ثانية!'}`;
+        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setDescription(description);
+        return interaction.update({embeds:[embed],components:interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(true))))});
+    }
+    if (parts[0]==='ys_game_higherlower') {
+        const [,ownerId,currentText,guess]=parts;
+        if(interaction.user.id!==ownerId)return interaction.reply({content:'هاي الجولة لشخص ثاني، افتح /games والعب جولتك.',ephemeral:true});
+        const current=Number(currentText),next=1+Math.floor(Math.random()*99),en=/Higher or Lower/i.test(interaction.message.embeds[0]?.title||'');
+        const won=guess==='up'?next>current:next<current;
+        const description=en?`The next number was **${next}**.\n\n${won?'Correct prediction! 🎉':'Not this time—try again!'}`:`الرقم التالي كان **${next}**.\n\n${won?'توقّعك صح! 🎉':'ما زبطت هالمرة، جرّب مرة ثانية!'}`;
+        const embed=EmbedBuilder.from(interaction.message.embeds[0]).setDescription(description);
         return interaction.update({embeds:[embed],components:interaction.message.components.map((row)=>ActionRowBuilder.from(row).setComponents(row.components.map((component)=>ButtonBuilder.from(component).setDisabled(true))))});
     }
     return;
@@ -1582,6 +1762,35 @@ async function warnMember(interaction) {
         }
     }
     return interaction.editReply(result);
+}
+
+async function clearMessages(interaction, guildSettings=null) {
+    await interaction.deferReply({ ephemeral: true });
+    const language=gameLanguage(guildSettings?.advancedSettings||{});
+    const en=language==='en';
+    if (!interaction.guild) return interaction.editReply(en?'Use /clear inside a server.':'استخدم /clear داخل السيرفر.');
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages)) {
+        return interaction.editReply(en?'You need Manage Messages permission to use /clear.':'تحتاج صلاحية إدارة الرسائل لاستخدام /clear.');
+    }
+    const channel=interaction.channel;
+    if (!channel?.bulkDelete) return interaction.editReply(en?'Use /clear in a text channel.':'استخدم /clear داخل قناة نصية.');
+    const botMember=interaction.guild.members.me || await interaction.guild.members.fetchMe().catch(()=>null);
+    if (!botMember || !channel.permissionsFor(botMember)?.has(PermissionFlagsBits.ManageMessages)) {
+        return interaction.editReply(en?'I need the Manage Messages permission in this channel.':'أحتاج صلاحية إدارة الرسائل في هذه القناة.');
+    }
+    const amount=interaction.options.getInteger('amount',true);
+    try {
+        const deleted=await channel.bulkDelete(amount,true);
+        const count=deleted.size;
+        if (!count) return interaction.editReply(en?'No recent messages were found. Messages older than 14 days cannot be bulk deleted.':'ما لقيت رسائل حديثة للحذف. ما بقدر أحذف جماعيًا الرسائل الأقدم من 14 يوم.');
+        const skipped=amount-count;
+        return interaction.editReply(en
+            ? `🧹 Deleted **${count}** message${count===1?'':'s'}${skipped?`. ${skipped} older or unavailable message${skipped===1?' was':'s were'} skipped; Discord does not allow bulk deleting messages older than 14 days.`:'.'}`
+            : `🧹 تم حذف **${count}** رسالة${skipped?`، وتُركت ${skipped} رسالة قديمة أو غير متاحة (Discord لا يسمح بالحذف الجماعي لما تجاوز 14 يوم).`:' بنجاح.'}`);
+    } catch (error) {
+        console.error('Could not bulk delete messages:',error.message);
+        return interaction.editReply(en?'Could not delete messages. Check my channel permissions and try again.':'ما قدرت أحذف الرسائل. تأكد من صلاحياتي في القناة وحاول مرة ثانية.');
+    }
 }
 
 async function verifyMember(interaction) {
@@ -1692,6 +1901,16 @@ function addSlashReplyEmoji(interaction) {
 
 // معالجة أوامر السلاش (Interaction)
 client.on('interactionCreate', async (interaction) => {
+    const enforceAccountBan = interaction.isChatInputCommand() || interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit();
+    if (enforceAccountBan && interaction.user && !interaction.user.bot) {
+        const accountBan = await getDiscordAccountBan(interaction.user.id);
+        if (accountBan) {
+            if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+                await interaction.reply({ content: 'هذا الحساب غير مسموح له باستخدام أوامر YS-Bot. إذا كنت ترى أن هذا خطأ، تواصل مع الدعم عبر الموقع.', ephemeral: true }).catch(() => {});
+            }
+            return;
+        }
+    }
     if (interaction.isStringSelectMenu() && interaction.customId === 'ys_games_category') {
         await interaction.deferUpdate();
         return showGamesCategory(interaction);
@@ -1736,6 +1955,7 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.commandName === 'poll') return submitPoll(interaction);
     if (interaction.commandName === 'games') return showGamesMenu(interaction, guildSettings);
     if (interaction.commandName === 'warn') return warnMember(interaction);
+    if (interaction.commandName === 'clear') return clearMessages(interaction, guildSettings);
     if (interaction.commandName === 'verify') return verifyMember(interaction);
     if (interaction.commandName === 'support') return showSupportChannel(interaction);
     if (interaction.commandName === 'invites') return showInviteCount(interaction);
@@ -1747,8 +1967,8 @@ client.on('interactionCreate', async (interaction) => {
             .setColor(0x35cdb7)
             .setTitle(english ? 'YS-Bot commands' : 'أوامر YS-Bot')
             .setDescription(english
-                ? '`/profile` member stats · `/games` open interactive games · `/ticket` open support ticket · `/suggest` submit suggestion · `/poll` create poll · `/warn` warn a member · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send the configured embed.'
-                : '`/profile` إحصاءات عضو · `/games` قائمة الألعاب التفاعلية · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
+                ? '`/profile` member stats · `/games` open interactive games · `/ticket` open support ticket · `/suggest` submit suggestion · `/poll` create poll · `/warn` warn a member · `/clear` delete recent messages · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send the configured embed.'
+                : '`/profile` إحصاءات عضو · `/games` قائمة الألعاب التفاعلية · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/clear` مسح رسائل حديثة · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
             .setFooter({ text: english ? 'YS-Bot • Use / to browse commands' : 'YS-Bot • اكتب / لاستعراض الأوامر' });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -2542,6 +2762,12 @@ client.on('messageCreate', async (message) => {
     const command=commandInput.split(/\s+/)[0];
     const gameCommand=GAME_OPTIONS.find((game)=>game.command===command);
     if (!['plan', 'anticrash', 'help', 'support', 'games'].includes(command)&&!gameCommand) return;
+
+    const accountBan = await getDiscordAccountBan(message.author.id);
+    if (accountBan) {
+        await message.reply('هذا الحساب غير مسموح له باستخدام أوامر YS-Bot. إذا كنت ترى أن هذا خطأ، تواصل مع الدعم عبر الموقع.').catch(() => {});
+        return;
+    }
 
     if (advanced.commandsEnabled === false) return;
     if (advanced.commandsAllowedChannelIds) {

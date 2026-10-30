@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
-const { addIpBan, getBotUserStats, isIpBanned, listBotUsers, listIpBans, normalizeIpAddress, recordBotCommandUser, recordWebsiteUser, removeIpBan } = require('./services/ip-ban-service');
+const { addIpBan, addDiscordAccountBan, findBotUser, getBotUserStats, isIpBanned, isDiscordUserBanned, listBotUsers, listIpBans, listDiscordAccountBans, normalizeIpAddress, recordBotCommandUser, recordWebsiteUser, removeIpBan, removeDiscordAccountBan } = require('./services/ip-ban-service');
 const session = require('express-session');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -19,6 +19,7 @@ const aiAssistantUsage = new Map();
 app.set('trust proxy', 1);
 
 const ipBanCache = new Map();
+const discordAccountBanCache = new Map();
 const BANNED_PAGE = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Access denied | YS-Bot</title>
 <style>body{min-height:100vh;margin:0;display:grid;place-items:center;padding:24px;background:#0f172a;color:#f8fafc;font-family:system-ui,sans-serif;text-align:center;box-sizing:border-box}.notice{max-width:640px}.icon{width:76px;height:76px;margin:0 auto 24px;color:#f87171}h1{font-size:clamp(22px,5vw,34px);line-height:1.45;margin:0}</style></head>
@@ -51,11 +52,11 @@ const servePublicFile = express.static(__dirname, {
     dotfiles: 'deny',
     index: false,
     setHeaders(res, filePath) {
-        if (path.basename(filePath) === 'dashboard.html') res.setHeader('Cache-Control', 'no-store, max-age=0');
+        if (['dashboard.html', 'ip-admin.html'].includes(path.basename(filePath))) res.setHeader('Cache-Control', 'no-store, max-age=0');
     }
 });
 const PUBLIC_FILES = new Set([
-    '/index.html', '/dashboard.html', '/privacy.html', '/wallet.html', '/emoji-pack.html', '/style.css', '/button-effects.js', '/ys-bot-avatar.svg',
+    '/index.html', '/dashboard.html', '/ip-admin.html', '/privacy.html', '/wallet.html', '/emoji-pack.html', '/style.css', '/button-effects.js', '/ys-bot-avatar.svg',
     '/emojis/ys-logo.svg', '/emojis/ys-check.svg', '/emojis/ys-error.svg', '/emojis/ys-warning.svg',
     '/emojis/ys-loading.svg', '/emojis/ys-lock.svg', '/emojis/ys-premium.svg', '/emojis/ys-online.svg'
 ]);
@@ -102,7 +103,7 @@ const REDIRECT_URI = 'https://yenson-security.vercel.app/auth/discord/callback';
 
 // 1. مسار توجيه المستخدم لصفحة التسجيل في ديسكورد
 app.get('/auth/discord', (req, res) => {
-    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify+guilds`;
+    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify+guilds+email`;
     res.redirect(discordAuthUrl);
 });
 
@@ -119,7 +120,7 @@ app.get('/auth/discord/callback', async (req, res) => {
             grant_type: 'authorization_code',
             code: code,
             redirect_uri: REDIRECT_URI,
-            scope: 'identify guilds'
+            scope: 'identify guilds email'
         }), {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
@@ -175,8 +176,26 @@ async function getAuthenticatedDiscordUser(req, res) {
             headers: { authorization: `Bearer ${accessToken}` },
             timeout: 10000
         });
+        const userId = String(response.data.id);
+        let accountBan;
+        const cached = discordAccountBanCache.get(userId);
+        if (cached && cached.expiresAt > Date.now()) accountBan = cached.ban;
+        else {
+            accountBan = await isDiscordUserBanned(userId);
+            discordAccountBanCache.set(userId, { ban: accountBan, expiresAt: Date.now() + 30000 });
+            if (discordAccountBanCache.size > 10000) discordAccountBanCache.delete(discordAccountBanCache.keys().next().value);
+        }
+        if (accountBan) {
+            res.status(403).json({ code: 'DISCORD_ACCOUNT_BANNED', error: 'هذا الحساب غير مسموح له باستخدام موقع YS-Bot.', reason: accountBan.reason || '' });
+            return null;
+        }
         return response.data;
     } catch (error) {
+        if (res.headersSent) return null;
+        if (error?.message?.includes('DATABASE_URL')) {
+            res.status(503).json({ error: 'تعذر التحقق من حالة الحساب حاليًا' });
+            return null;
+        }
         const status = error.response?.status === 401 ? 401 : 503;
         res.status(status).json({ error: status === 401 ? 'انتهت جلسة Discord' : 'تعذر التحقق من حساب Discord' });
         return null;
@@ -657,6 +676,19 @@ app.post('/api/internal/bot/user-command', async (req, res) => {
     }
 });
 
+app.get('/api/internal/bot/account-ban/:userId', async (req, res) => {
+    if (!isAuthorizedBotBridgeRequest(req)) return res.status(401).json({ error: 'Unauthorized' });
+    const userId = String(req.params.userId || '');
+    if (!/^\d{17,20}$/.test(userId)) return res.status(400).json({ error: 'Invalid user id' });
+    try {
+        const ban = await isDiscordUserBanned(userId);
+        res.set('Cache-Control', 'no-store').json({ banned: Boolean(ban), reason: ban?.reason || '' });
+    } catch (error) {
+        console.error('Bot account ban lookup failed:', error.message);
+        res.status(503).json({ error: 'Account restriction status unavailable' });
+    }
+});
+
 app.get('/api/internal/bot/user-profile-theme/:userId', async (req, res) => {
     if (!isAuthorizedBotBridgeRequest(req)) return res.status(401).json({ error: 'Unauthorized' });
     const userId = String(req.params.userId || '');
@@ -1050,11 +1082,11 @@ app.post('/api/ai-assistant', async (req, res) => {
 Verified YS-Bot product knowledge:
 - The website is ys-bot.vercel.app. Sign-in uses Discord. In dashboard.html, the user signs in, selects a server they manage, edits that server's settings, and presses “حفظ الإعدادات” (Save settings). Saving sends settings to the bot service; it does not install the bot or grant Discord permissions.
 - Personal settings include the user's profile statistics-card theme. The /profile command displays the selected member's card. The theme is a personal preference, not a server-wide setting. Custom uploads and some themes are VIP-locked if the dashboard marks them so.
-- Main dashboard groups include command permissions, anti-spam, link filtering, message filters, event logs, welcome/farewell, verification and roles, moderation, anti-raid, anti-nuke, tickets/suggestions, polls/levels, interactive games, embeds, adhkar/Quran scheduling, and server-structure backup/restore. Game settings enable or disable eleven games, optionally restrict them to channel IDs, and set a per-member cooldown. The /games menu groups them into group games, solo games, and playing with the bot. Text commands use the server prefix configured in the dashboard (for example !games, !picture, and !tictactoe). Picture guessing and spot-the-difference attach original game artwork rendered by the bot; the memory game shows an original color-sequence card. These game images are drawn for gameplay and do not reuse emoji-pack assets. The dashboard explicitly marks some settings “يعمل الآن” (active) and others “قيد الربط” (saved but not applied by the bot); always tell users to check that label and never claim an in-progress setting operates.
+- Main dashboard groups include command permissions, anti-spam, link filtering, message filters, event logs, welcome/farewell, verification and roles, moderation, anti-raid, anti-nuke, tickets/suggestions, polls/levels, interactive games, embeds, adhkar/Quran scheduling, and server-structure backup/restore. Game settings enable or disable nineteen games, optionally restrict them to channel IDs, and set a per-member cooldown. The /games menu groups them into group games, solo games, and playing with the bot. Menu labels and game prompts follow the server's commandLanguage setting (Arabic or English). Text commands use the server prefix configured in the dashboard (for example !games, !picture, and !tictactoe). Picture guessing and spot-the-difference attach original game artwork rendered by the bot; the memory game shows an original color-sequence card. These game images are drawn for gameplay and do not reuse emoji-pack assets. The dashboard explicitly marks some settings “يعمل الآن” (active) and others “قيد الربط” (saved but not applied by the bot); always tell users to check that label and never claim an in-progress setting operates.
 - Core anti-link filtering deletes matching member messages and exempts administrators. Core anti-spam deletes messages starting at the fifth within eight seconds and exempts administrators. These require the bot in the server and Manage Messages permission. Actual behavior can also depend on saved per-server settings.
 - Anti-Nuke needs View Audit Log and the permission for the selected response. Recommend starting with alert-only, setting conservative limits, and checking allowlists carefully. Temporary raid lockdown needs Manage Channels. Welcome/farewell, verification, and automatic member roles need Server Members Intent enabled in Discord Developer Portal as well as the necessary bot permissions.
 - Slash commands currently registered in bot.js: /ticket [reason], /suggest text, /poll question, /games (opens categories for group, solo, and bot games), /warn member [reason] (Manage Messages), /verify, /support, /invites [member; moderators can inspect another member], /profile [user], /embed (Manage Server), /help, /plan, and /anticrash (Manage Server), /add-2fa site_name secret_key (private), and /get-2fa (private). Slash replies automatically use a matching YS icon as a PNG attachment/thumbnail without uploading a custom emoji to the server. /ticket and /suggest require their respective dashboard features/channels to be configured. /embed sends the configured embed; it is not a general-purpose message editor.
-- Text prefix commands currently implemented: <prefix>help, <prefix>plan, <prefix>anticrash, <prefix>support, <prefix>games, and the game aliases <prefix>quiz, <prefix>picture, <prefix>difference, <prefix>scramble, <prefix>riddle, <prefix>mathgame, <prefix>memory, <prefix>rps, <prefix>dice, <prefix>tictactoe, and <prefix>emojipuzzle. The prefix defaults to ! and can be changed in the dashboard. The anticrash command is available to Basic/VIP subscriptions. Do not invent other commands.
+- Text prefix commands currently implemented: <prefix>help, <prefix>plan, <prefix>anticrash, <prefix>support, <prefix>games, and the game aliases <prefix>quiz, <prefix>picture, <prefix>difference, <prefix>scramble, <prefix>riddle, <prefix>mathgame, <prefix>memory, <prefix>rps, <prefix>dice, <prefix>tictactoe, <prefix>emojipuzzle, <prefix>truefalse, <prefix>capitals, <prefix>wordguess, <prefix>typing, <prefix>oddone, <prefix>numberguess, <prefix>coin, and <prefix>higherlower. The prefix defaults to ! and can be changed in the dashboard. The anticrash command is available to Basic/VIP subscriptions. Do not invent other commands.
 - Server backup copies roles, channels, categories, role permissions, and YS-Bot settings. It does not copy messages, members, member-role assignments, or individual member channel permissions. Restore recreates missing items and updates matching items; it does not delete existing items. Restore needs Manage Roles and Manage Channels.
 - Prices, entitlement status, payment state, a user's live settings, and bot uptime are not visible to you. Do not guess or promise purchases, refunds, uptime, or account-specific results. Refer billing/support issues to the support server https://discord.gg/r9YQMhkZJm.
 
@@ -1119,6 +1151,27 @@ async function getIpAdmin(req, res) {
     return user;
 }
 
+async function sendDiscordAccountBanNotice(account, reason) {
+    if (!account.emailVerified || !account.email || !process.env.SUPPORT_EMAIL_APP_PASSWORD) return { sent: false, reason: 'no_verified_email_or_mail_config' };
+    const supportEmail = process.env.SUPPORT_EMAIL || 'support.ys.bot@gmail.com';
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: supportEmail, pass: String(process.env.SUPPORT_EMAIL_APP_PASSWORD).replace(/\s+/g, '') }
+    });
+    try {
+        await transporter.sendMail({
+            from: `YS-Bot <${supportEmail}>`,
+            to: account.email,
+            subject: 'إشعار بخصوص حسابك في YS-Bot',
+            text: `مرحبًا ${account.username},\n\nتم تقييد حساب Discord المرتبط من استخدام موقع وأوامر بوت YS-Bot.\nالسبب: ${reason || 'لم يُذكر سبب.'}\n\nإذا كنت ترى أن هذا الإجراء تم بالخطأ، تواصل مع الدعم: https://ys-bot.vercel.app/support\n\nهذا الإجراء يخص خدمات YS-Bot فقط ولا يؤثر على حسابك في Discord.`
+        });
+        return { sent: true };
+    } catch (error) {
+        console.error('Discord account-ban email failed', { code: error?.code || 'UNKNOWN', responseCode: Number(error?.responseCode) || undefined });
+        return { sent: false, reason: 'email_delivery_failed' };
+    }
+}
+
 app.post('/api/site/identify', async (req, res) => {
     const user = await getAuthenticatedDiscordUser(req, res);
     if (!user) return;
@@ -1138,10 +1191,48 @@ app.get('/api/admin/overview', async (req, res) => {
     if (!admin) return;
 
     try {
-        const [users, bans] = await Promise.all([listBotUsers(), listIpBans()]);
-        res.json({ users, bans });
+        const [users, bans, accountBans] = await Promise.all([listBotUsers(), listIpBans(), listDiscordAccountBans()]);
+        const currentIp = normalizeIpAddress(req.ip);
+        res.json({ users, bans, accountBans, currentIp, currentIpBanned: Boolean(currentIp && bans.some((ban) => normalizeIpAddress(ban.ip) === currentIp)) });
     } catch (error) {
         res.status(503).json({ error: 'تعذر تحميل بيانات الإدارة' });
+    }
+});
+
+app.post('/api/admin/account-bans', async (req, res) => {
+    const admin = await getIpAdmin(req, res);
+    if (!admin) return;
+    const query = String(req.body?.account || '').trim();
+    const reason = String(req.body?.reason || '').trim();
+    if (!query || query.length > 100 || reason.length > 240) return res.status(400).json({ error: 'أدخل اسم Discord أو معرّف الحساب، وسببًا أقصر من 240 حرفًا.' });
+    try {
+        const account = await findBotUser(query);
+        if (!account) return res.status(404).json({ error: 'لم أجد هذا الحساب. يجب أن يكون قد سجل الدخول للموقع سابقًا؛ ابحث باسم المستخدم أو استخدم Discord ID.' });
+        if (String(account.discordUserId) === String(admin.id)) return res.status(400).json({ error: 'لا يمكنك حظر حسابك الإداري.' });
+        const existingBan = await isDiscordUserBanned(account.discordUserId);
+        await addDiscordAccountBan(account, reason, admin.id);
+        discordAccountBanCache.set(String(account.discordUserId), { ban: { reason }, expiresAt: Date.now() + 30000 });
+        const notification = existingBan ? { sent: false, reason: 'already_banned' } : await sendDiscordAccountBanNotice(account, reason);
+        res.json({ banned: true, username: account.username, emailSent: notification.sent, notificationReason: notification.reason || null });
+    } catch (error) {
+        if (error.message?.includes('يستخدم أكثر من حساب')) return res.status(409).json({ error: error.message });
+        console.error('Discord account ban failed:', error.message);
+        res.status(503).json({ error: 'تعذر حظر حساب Discord الآن.' });
+    }
+});
+
+app.delete('/api/admin/account-bans/:discordUserId', async (req, res) => {
+    const admin = await getIpAdmin(req, res);
+    if (!admin) return;
+    const discordUserId = String(req.params.discordUserId || '');
+    if (!/^\d{17,20}$/.test(discordUserId)) return res.status(400).json({ error: 'Discord ID غير صالح.' });
+    try {
+        const removed = await removeDiscordAccountBan(discordUserId);
+        discordAccountBanCache.set(discordUserId, { ban: null, expiresAt: Date.now() + 30000 });
+        res.json({ removed });
+    } catch (error) {
+        console.error('Discord account unban failed:', error.message);
+        res.status(503).json({ error: 'تعذر إلغاء حظر الحساب الآن.' });
     }
 });
 
@@ -1159,6 +1250,7 @@ app.post('/api/admin/ip-bans', async (req, res) => {
         ipBanCache.delete(ip);
         res.json({ banned: true, ip });
     } catch (error) {
+        console.error('IP ban save failed:', error.message);
         res.status(503).json({ error: 'تعذر إضافة عنوان IP إلى الحظر' });
     }
 });
@@ -1175,6 +1267,7 @@ app.delete('/api/admin/ip-bans', async (req, res) => {
         ipBanCache.delete(ip);
         res.json({ removed });
     } catch (error) {
+        console.error('IP unban failed:', error.message);
         res.status(503).json({ error: 'تعذر إزالة عنوان IP من الحظر' });
     }
 });

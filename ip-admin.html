@@ -18,7 +18,7 @@
         .intro { margin:36px 0 24px; }
         h1 { margin:0; font-size:34px; line-height:1.2; }
         .intro p,.muted { color:var(--muted); }
-        .stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-bottom:18px; }
         .stat,.panel { border:1px solid var(--line); border-radius:10px; background:var(--surface); }
         .stat { padding:16px 18px; }
         .stat span { display:block; color:var(--muted); font-size:14px; }
@@ -47,6 +47,12 @@
         .status { min-height:24px; margin:12px 0 0; color:var(--muted); }
         .status[data-tone="error"] { color:#fda4af; }
         .status[data-tone="success"] { color:#6ee7b7; }
+        .account-ban-button { margin-inline-start:7px; background:#7f1d36; }
+        .account-ban-form { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+        .account-ban-form input:first-child { flex:1; min-width:210px; }
+        .account-ban-form input:nth-child(2) { flex:1; min-width:210px; }
+        .notice-info { color:#aebed0; font-size:.86rem; line-height:1.7; }
+        .current-ip-alert { border-color:rgba(251,113,133,.45); background:linear-gradient(130deg,#442335,#241d2d); }
         .login-panel { width:min(520px,100%); margin:12vh auto 0; padding:30px; text-align:center; }
         .login-panel[hidden],.admin-content[hidden] { display:none; }
         .login-panel p { color:var(--muted); }
@@ -85,17 +91,36 @@
             <div class="stats">
                 <div class="stat"><span>مستخدمو البوت المسجلون</span><strong id="user-count">0</strong></div>
                 <div class="stat"><span>عناوين IP المحظورة</span><strong id="ban-count">0</strong></div>
+                <div class="stat"><span>حسابات Discord المقيّدة</span><strong id="account-ban-count">0</strong></div>
             </div>
 
             <section class="panel">
                 <h2>حظر عنوان IP</h2>
                 <p class="panel-intro">الحظر دائم حتى إزالته. قد يؤثر على مستخدمين آخرين يشاركون نفس الشبكة.</p>
+                <p class="notice-info">لن يقبل النظام حظر عنوان IP الذي تتصل منه الآن؛ لتجنب قفل لوحة الإدارة عليك.</p>
                 <form class="ban-form" id="ban-form">
                     <input id="ban-ip" name="ip" type="text" maxlength="45" placeholder="عنوان IPv4 أو IPv6" required>
                     <input id="ban-reason" name="reason" type="text" maxlength="240" placeholder="سبب الحظر (اختياري)">
                     <button class="danger" type="submit">حظر IP نهائيًا</button>
                 </form>
                 <p class="status" id="action-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section id="current-ip-alert" class="panel current-ip-alert" hidden>
+                <h2>عنوان اتصالك محظور</h2>
+                <p class="panel-intro">هذا يفسّر منع بقية صفحات الموقع من الفتح. تقدر تلغي الحظر هنا؛ صفحة الإدارة تبقى متاحة لك.</p>
+                <button id="unban-current-ip" class="quiet" type="button">إلغاء حظر عنوان اتصالي</button>
+            </section>
+
+            <section class="panel">
+                <h2>حظر حساب Discord من خدمات YS-Bot</h2>
+                <p class="panel-intro">استخدم اسمًا مطابقًا أو Discord ID لحساب موجود في قائمة المستخدمين أدناه. هذا يمنع الحساب من استخدام الموقع وأوامر البوت، ولا يحظره من منصة Discord.</p>
+                <p class="notice-info">يصل إشعار البريد فقط إذا سبق للحساب تسجيل الدخول ووافق على مشاركة بريد Discord الموثق، وكانت خدمة البريد مضبوطة.</p>
+                <form class="account-ban-form" id="account-ban-form">
+                    <input id="account-ban-query" name="account" type="text" maxlength="100" placeholder="Discord username أو ID" required>
+                    <input id="account-ban-reason" name="reason" type="text" maxlength="240" placeholder="سبب التقييد (اختياري)">
+                    <button class="danger" type="submit">حظر الحساب</button>
+                </form>
             </section>
 
             <section class="panel">
@@ -109,6 +134,17 @@
                     </table>
                 </div>
                 <p class="empty" id="users-empty" hidden>لا يوجد مستخدمون مسجلون بعد.</p>
+            </section>
+
+            <section class="panel">
+                <h2>حسابات Discord المقيّدة</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>المستخدم</th><th>Discord ID</th><th>السبب</th><th>المسؤول</th><th>التاريخ</th><th>إجراء</th></tr></thead>
+                        <tbody id="account-bans-body"></tbody>
+                    </table>
+                </div>
+                <p class="empty" id="account-bans-empty" hidden>لا توجد حسابات مقيّدة.</p>
             </section>
 
             <section class="panel">
@@ -139,13 +175,21 @@
             refreshStatus: document.getElementById('refresh-status'),
             userCount: document.getElementById('user-count'),
             banCount: document.getElementById('ban-count'),
+            accountBanCount: document.getElementById('account-ban-count'),
+            accountBanForm: document.getElementById('account-ban-form'),
+            accountBanQuery: document.getElementById('account-ban-query'),
+            accountBanReason: document.getElementById('account-ban-reason'),
+            accountBansBody: document.getElementById('account-bans-body'),
+            accountBansEmpty: document.getElementById('account-bans-empty'),
+            currentIpAlert: document.getElementById('current-ip-alert'),
+            unbanCurrentIpButton: document.getElementById('unban-current-ip'),
             banForm: document.getElementById('ban-form'),
             banIp: document.getElementById('ban-ip'),
             banReason: document.getElementById('ban-reason'),
             actionStatus: document.getElementById('action-status')
         };
         let token = '';
-        let overview = { users: [], bans: [] };
+        let overview = { users: [], bans: [], accountBans: [], currentIp: null, currentIpBanned: false };
 
         function setStatus(message, tone = '') {
             elements.actionStatus.textContent = message;
@@ -194,6 +238,18 @@
                 button.disabled = !user.ip || bans.has(user.ip);
                 button.addEventListener('click', () => banAddress(user.ip, `حظر المستخدم ${user.username}`));
                 actionCell.appendChild(button);
+                const accountButton = document.createElement('button');
+                const accountBanned = overview.accountBans.some((ban) => ban.discordUserId === user.discordUserId);
+                accountButton.className = accountBanned ? 'quiet account-ban-button' : 'danger account-ban-button';
+                accountButton.type = 'button';
+                accountButton.textContent = accountBanned ? 'الحساب مقيّد' : 'حظر الحساب';
+                accountButton.disabled = accountBanned;
+                accountButton.addEventListener('click', async () => {
+                    const reason = window.prompt(`سبب تقييد حساب ${user.username} (اختياري):`, '');
+                    if (reason === null) return;
+                    await banDiscordAccount(user.discordUserId, reason.trim());
+                });
+                actionCell.appendChild(accountButton);
                 row.appendChild(actionCell);
                 elements.usersBody.appendChild(row);
             }
@@ -217,11 +273,28 @@
             }
         }
 
+        function renderAccountBans() {
+            elements.accountBansBody.replaceChildren();
+            elements.accountBansEmpty.hidden = overview.accountBans.length > 0;
+            for (const ban of overview.accountBans) {
+                const row = document.createElement('tr');
+                row.append(createCell(ban.username), createCell(ban.discordUserId, true), createCell(ban.reason), createCell(ban.bannedBy, true), createCell(formatDate(ban.createdAt)));
+                const actionCell = document.createElement('td');
+                const button = document.createElement('button');
+                button.className = 'quiet'; button.type = 'button'; button.textContent = 'إلغاء تقييد الحساب';
+                button.addEventListener('click', () => unbanDiscordAccount(ban.discordUserId, ban.username));
+                actionCell.appendChild(button); row.appendChild(actionCell); elements.accountBansBody.appendChild(row);
+            }
+        }
+
         function renderOverview() {
             elements.userCount.textContent = String(overview.users.length);
             elements.banCount.textContent = String(overview.bans.length);
+            elements.accountBanCount.textContent = String(overview.accountBans.length);
+            elements.currentIpAlert.hidden = !overview.currentIpBanned;
             renderUsers();
             renderBans();
+            renderAccountBans();
         }
 
         async function adminRequest(url, options = {}) {
@@ -292,6 +365,30 @@
             }
         }
 
+        async function banDiscordAccount(account, reason) {
+            if (!account) return;
+            if (!window.confirm(`تقييد حساب ${account} من استخدام خدمات YS-Bot؟`)) return;
+            setStatus('جاري تقييد الحساب وإرسال إشعار البريد إن توفر...', '');
+            try {
+                const result = await adminRequest('/api/admin/account-bans', {
+                    method: 'POST', headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ account, reason })
+                });
+                setStatus(result.emailSent ? `تم تقييد ${result.username} وإرسال الإشعار إلى بريده الموثق.` : result.notificationReason === 'email_delivery_failed' ? `تم تقييد ${result.username}، لكن تعذر إرسال البريد. راجع إعدادات Gmail في Vercel.` : `تم تقييد ${result.username}. لم يُرسل بريد (لا يوجد بريد موثق بموافقة المستخدم أو إعداد البريد غير متاح).`, 'success');
+                await loadOverview();
+            } catch (error) { setStatus(error.message, 'error'); }
+        }
+
+        async function unbanDiscordAccount(discordUserId, username) {
+            if (!window.confirm(`إلغاء تقييد حساب ${username} من خدمات YS-Bot؟`)) return;
+            setStatus('جاري إلغاء تقييد الحساب...');
+            try {
+                await adminRequest(`/api/admin/account-bans/${encodeURIComponent(discordUserId)}`, { method: 'DELETE' });
+                setStatus('تم إلغاء تقييد الحساب.', 'success');
+                await loadOverview();
+            } catch (error) { setStatus(error.message, 'error'); }
+        }
+
         elements.loginButton.addEventListener('click', () => {
             const stateBytes = crypto.getRandomValues(new Uint8Array(24));
             const state = [...stateBytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -311,8 +408,13 @@
             event.preventDefault();
             banAddress(elements.banIp.value.trim(), elements.banReason.value.trim());
         });
+        elements.accountBanForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            banDiscordAccount(elements.accountBanQuery.value.trim(), elements.accountBanReason.value.trim());
+        });
         elements.userSearch.addEventListener('input', renderUsers);
         elements.refreshButton.addEventListener('click', loadOverview);
+        elements.unbanCurrentIpButton.addEventListener('click', () => { if (overview.currentIp) unbanAddress(overview.currentIp); });
 
         token = localStorage.getItem('discord_token') || '';
         if (!token) showLogin('سجّل الدخول بحساب Discord الإداري المصرّح له.');

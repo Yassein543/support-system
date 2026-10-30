@@ -110,6 +110,22 @@
         .settings-status { min-height: 24px; color: #71e0cc; }
         .settings-status[data-dirty="true"] { color: #ffd27b !important; }
         .settings-status[data-saved="true"] { color: #71e0cc !important; }
+        .diagnostics-panel { margin: 0 0 18px; padding: 17px; border: 1px solid rgba(71,215,194,.22); border-radius: 14px; background: linear-gradient(135deg,rgba(18,46,58,.72),rgba(12,25,40,.88)); }
+        .diagnostics-heading { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+        .diagnostics-heading h4 { margin:0; font-size:1.02rem; }
+        .diagnostics-heading p { flex:1 0 100%; margin:0; color:#a7b8c4; font-size:.84rem; line-height:1.7; }
+        .diagnostics-run { min-height:40px; padding:8px 14px; border:1px solid rgba(71,215,194,.35); border-radius:9px; background:linear-gradient(135deg,#1cae9d,#117a75); color:white; font:800 .86rem 'Tajawal',sans-serif; cursor:pointer; }
+        .diagnostics-summary { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 0; }
+        .diagnostics-pill { padding:5px 10px; border:1px solid #355267; border-radius:999px; color:#d6e3e9; font-size:.78rem; }
+        .diagnostics-results { display:grid; gap:8px; margin-top:12px; }
+        .diagnostic-item { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1px solid #2a3b4f; border-radius:10px; background:rgba(7,18,30,.58); color:#dce8ee; font-size:.84rem; line-height:1.65; }
+        .diagnostic-item[data-state="ok"] { border-color:rgba(71,215,194,.2); }
+        .diagnostic-item[data-state="warning"] { border-color:rgba(255,210,123,.24); }
+        .diagnostic-item[data-state="error"] { border-color:rgba(252,165,165,.25); }
+        .diagnostic-item strong { display:block; }
+        .diagnostic-item small { display:block; color:#9aabba; }
+        .diagnostic-mark { flex:0 0 auto; font-weight:900; }
+        .diagnostics-footnote { margin:11px 0 0; color:#91a3b2; font-size:.76rem; line-height:1.6; }
         .dashboard-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:0 0 16px; }
         .dashboard-summary-card { min-width:0; padding:15px 16px; border:1px solid rgba(113,164,190,.18); border-radius:13px; background:linear-gradient(145deg,rgba(20,40,58,.9),rgba(11,24,38,.94)); }
         .dashboard-summary-card small { display:block; margin-bottom:6px; color:#91a8b7; font-size:.76rem; }
@@ -194,6 +210,39 @@
         .embed-builder-preview-image { display: none; width: 100%; max-height: 220px; margin-top: 12px; border-radius: 8px; object-fit: cover; }
         .embed-builder-preview-image.visible { display: block; }
         .embed-builder-color { min-height: 42px; padding: 4px !important; cursor: pointer; }
+
+        /* Compact hamburger navigation for the full dashboard, on desktop and mobile. */
+        .dashboard-menu-toggle { display:grid; width:44px; height:44px; flex:0 0 44px; place-items:center; margin-inline-start:auto; border:1px solid rgba(71,215,194,.28); border-radius:12px; background:linear-gradient(145deg,rgba(39,136,128,.2),rgba(12,29,43,.9)); color:#a6f0e3; cursor:pointer; }
+        .dashboard-menu-toggle svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
+        .dashboard-menu-toggle:hover, .dashboard-menu-toggle:focus-visible { border-color:rgba(71,215,194,.62); box-shadow:0 0 0 3px rgba(71,215,194,.1); outline:none; }
+        .dashboard-menu-backdrop { position:fixed; inset:0; z-index:79; border:0; background:rgba(2,8,15,.62); backdrop-filter:blur(3px); }
+        .dashboard-menu-backdrop[hidden], #dashboard-nav[hidden] { display:none !important; }
+        .dashboard-side-nav { position:fixed; inset-block:16px; inset-inline-end:16px; z-index:80; display:flex; width:min(360px,calc(100vw - 24px)); max-height:calc(100dvh - 32px); box-sizing:border-box; flex-direction:column; gap:10px; overflow:auto; padding:15px; border-color:rgba(94,216,199,.27); border-radius:18px; background:linear-gradient(155deg,rgba(17,34,51,.99),rgba(7,17,29,.99)); box-shadow:0 24px 80px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.035); }
+        .dashboard-menu-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:3px 3px 11px; border-bottom:1px solid rgba(133,171,194,.14); color:#eff9fa; font-weight:900; }
+        .dashboard-menu-heading small { display:block; margin-top:3px; color:#81cfc2; font-size:.68rem; letter-spacing:.12em; }
+        .dashboard-menu-close { display:grid; width:38px; height:38px; flex:0 0 38px; place-items:center; border:1px solid rgba(133,171,194,.18); border-radius:11px; background:rgba(255,255,255,.035); color:#dce8ee; font-size:1.25rem; cursor:pointer; }
+        .dashboard-nav-top { display:grid; gap:5px; }
+        .dashboard-nav-top a, .dashboard-nav-top button { width:100%; box-sizing:border-box; }
+        .dashboard-menu-categories { display:grid; gap:8px; margin-top:3px; }
+        .dashboard-menu-category { overflow:hidden; border:1px solid rgba(113,164,190,.15); border-radius:13px; background:rgba(7,18,30,.48); }
+        .dashboard-menu-category > summary { display:flex; min-height:49px; align-items:center; gap:10px; padding:7px 11px; color:#dce8ee; font-weight:900; cursor:pointer; list-style:none; }
+        .dashboard-menu-category > summary::-webkit-details-marker { display:none; }
+        .dashboard-menu-category > summary::after { margin-inline-start:auto; color:#79daca; content:'⌄'; font-size:1.05rem; transition:transform .18s ease; }
+        .dashboard-menu-category[open] > summary::after { transform:rotate(180deg); }
+        .dashboard-menu-category[data-tone="protection"] > summary .dashboard-nav-icon { color:#73e2ce; }
+        .dashboard-menu-category[data-tone="games"] > summary .dashboard-nav-icon { color:#a9a0ff; }
+        .dashboard-menu-category[data-tone="moderation"] > summary .dashboard-nav-icon { color:#ffca7c; }
+        .dashboard-menu-category[data-tone="community"] > summary .dashboard-nav-icon { color:#81c5ff; }
+        .dashboard-menu-links { display:grid; gap:3px; padding:0 7px 8px; }
+        .dashboard-menu-links button { display:flex; width:100%; min-height:42px; align-items:center; gap:9px; padding:7px 10px; border:1px solid transparent; border-radius:9px; background:transparent; color:#adbec9; font:700 .82rem 'Tajawal',sans-serif; text-align:start; cursor:pointer; }
+        .dashboard-menu-links button::before { width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#4b7180; content:''; }
+        .dashboard-menu-links button:hover, .dashboard-menu-links button:focus-visible { border-color:rgba(71,215,194,.19); background:rgba(39,136,128,.13); color:#a6f0e3; outline:none; }
+        .dashboard-menu-links button:disabled { opacity:.5; cursor:not-allowed; }
+        .dashboard-nav-hint { margin: auto 3px 0; padding:12px 4px 2px; }
+        #dashboard-nav .dashboard-nav-hint { display:block; }
+        .dashboard-workspace { display:block; }
+        body.dashboard-menu-open { overflow:hidden; }
+        @media(max-width:480px) { .dashboard-side-nav { inset-block:8px; inset-inline-end:8px; width:min(370px,calc(100vw - 16px)); max-height:calc(100dvh - 16px); padding:12px; } .dashboard-menu-toggle { width:42px; height:42px; flex-basis:42px; } }
 
         /* Dashboard visual polish: preserve all existing sections and controls. */
         body { padding: clamp(12px, 2.5vw, 28px); }
@@ -330,11 +379,21 @@
             .profile-theme-grid { grid-template-columns: minmax(0,1fr); }
             .advanced-field { font-size: .82rem; }
         }
+        /* Keep the hamburger drawer behavior after the legacy responsive rules above. */
+        #dashboard-nav.dashboard-side-nav { position:fixed; inset-block:16px; inset-inline-end:16px; z-index:80; display:flex; width:min(360px,calc(100vw - 24px)); max-height:calc(100dvh - 32px); box-sizing:border-box; flex-direction:column; grid-template-columns:none; align-items:stretch; gap:10px; overflow:auto; padding:15px; }
+        #dashboard-nav[hidden] { display:none !important; }
+        .dashboard-workspace { display:block !important; }
+        .dashboard-brand-status { margin-inline-start:auto; }
+        .dashboard-menu-toggle { margin-inline-start:0; }
+        #dashboard-nav .dashboard-nav-top a, #dashboard-nav .dashboard-nav-top button { display:flex; min-height:46px; flex:0 0 auto; justify-content:flex-start; gap:10px; padding:8px 10px; font-size:.88rem; text-align:start; }
+        #dashboard-nav .dashboard-menu-links button { min-height:42px; flex:0 0 auto; justify-content:flex-start; gap:9px; padding:7px 10px; font-size:.82rem; text-align:start; }
+        @media(max-width:780px) { #dashboard-nav.dashboard-side-nav { position:fixed; inset-block:12px; inset-inline-end:12px; width:min(360px,calc(100vw - 24px)); max-height:calc(100dvh - 24px); display:flex; flex-direction:column; grid-template-columns:none; align-items:stretch; gap:10px; padding:13px; overflow:auto; } }
+        @media(max-width:480px) { #dashboard-nav.dashboard-side-nav { inset-block:8px; inset-inline-end:8px; width:min(370px,calc(100vw - 16px)); max-height:calc(100dvh - 16px); } }
     </style>
 </head>
 <body>
     <label class="settings-note" for="dashboard-language" style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:0 auto;max-width:1000px"><span>لغة الموقع</span><select id="dashboard-language" aria-label="لغة الموقع" style="padding:8px;border-radius:8px;background:#0a1421;color:#fff;border:1px solid #33485e"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ko">한국어</option><option value="ja">日本語</option></select></label>
-    <div class="dashboard-brand" aria-label="YS-Bot Control Center"><button id="dashboard-back" class="dashboard-back" type="button" aria-label="رجوع"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg><span>رجوع</span></button><img src="/ys-bot-avatar.svg" alt="YS-Bot" width="38" height="38"><div class="dashboard-brand-copy"><strong>YS-Bot</strong><small>CONTROL CENTER</small></div><span class="dashboard-brand-status">SECURE PANEL</span></div>
+    <div class="dashboard-brand" aria-label="YS-Bot Control Center"><button id="dashboard-back" class="dashboard-back" type="button" aria-label="رجوع"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg><span>رجوع</span></button><img src="/ys-bot-avatar.svg" alt="YS-Bot" width="38" height="38"><div class="dashboard-brand-copy"><strong>YS-Bot</strong><small>CONTROL CENTER</small></div><span class="dashboard-brand-status">SECURE PANEL</span><button id="dashboard-menu-toggle" class="dashboard-menu-toggle" type="button" aria-label="فتح قائمة لوحة التحكم" aria-expanded="false" aria-controls="dashboard-nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></div>
     <div class="dashboard-container">
         <div id="loading" class="loading">جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳</div>
 
@@ -348,16 +407,21 @@
             </div>
 
             <div class="dashboard-workspace">
-                <nav class="dashboard-side-nav" id="dashboard-nav" aria-label="التنقل في لوحة التحكم">
-                    <span class="dashboard-side-nav-label">القائمة</span>
-                    <a href="#personal-settings"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span><span class="dashboard-nav-text">إعداداتي الشخصية</span><span class="dashboard-nav-short">شخصي</span></a>
-                    <a href="#guild-list"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg></span><span class="dashboard-nav-text">سيرفراتي</span><span class="dashboard-nav-short">السيرفرات</span></a>
-                    <button id="dashboard-nav-server-settings" type="button" disabled title="اختر سيرفرًا أولًا"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg></span><span class="dashboard-nav-text">إعدادات السيرفر</span><span class="dashboard-nav-short">الإعدادات</span></button>
-                    <button class="dashboard-group-nav" type="button" data-dashboard-jump="protection" disabled><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="dashboard-nav-text">الحماية</span><span class="dashboard-nav-short">الحماية</span></button>
-                    <button class="dashboard-group-nav" type="button" data-dashboard-jump="welcome" disabled><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 1.9 5.8L20 11l-6.1 2.1L12 19l-1.9-5.9L4 11l6.1-2.2L12 3Z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg></span><span class="dashboard-nav-text">الترحيب</span><span class="dashboard-nav-short">الترحيب</span></button>
-                    <button class="dashboard-group-nav" type="button" data-dashboard-jump="tickets" disabled><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6V6a2 2 0 0 1 2-2Z"/><path d="M12 7v2m0 3v2m0 3v1"/></svg></span><span class="dashboard-nav-text">التذاكر</span><span class="dashboard-nav-short">التذاكر</span></button>
-                    <button class="dashboard-group-nav" type="button" data-dashboard-jump="backups" disabled><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM3 4h18v3H3z"/><path d="M9 11h6m-6 3h6"/></svg></span><span class="dashboard-nav-text">النسخ الاحتياطي</span><span class="dashboard-nav-short">النسخ</span></button>
-                    <div class="dashboard-nav-hint" id="dashboard-nav-hint">اختر سيرفرًا لعرض إعداداته</div>
+                <button id="dashboard-menu-backdrop" class="dashboard-menu-backdrop" type="button" aria-label="إغلاق القائمة" hidden></button>
+                <nav class="dashboard-side-nav" id="dashboard-nav" aria-label="التنقل في لوحة التحكم" hidden>
+                    <div class="dashboard-menu-heading"><div>قائمة لوحة التحكم<small>YS-BOT CONTROL CENTER</small></div><button id="dashboard-menu-close" class="dashboard-menu-close" type="button" aria-label="إغلاق القائمة">×</button></div>
+                    <div class="dashboard-nav-top">
+                        <a href="#personal-settings"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span><span>إعداداتي الشخصية</span></a>
+                        <a href="#guild-list"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg></span><span>سيرفراتي</span></a>
+                        <button id="dashboard-nav-server-settings" type="button" disabled title="اختر سيرفرًا أولًا"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg></span><span>إعدادات السيرفر المحدد</span></button>
+                    </div>
+                    <div class="dashboard-menu-categories" id="dashboard-menu-categories">
+                        <details class="dashboard-menu-category" data-tone="protection" open><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span>الحماية</span></summary><div class="dashboard-menu-links" data-menu-category="protection"></div></details>
+                        <details class="dashboard-menu-category" data-tone="games"><summary><span class="dashboard-nav-icon" aria-hidden="true">✦</span><span>الألعاب</span></summary><div class="dashboard-menu-links" data-menu-category="games"></div></details>
+                        <details class="dashboard-menu-category" data-tone="moderation"><summary><span class="dashboard-nav-icon" aria-hidden="true">✓</span><span>الإشراف</span></summary><div class="dashboard-menu-links" data-menu-category="moderation"></div></details>
+                        <details class="dashboard-menu-category" data-tone="community"><summary><span class="dashboard-nav-icon" aria-hidden="true">◇</span><span>التفاعل والأدوات</span></summary><div class="dashboard-menu-links" data-menu-category="community"></div></details>
+                    </div>
+                    <div class="dashboard-nav-hint" id="dashboard-nav-hint">اختر سيرفرًا ثم اختر فئة لفتح إعداداتها</div>
                 </nav>
                 <main class="dashboard-main">
             <section class="personal-settings" id="personal-settings" aria-labelledby="personal-settings-title">
@@ -405,6 +469,12 @@
                     <div class="guild-plan-status"><span>خطة السيرفر</span><strong id="guild-plan-chip" class="guild-plan-chip">Free</strong><a class="guild-plan-upgrade" href="/#pricing">عرض الباقات</a><button id="refresh-guild-plan" class="guild-plan-refresh" type="button">تحديث الخطة</button></div>
                 </div>
                 <p class="settings-note">اختر ما تريد تفعيله. حماية الروابط والسبام تحذف الرسالة المخالفة فقط، وتتطلب صلاحية <b>إدارة الرسائل</b> للبوت. أضف البوت للسيرفر حتى تعمل الحماية.</p>
+                <section class="diagnostics-panel" aria-labelledby="diagnostics-title">
+                    <div class="diagnostics-heading"><h4 id="diagnostics-title">مركز تشخيص السيرفر</h4><button id="run-diagnostics" class="diagnostics-run" type="button">فحص الإعدادات</button><p>يفحص الإعدادات الحالية ومعرّفات القنوات المطلوبة، ويعرض الصلاحيات التي تحتاج مراجعتها.</p></div>
+                    <div id="diagnostics-summary" class="diagnostics-summary" aria-live="polite"><span class="diagnostics-pill">اضغط «فحص الإعدادات» للبدء</span></div>
+                    <div id="diagnostics-results" class="diagnostics-results" aria-live="polite"></div>
+                    <p class="diagnostics-footnote">فحص القنوات يتحقق من وجود المعرّف وصيغته فقط. تأكد من صلاحيات YS-Bot داخل Discord؛ الموقع لا يستطيع قراءة صلاحيات البوت الحية.</p>
+                </section>
                 <div class="settings-grid">
                     <label class="setting-card"><input id="setting-anti-links" type="checkbox"><span><b>منع الروابط</b><small>يحذف الروابط والدعوات من رسائل الأعضاء. المشرفون مستثنون.</small></span></label>
                     <label class="setting-card"><input id="setting-anti-spam" type="checkbox"><span><b>مكافحة السبام</b><small>يحذف الرسائل ابتداءً من الرسالة الخامسة خلال 8 ثوانٍ. المشرفون مستثنون.</small></span></label>
@@ -485,6 +555,7 @@
         };
         Object.assign(dashboardEnglish, {
             'رجوع':'Back','شخصي':'Profile','السيرفرات':'Servers','الإعدادات':'Settings',
+            'قائمة لوحة التحكم':'Dashboard menu','الحماية':'Protection','الألعاب':'Games','الإشراف':'Moderation','التفاعل والأدوات':'Community and tools','إعداداتي الشخصية':'Personal settings','سيرفراتي':'My servers','إعدادات السيرفر المحدد':'Selected server settings','اختر سيرفرًا ثم اختر فئة لفتح إعداداتها':'Choose a server, then pick a category to open its settings','اختر سيرفرًا أولًا لعرض إعدادات هذه الفئة':'Choose a server first to view this category','إغلاق القائمة':'Close menu',
             'إضافات الخطط المدفوعة':'Paid plan extras',
             'هذه إعدادات إضافية فقط: إعدادات اللوحة المعتادة تبقى متاحة للجميع. Basic يضيف إسكات السبام وحماية الحسابات الحديثة، وVIP يضيف تخصيص قفل الغارة واستثناء قنواته وتنبيه رتبة.':'These are optional extras only. Existing dashboard settings stay available to everyone. Basic adds spam timeouts and young-account protection; VIP adds raid-lockdown duration, exempt channels, and role alerts.',
             'نسخ واسترجاع هيكل السيرفر':'Server structure backup and restore',
@@ -507,7 +578,8 @@
             gamesTriviaEnabled:'General knowledge quiz', gamesPictureGuessEnabled:'Drawn-picture guessing', gamesSpotDifferenceEnabled:'Spot the difference', gamesScrambleEnabled:'Word scramble',
             gamesRiddleEnabled:'Riddles', gamesMathEnabled:'Quick math challenge', gamesMemoryEnabled:'Memory sequence',
             gamesRpsEnabled:'Rock, paper, scissors', gamesDiceEnabled:'Dice challenge', gamesTicTacToeEnabled:'Tic-tac-toe vs bot',
-            gamesEmojiPuzzleEnabled:'Emoji puzzle'
+            gamesEmojiPuzzleEnabled:'Emoji puzzle', gamesTrueFalseEnabled:'True or False', gamesGeographyEnabled:'Capital cities', gamesWordGuessEnabled:'Guess the word',
+            gamesTypingEnabled:'Typing sprint', gamesOddOneEnabled:'Odd one out', gamesNumberGuessEnabled:'Number guessing', gamesCoinEnabled:'Coin flip', gamesHigherLowerEnabled:'Higher or lower'
         });
         const dashboardLocales = {
             fr: { 'لغة الموقع':'Langue du site','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Chargement du compte et des serveurs Discord... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Choisissez un serveur à gérer','سيرفراتك التي تديرها:':'Serveurs que vous gérez :','إعدادات السيرفر':'Paramètres du serveur','حفظ الإعدادات':'Enregistrer','إعدادات متقدمة — أكثر من 50 خيارًا':'Paramètres avancés — plus de 50 options','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'Les options « Actif » contrôlent le bot. Les options « En cours » sont enregistrées mais ne sont pas encore appliquées.','منع الروابط':'Bloquer les liens','مكافحة السبام':'Anti-spam','إعدادات متقدمة':'Paramètres avancés','يعمل الآن':'Actif','قيد الربط':'En cours','تفعيل التحقق بخطوتين':'Activer l’authentification à deux facteurs','غير مفعّل':'Désactivé','مفعّل':'Activé','إلغاء التحقق بخطوتين':'Désactiver l’authentification à deux facteurs','جاري تحميل الإعدادات...':'Chargement des paramètres...','تم تحميل الإعدادات المحفوظة.':'Paramètres enregistrés chargés.','جاري الحفظ...':'Enregistrement...','انحفظت الإعدادات بنجاح.':'Paramètres enregistrés.','الأوامر والصلاحيات':'Commandes et permissions','الروابط والاستثناءات':'Liens et exceptions','فلاتر الرسائل':'Filtres de messages','سجل الأحداث':'Journal des événements','الترحيب والمغادرة':'Bienvenue et départ','التحقق والرتب':'Vérification et rôles','الإشراف وإعدادات إضافية':'Modération et autres paramètres','الحماية من الغارات':'Protection anti-raid','الدعوات والمكافآت':'Invitations et récompenses','التذاكر والاقتراحات':'Tickets et suggestions','التصويت والمستويات والنسخ الاحتياطي':'Sondages, niveaux et sauvegardes','إلغاء':'Annuler' },
@@ -533,7 +605,15 @@
             'تعذر تحميل الإعدادات. أعد المحاولة أو حدّث الصفحة.':'Could not load settings. Retry or refresh the page.',
             'إعادة المحاولة':'Retry',
             'ترحيب الأعضاء':'Member welcome', 'مغادرة الأعضاء':'Member departures',
-            'الردود التلقائية':'Automatic replies', 'الإعلانات المجدولة':'Scheduled announcements'
+            'الردود التلقائية':'Automatic replies', 'الإعلانات المجدولة':'Scheduled announcements',
+            'مركز تشخيص السيرفر':'Server diagnostics center','فحص الإعدادات':'Check settings','يفحص الإعدادات الحالية ومعرّفات القنوات المطلوبة، ويعرض الصلاحيات التي تحتاج مراجعتها.':'Checks current settings and required channel IDs, and lists permissions to review.',
+            'اضغط «فحص الإعدادات» للبدء':'Select “Check settings” to begin','فحص القنوات يتحقق من وجود المعرّف وصيغته فقط. تأكد من صلاحيات YS-Bot داخل Discord؛ الموقع لا يستطيع قراءة صلاحيات البوت الحية.':'Channel checks only validate that an ID is present and well-formed. Verify YS-Bot permissions in Discord; the website cannot read the bot’s live permissions.',
+            'لا توجد مشاكل ظاهرة في الإعدادات':'No configuration issues found','ملاحظة تحتاج مراجعة':'Items to review','فحص مكتمل':'Check complete','إعداد غير مكتمل':'Incomplete setting','معرّف غير صحيح':'Invalid ID','تغييرات غير محفوظة':'Unsaved changes','صلاحيات يجب التأكد منها':'Permissions to verify','البوت في السيرفر':'Bot membership','أضف البوت للسيرفر وتأكد أن رتبته أعلى من الرتب التي يحتاج إدارتها.':'Add the bot to the server and place its role above roles it needs to manage.',
+            'إدارة الرسائل':'Manage Messages','عرض سجل التدقيق':'View Audit Log','إدارة القنوات':'Manage Channels','إدارة الرتب':'Manage Roles','حظر الأعضاء':'Ban Members','طرد الأعضاء':'Kick Members','إسكات الأعضاء':'Moderate Members',
+            'القناة المطلوبة غير محددة':'Required channel is not set','صيغة معرّف Discord غير صحيحة':'Discord ID format is invalid','صيغة المعرّف صحيحة؛ تحقق أن البوت يستطيع رؤية القناة وإرسال الرسائل فيها.':'ID format is valid; confirm the bot can view the channel and send messages there.',
+            'هذا الخيار محفوظ لكنه معلّم «قيد الربط»، لذلك لن يطبّقه البوت حاليًا.':'This option is saved but marked “In progress”, so the bot will not apply it yet.',
+            'الإعدادات المحفوظة تبدو مكتملة. راجع صلاحيات البوت المذكورة أدناه.':'Saved settings look complete. Review the bot permissions listed below.',
+            'فحص الإعدادات المحفوظة الحالية':'Check the current settings','لم يتم اختيار سيرفر':'No server selected','قناة سجل الإدارة':'Moderation log channel','قناة الترحيب':'Welcome channel','قناة المغادرة':'Farewell channel','قناة تنبيهات Anti-Raid':'Anti-Raid alert channel','قناة تنبيهات Anti-Nuke':'Anti-Nuke alert channel','قناة التذاكر':'Ticket panel channel','قناة الاقتراحات':'Suggestions channel','قناة الإعلان المجدول':'Scheduled announcement channel','قناة الأذكار':'Adhkar channel','قناة القرآن':'Quran channel','قناة الإمبيد':'Embed channel','رتبة التحقق':'Verification role','رتبة الأعضاء الجدد':'Auto-role','رتبة تنبيهات Anti-Raid':'Anti-Raid alert role','رتبة الطاقم':'Trusted staff role'
         });
         document.getElementById('dashboard-back').addEventListener('click', () => {
             let sameSiteReferrer = false;
@@ -541,7 +621,30 @@
             if (sameSiteReferrer && history.length > 1) history.back();
             else location.assign('/');
         });
+        const dashboardNav = document.getElementById('dashboard-nav');
+        const dashboardMenuToggle = document.getElementById('dashboard-menu-toggle');
+        const dashboardMenuBackdrop = document.getElementById('dashboard-menu-backdrop');
+        function closeDashboardMenu(returnFocus = false) {
+            dashboardNav.hidden = true;
+            dashboardMenuBackdrop.hidden = true;
+            dashboardMenuToggle.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('dashboard-menu-open');
+            if (returnFocus) dashboardMenuToggle.focus();
+        }
+        function openDashboardMenu() {
+            dashboardNav.hidden = false;
+            dashboardMenuBackdrop.hidden = false;
+            dashboardMenuToggle.setAttribute('aria-expanded', 'true');
+            document.body.classList.add('dashboard-menu-open');
+            document.getElementById('dashboard-menu-close').focus();
+        }
+        dashboardMenuToggle.addEventListener('click', () => dashboardNav.hidden ? openDashboardMenu() : closeDashboardMenu());
+        document.getElementById('dashboard-menu-close').addEventListener('click', () => closeDashboardMenu(true));
+        dashboardMenuBackdrop.addEventListener('click', () => closeDashboardMenu(true));
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !dashboardNav.hidden) closeDashboardMenu(true); });
+        dashboardNav.querySelectorAll('.dashboard-nav-top a').forEach((link) => link.addEventListener('click', () => closeDashboardMenu()));
         document.getElementById('dashboard-nav-server-settings').addEventListener('click', () => {
+            closeDashboardMenu();
             const panel = document.getElementById('server-settings-panel');
             if (!selectedGuild) { document.getElementById('guild-list').scrollIntoView({ behavior:'smooth', block:'start' }); return; }
             panel.hidden = false;
@@ -569,6 +672,7 @@
             document.querySelectorAll('body *').forEach((el) => { for (const node of el.childNodes) if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) { if (!dashboardOriginalText.has(node)) { const current=node.nodeValue; const trimmed=current.trim(); dashboardOriginalText.set(node, dashboardArabicByEnglish[trimmed] ? current.replace(trimmed,dashboardArabicByEnglish[trimmed]) : current); } const original=dashboardOriginalText.get(node); const raw=original.trim(); if (dashboardEnglish[raw]) node.nodeValue=original.replace(raw,dashboardText(raw)); } });
             const values = document.getElementById('advanced-settings-groups').children.length ? readAdvancedSettings() : {};
             if (selectedGuildId) renderAdvancedSettings(values);
+            else renderDashboardMenuGroups();
             if (selectedGuildId) document.getElementById('server-settings-title').textContent = dashboardText('إعدادات السيرفر');
         }
         dashboardLanguageSelect.value = dashboardLanguage;
@@ -623,8 +727,8 @@
                 ['scheduledAnnouncementEnabled', 'تفعيل الإعلان المجدول'], ['scheduledAnnouncementChannelId', 'معرّف قناة الإعلان'], ['scheduledAnnouncementMessage', 'نص الإعلان'], ['scheduledAnnouncementIntervalHours', 'الفترة بين الإعلانات بالساعات'], ['scheduledAnnouncementTitle', 'عنوان الإعلان (اختياري)'], ['scheduledAnnouncementColor', 'لون الإعلان'], ['scheduledAnnouncementImageUrl', 'رابط صورة HTTPS (اختياري)']
             ] },
             { key: 'embedBuilder', title: 'إدارة الإمبيدات', note: 'حدد عدد الإمبيدات واكتب معرّف الروم لكل بطاقة. عند حفظ الإعدادات يرسل البوت كل إمبيد إلى الروم الخاص به.', items: [] },
-            { title: 'الألعاب التفاعلية', note: 'استخدم /games أو بادئة السيرفر متبوعة بـ games لفتح قائمة الأنواع. أوامر الألعاب النصية تستخدم بادئة السيرفر المحفوظة هنا. رسومات ألعاب الصور مرسومة داخل YS-Bot وليست من حزمة الإيموجي.', items: [
-                ['gamesEnabled', 'تفعيل قائمة الألعاب'], ['gameChannelIds', 'القنوات المسموحة للألعاب'], ['gamesCooldownSeconds', 'فترة الانتظار بين الألعاب بالثواني'], ['gamesTriviaEnabled', 'لعبة المعلومات العامة'], ['gamesPictureGuessEnabled', 'لعبة تخمين الرسمة'], ['gamesSpotDifferenceEnabled', 'لعبة اكتشاف الاختلاف'], ['gamesScrambleEnabled', 'لعبة ترتيب الحروف'], ['gamesRiddleEnabled', 'لعبة الألغاز'], ['gamesMathEnabled', 'تحدي الحساب السريع'], ['gamesMemoryEnabled', 'لعبة الذاكرة البصرية'], ['gamesRpsEnabled', 'حجر ورقة مقص'], ['gamesDiceEnabled', 'تحدي النرد'], ['gamesTicTacToeEnabled', 'إكس أو ضد البوت'], ['gamesEmojiPuzzleEnabled', 'لغز الإيموجي']
+            { title: 'الألعاب التفاعلية', note: 'فعّل حتى 19 لعبة من القائمة. استخدم /games أو بادئة السيرفر متبوعة بـ games لفتح الأنواع. أسماء ورسائل اللعب تتبع لغة ردود البوت المحددة في commandLanguage، وأوامر الألعاب النصية تستخدم بادئة السيرفر المحفوظة. رسومات الألعاب أصلية ومرسومة داخل YS-Bot وليست من حزمة الإيموجي.', items: [
+                ['gamesEnabled', 'تفعيل قائمة الألعاب'], ['gameChannelIds', 'القنوات المسموحة للألعاب'], ['gamesCooldownSeconds', 'فترة الانتظار بين الألعاب بالثواني'], ['gamesTriviaEnabled', 'لعبة المعلومات العامة'], ['gamesPictureGuessEnabled', 'لعبة تخمين الرسمة'], ['gamesSpotDifferenceEnabled', 'لعبة اكتشاف الاختلاف'], ['gamesScrambleEnabled', 'لعبة ترتيب الحروف'], ['gamesRiddleEnabled', 'لعبة الألغاز'], ['gamesMathEnabled', 'تحدي الحساب السريع'], ['gamesMemoryEnabled', 'لعبة الذاكرة البصرية'], ['gamesRpsEnabled', 'حجر ورقة مقص'], ['gamesDiceEnabled', 'تحدي النرد'], ['gamesTicTacToeEnabled', 'إكس أو ضد البوت'], ['gamesEmojiPuzzleEnabled', 'لغز الإيموجي'], ['gamesTrueFalseEnabled', 'لعبة صح أو خطأ'], ['gamesGeographyEnabled', 'تحدي العواصم'], ['gamesWordGuessEnabled', 'لعبة خمن الكلمة'], ['gamesTypingEnabled', 'تحدي الكتابة'], ['gamesOddOneEnabled', 'لعبة اختر المختلف'], ['gamesNumberGuessEnabled', 'خمن الرقم ضد البوت'], ['gamesCoinEnabled', 'تحدي العملة ضد البوت'], ['gamesHigherLowerEnabled', 'أعلى أو أقل ضد البوت']
             ] },
             { title: 'التصويت والمستويات والنسخ الاحتياطي', items: [
                 ['pollEnabled', 'تفعيل التصويت'], ['pollChannelIds', 'القنوات المسموحة للتصويت'], ['levelSystemEnabled', 'تفعيل نظام المستويات'], ['levelAnnouncementChannelId', 'قناة إعلان المستوى'], ['levelUpMessage', 'رسالة الترقية للمستوى'], ['levelCooldownSeconds', 'فترة احتساب الخبرة بالثواني'], ['autorunBackupEnabled', 'تفعيل النسخ الاحتياطي المجدول'], ['autorunBackupIntervalHours', 'فترة النسخ الاحتياطي بالساعات']
@@ -641,7 +745,7 @@
             'autoRoleEnabled', 'warningEscalationEnabled', 'antiRaidEnabled', 'inviteTrackingEnabled', 'ticketEnabled',
             'ticketAskReason', 'ticketTranscriptEnabled', 'ticketNotifySupport', 'ticketAllowMemberClose', 'suggestionAnonymousEnabled',
             'suggestionEnabled', 'pollEnabled', 'levelSystemEnabled', 'autorunBackupEnabled', 'azkarEnabled', 'quranReminderEnabled',
-            'gamesEnabled', 'gamesTriviaEnabled', 'gamesPictureGuessEnabled', 'gamesSpotDifferenceEnabled', 'gamesScrambleEnabled', 'gamesRiddleEnabled', 'gamesMathEnabled', 'gamesMemoryEnabled', 'gamesRpsEnabled', 'gamesDiceEnabled', 'gamesTicTacToeEnabled', 'gamesEmojiPuzzleEnabled',
+            'gamesEnabled', 'gamesTriviaEnabled', 'gamesPictureGuessEnabled', 'gamesSpotDifferenceEnabled', 'gamesScrambleEnabled', 'gamesRiddleEnabled', 'gamesMathEnabled', 'gamesMemoryEnabled', 'gamesRpsEnabled', 'gamesDiceEnabled', 'gamesTicTacToeEnabled', 'gamesEmojiPuzzleEnabled', 'gamesTrueFalseEnabled', 'gamesGeographyEnabled', 'gamesWordGuessEnabled', 'gamesTypingEnabled', 'gamesOddOneEnabled', 'gamesNumberGuessEnabled', 'gamesCoinEnabled', 'gamesHigherLowerEnabled',
             'antiNukeEnabled', 'antiNukeChannelCreateEnabled', 'antiNukeChannelDeleteEnabled', 'antiNukeRoleCreateEnabled', 'antiNukeRoleDeleteEnabled',
             'antiNukeRoleUpdateEnabled', 'antiNukeBanEnabled', 'antiNukeWebhookCreateEnabled', 'antiNukeWebhookDeleteEnabled',
             'antiNukeEmojiDeleteEnabled', 'antiNukeStickerDeleteEnabled', 'antiNukeLockdownEnabled', 'antiNukeLogAllEvents',
@@ -844,6 +948,85 @@
             const advancedEnabled = [...document.querySelectorAll('[data-advanced-setting]')].filter((control) => dashboardProtectionKeys.has(control.dataset.advancedSetting) && control.checked).length;
             document.getElementById('summary-protections').textContent = `${baseEnabled + advancedEnabled} ${dashboardText('مفعّلة')}`;
         }
+        function runServerDiagnostics() {
+            const results = document.getElementById('diagnostics-results');
+            const summary = document.getElementById('diagnostics-summary');
+            results.replaceChildren(); summary.replaceChildren();
+            if (!selectedGuildId) {
+                const pill = document.createElement('span'); pill.className = 'diagnostics-pill'; pill.textContent = dashboardText('لم يتم اختيار سيرفر'); summary.appendChild(pill); return;
+            }
+            const findings = [];
+            const add = (state, title, detail, target) => findings.push({ state, title, detail, target });
+            const advanced = readAdvancedSettings();
+            const checked = (key) => Boolean(document.querySelector(`[data-advanced-setting="${key}"]`)?.checked);
+            const pending = (key) => checked(key) && !document.querySelector(`[data-advanced-setting="${key}"]`)?.closest('.advanced-field')?.querySelector('.settings-coming-soon.current');
+            const enabled = (key) => checked(key) && !pending(key);
+            const validDiscordId = (value) => /^\d{17,20}$/.test(String(value || '').trim());
+            const channelRequirements = [
+                ['welcomeEnabled','welcomeChannelId','قناة الترحيب'], ['farewellEnabled','farewellChannelId','قناة المغادرة'],
+                ['antiRaidEnabled','antiRaidAlertChannelId','قناة تنبيهات Anti-Raid'], ['antiNukeEnabled','antiNukeAlertChannelId','قناة تنبيهات Anti-Nuke'],
+                ['ticketEnabled','ticketPanelChannelId','قناة التذاكر'], ['suggestionEnabled','suggestionChannelId','قناة الاقتراحات'],
+                ['scheduledAnnouncementEnabled','scheduledAnnouncementChannelId','قناة الإعلان المجدول'],
+                ['azkarEnabled','azkarChannelId','قناة الأذكار'], ['quranReminderEnabled','quranChannelId','قناة القرآن']
+            ];
+            const requiredChannels = channelRequirements.filter(([toggle]) => enabled(toggle));
+            const logConfigured = ['logDeletedMessages','logEditedMessages','logMemberJoins','logMemberLeaves','logModerationActions','logRoleChanges','logChannelChanges','logBotCommands'].some(enabled);
+            if (logConfigured) requiredChannels.push(['modLogChannelId','modLogChannelId','قناة سجل الإدارة']);
+            const embedRaw = advanced.customEmbedsJson || '[]';
+            try {
+                const embeds = JSON.parse(embedRaw);
+                if (Array.isArray(embeds)) embeds.forEach((embed, index) => {
+                    if (embed?.title?.trim() || embed?.description?.trim()) {
+                        if (!validDiscordId(embed.channelId)) add('error', `الإمبيد ${index + 1}: ${dashboardText('معرّف غير صحيح')}`, dashboardText('صيغة معرّف Discord غير صحيحة'), 'embed-builder-card');
+                        else add('ok', `الإمبيد ${index + 1}: ${dashboardText('صيغة المعرّف صحيحة؛ تحقق أن البوت يستطيع رؤية القناة وإرسال الرسائل فيها.')}`);
+                    }
+                });
+            } catch { add('error', 'إعدادات الإمبيد', 'صيغة قائمة الإمبيدات غير قابلة للقراءة. افتح إعداد الإمبيد وأعد حفظه.', 'embed-builder-card'); }
+            for (const [toggle, channelKey, label] of requiredChannels) {
+                const value = advanced[channelKey];
+                if (!value) add('error', `${dashboardText(label)}: ${dashboardText('القناة المطلوبة غير محددة')}`, 'اختر معرّف القناة في الإعداد المرتبط ثم احفظ الإعدادات.', channelKey);
+                else if (!validDiscordId(value)) add('error', `${dashboardText(label)}: ${dashboardText('معرّف غير صحيح')}`, dashboardText('صيغة معرّف Discord غير صحيحة'), channelKey);
+                else add('ok', `${dashboardText(label)}: ${dashboardText('صيغة المعرّف صحيحة؛ تحقق أن البوت يستطيع رؤية القناة وإرسال الرسائل فيها.')}`);
+            }
+            const roleRequirements = [
+                ['verificationEnabled','verificationRoleId','رتبة التحقق'], ['autoRoleEnabled','autoRoleId','رتبة الأعضاء الجدد'],
+                ['antiRaidEnabled','antiRaidAlertRoleId','رتبة تنبيهات Anti-Raid'], ['antiImpersonationEnabled','antiImpersonationStaffRoleIds','رتبة الطاقم']
+            ];
+            for (const [toggle, key, label] of roleRequirements) if (enabled(toggle)) {
+                const ids = String(advanced[key] || '').split(/[\s,،]+/).filter(Boolean);
+                if (!ids.length) add('error', `${dashboardText(label)}: ${dashboardText('القناة المطلوبة غير محددة')}`, 'أدخل معرّف الرتبة المطلوبة في إعدادها.', key);
+                else if (ids.some((id) => !validDiscordId(id))) add('error', `${dashboardText(label)}: ${dashboardText('معرّف غير صحيح')}`, dashboardText('صيغة معرّف Discord غير صحيحة'), key);
+                else add('ok', `${dashboardText(label)}: صيغة المعرّف صحيحة.`);
+            }
+            for (const control of document.querySelectorAll('[data-advanced-setting]')) if (control.type === 'checkbox' && control.checked && pending(control.dataset.advancedSetting)) {
+                add('warning', dashboardLabel(control.dataset.advancedSetting, control.closest('.advanced-field')?.querySelector('span')?.textContent || control.dataset.advancedSetting), dashboardText('هذا الخيار محفوظ لكنه معلّم «قيد الربط»، لذلك لن يطبّقه البوت حاليًا.'));
+            }
+            const permissions = new Set();
+            if (document.getElementById('setting-anti-links').checked || document.getElementById('setting-anti-spam').checked || enabled('antiMentionRaidEnabled') || enabled('capsFilterEnabled') || enabled('duplicateFilterEnabled') || enabled('blockedWordsEnabled')) permissions.add('إدارة الرسائل');
+            if (enabled('antiNukeEnabled') || enabled('antiSuspiciousActivityEnabled') || enabled('antiPermissionAbuseEnabled')) permissions.add('عرض سجل التدقيق');
+            if (advanced.antiRaidAction === 'lockdown' && enabled('antiRaidEnabled') || enabled('antiSuspiciousAutoLockdownEnabled')) permissions.add('إدارة القنوات');
+            if (enabled('antiPermissionAbuseRevertEnabled') || enabled('autoRoleEnabled') || enabled('verificationEnabled')) permissions.add('إدارة الرتب');
+            if (enabled('antiNukeEnabled') && advanced.antiNukeAction === 'ban') permissions.add('حظر الأعضاء');
+            if (enabled('antiNukeEnabled') && advanced.antiNukeAction === 'kick' || enabled('antiAltEnabled') && advanced.antiAltAction === 'kick') permissions.add('طرد الأعضاء');
+            if (enabled('antiNukeEnabled') && advanced.antiNukeAction === 'timeout' || enabled('antiSpamTimeoutEnabled') || enabled('antiMentionRaidTimeoutEnabled')) permissions.add('إسكات الأعضاء');
+            if (permissions.size) add('warning', dashboardText('صلاحيات يجب التأكد منها'), `تأكد يدويًا أن YS-Bot يملك: ${[...permissions].map(dashboardText).join('، ')}. كذلك تأكد أن رتبة البوت أعلى من الرتب التي يحتاج إدارتها.`);
+            add('warning', dashboardText('البوت في السيرفر'), dashboardText('أضف البوت للسيرفر وتأكد أن رتبته أعلى من الرتب التي يحتاج إدارتها.'));
+            if (enabled('welcomeEnabled') || enabled('farewellEnabled') || enabled('autoRoleEnabled') || enabled('verificationEnabled')) add('warning', 'Server Members Intent', 'فعّل Server Members Intent في Discord Developer Portal؛ الترحيب والمغادرة والتحقق والرتب التلقائية تعتمد عليه.');
+            if (savedGuildSettingsSnapshot && currentGuildSettingsSnapshot() !== savedGuildSettingsSnapshot) add('warning', dashboardText('تغييرات غير محفوظة'), 'احفظ التغييرات أولًا؛ الفحص الحالي يقرأ ما يظهر في اللوحة الآن.');
+            if (!findings.some((item) => item.state === 'error' || item.state === 'warning')) add('ok', dashboardText('لا توجد مشاكل ظاهرة في الإعدادات'), dashboardText('الإعدادات المحفوظة تبدو مكتملة. راجع صلاحيات البوت المذكورة أدناه.'));
+            const counts = { error: findings.filter((item) => item.state === 'error').length, warning: findings.filter((item) => item.state === 'warning').length, ok: findings.filter((item) => item.state === 'ok').length };
+            for (const text of [`${counts.error} ${dashboardText('إعداد غير مكتمل')}`, `${counts.warning} ${dashboardText('ملاحظة تحتاج مراجعة')}`, `${counts.ok} ✓`]) { const pill = document.createElement('span'); pill.className = 'diagnostics-pill'; pill.textContent = text; summary.appendChild(pill); }
+            findings.forEach((finding) => {
+                const item = document.createElement('article'); item.className = 'diagnostic-item'; item.dataset.state = finding.state;
+                const mark = document.createElement('span'); mark.className = 'diagnostic-mark'; mark.textContent = finding.state === 'ok' ? '✓' : finding.state === 'error' ? '!' : '•';
+                const copy = document.createElement('div'); const title = document.createElement('strong'); title.textContent = finding.title; copy.appendChild(title);
+                if (finding.detail) { const detail = document.createElement('small'); detail.textContent = finding.detail; copy.appendChild(detail); }
+                item.append(mark, copy);
+                if (finding.target) item.addEventListener('click', () => { const target = finding.target === 'embed-builder-card' ? document.querySelector('.embed-builder-card') : document.querySelector(`[data-advanced-setting="${finding.target}"]`)?.closest('.advanced-field'); target?.scrollIntoView({ behavior:'smooth', block:'center' }); target?.querySelector('input,textarea,select')?.focus({ preventScroll:true }); });
+                results.appendChild(item);
+            });
+        }
+        document.getElementById('run-diagnostics').addEventListener('click', runServerDiagnostics);
         function currentGuildSettingsSnapshot() {
             return JSON.stringify({
                 commandPrefix: document.getElementById('setting-command-prefix')?.value || '',
@@ -866,22 +1049,47 @@
         for (const eventName of ['input', 'change']) guildSettingsPanel.addEventListener(eventName, (event) => {
             if (event.target.matches('#setting-command-prefix, #setting-anti-spam, #setting-anti-links, [data-advanced-setting], [data-embed-field], #custom-embed-count')) refreshGuildSettingsDirtyState();
         });
-        document.getElementById('dashboard-nav').addEventListener('click', (event) => {
-            const button = event.target.closest('[data-dashboard-jump]');
+        dashboardNav.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-dashboard-menu-group]');
             if (!button) return;
-            if (!selectedGuildId) { document.getElementById('guild-list').scrollIntoView({ behavior:'smooth', block:'start' }); return; }
-            const destination = button.dataset.dashboardJump;
-            if (destination === 'backups') {
-                document.querySelector('.server-backup-tool')?.scrollIntoView({ behavior:'smooth', block:'start' });
+            closeDashboardMenu();
+            if (!selectedGuildId) {
+                document.getElementById('guild-list').scrollIntoView({ behavior:'smooth', block:'start' });
+                document.getElementById('dashboard-nav-hint').textContent = dashboardText('اختر سيرفرًا أولًا لعرض إعدادات هذه الفئة');
                 return;
             }
-            const groups = [...document.querySelectorAll('.advanced-group')];
-            const target = groups.find((group) => group.dataset.dashboardCategory === destination);
+            const groupIndex = Number(button.dataset.dashboardMenuGroup);
+            const target = document.querySelectorAll('.advanced-group')[groupIndex];
             if (target) {
+                const search = document.getElementById('settings-search-input');
+                if (search?.value) { search.value = ''; filterAdvancedSettings(); }
                 target.open = true;
                 target.scrollIntoView({ behavior:'smooth', block:'start' });
             }
         });
+        function menuCategoryForGroup(title) {
+            if (/الألعاب/.test(title)) return 'games';
+            if (/الحماية|السبام|الروابط|الفلاتر/.test(title)) return 'protection';
+            if (/الإشراف|التحقق والرتب|سجل الأحداث|الأوامر والصلاحيات/.test(title)) return 'moderation';
+            return 'community';
+        }
+        function renderDashboardMenuGroups() {
+            const categories = Object.fromEntries([...dashboardNav.querySelectorAll('[data-menu-category]')].map((container) => [container.dataset.menuCategory, container]));
+            Object.values(categories).forEach((container) => container.replaceChildren());
+            [...document.querySelectorAll('.advanced-group')].forEach((section, index) => {
+                const container = categories[menuCategoryForGroup(section.dataset.groupTitle || '')];
+                if (!container) return;
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'dashboard-menu-group';
+                button.dataset.dashboardMenuGroup = String(index);
+                button.textContent = dashboardText(section.dataset.groupTitle || 'الإعدادات');
+                container.appendChild(button);
+            });
+            dashboardNav.querySelectorAll('.dashboard-menu-category').forEach((category) => {
+                category.hidden = !category.querySelector('.dashboard-menu-group');
+            });
+        }
         function renderAdvancedSettings(values = {}) {
             const root = document.getElementById('advanced-settings-groups');
             root.replaceChildren();
@@ -1045,6 +1253,7 @@
                 root.appendChild(section);
             });
             filterAdvancedSettings();
+            renderDashboardMenuGroups();
         }
 
         function readAdvancedSettings() {
@@ -1237,6 +1446,7 @@
                 document.getElementById('settings-search-input').disabled = false;
                 panel.setAttribute('aria-busy', 'false');
                 savedGuildSettingsSnapshot = currentGuildSettingsSnapshot();
+                runServerDiagnostics();
                 status.dataset.dirty = 'false';
                 status.dataset.saved = 'true';
                 document.getElementById('summary-bot-card').dataset.state = 'ready';
@@ -1475,6 +1685,7 @@
                 const result = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(result.error || 'تعذر حفظ الإعدادات');
                 savedGuildSettingsSnapshot = submittedSettingsSnapshot;
+                runServerDiagnostics();
                 status.dataset.dirty = 'false';
                 status.dataset.saved = 'true';
                 status.textContent = dashboardLanguage === 'en' ? 'Settings saved successfully.' : 'انحفظت الإعدادات بنجاح.';
@@ -1527,6 +1738,7 @@
             }
         });
 
+        renderDashboardMenuGroups();
         applyDashboardLanguage(dashboardLanguage);
         renderProfileThemeOptions();
         initDashboard();
