@@ -84,6 +84,7 @@ const EXTRA_SETTING_SCHEMA = {
     farewellMessage: { type: 'text', default: 'غادر {user} السيرفر.', maxLength: 500 },
     verificationEnabled: { type: 'boolean', default: false },
     verificationRoleId: { type: 'text', default: '', maxLength: 24 },
+    verificationChannelId: { type: 'text', default: '', maxLength: 24 },
     verificationTimeoutMinutes: { type: 'number', default: 10, min: 1, max: 1440 },
     verificationMinAccountAgeDays: { type: 'number', default: 7, min: 0, max: 365 },
     autoRoleEnabled: { type: 'boolean', default: false },
@@ -121,6 +122,36 @@ const EXTRA_SETTING_SCHEMA = {
     featureUnlockEnabled: { type: 'boolean', default: true },
     featureSlowmodeEnabled: { type: 'boolean', default: true },
     featureRoleListEnabled: { type: 'boolean', default: true },
+    autoReactionEnabled: { type: 'boolean', default: false },
+    autoReactionChannelId: { type: 'text', default: '', maxLength: 24 },
+    autoReactionEmoji: { type: 'text', default: '✨', maxLength: 32 },
+    mediaOnlyEnabled: { type: 'boolean', default: false },
+    mediaOnlyChannelId: { type: 'text', default: '', maxLength: 24 },
+    keywordAlertEnabled: { type: 'boolean', default: false },
+    keywordAlertWords: { type: 'text', default: '', maxLength: 1000 },
+    keywordAlertChannelId: { type: 'text', default: '', maxLength: 24 },
+    stickyMessageEnabled: { type: 'boolean', default: false },
+    stickyMessageChannelId: { type: 'text', default: '', maxLength: 24 },
+    stickyMessageText: { type: 'text', default: '', maxLength: 1800 },
+    autoPublishEnabled: { type: 'boolean', default: false },
+    voiceLogEnabled: { type: 'boolean', default: false },
+    selfRolesEnabled: { type: 'boolean', default: false },
+    selfRoleAllowedIds: { type: 'text', default: '', maxLength: 500 },
+    afkEnabled: { type: 'boolean', default: false },
+    birthdayEnabled: { type: 'boolean', default: false },
+    birthdayChannelId: { type: 'text', default: '', maxLength: 24 },
+    remindersEnabled: { type: 'boolean', default: false },
+    confessionsEnabled: { type: 'boolean', default: false },
+    confessionsChannelId: { type: 'text', default: '', maxLength: 24 },
+    tempRoleEnabled: { type: 'boolean', default: false },
+    topicCommandEnabled: { type: 'boolean', default: false },
+    moveCommandEnabled: { type: 'boolean', default: false },
+    roleColorCommandEnabled: { type: 'boolean', default: false },
+    timestampCommandEnabled: { type: 'boolean', default: false },
+    eightBallEnabled: { type: 'boolean', default: false },
+    randomRangeEnabled: { type: 'boolean', default: false },
+    reverseTextEnabled: { type: 'boolean', default: false },
+    mockTextEnabled: { type: 'boolean', default: false },
     auditRetentionDays: { type: 'number', default: 30, min: 1, max: 365 },
     antiRaidEnabled: { type: 'boolean', default: false },
     antiRaidJoinLimit: { type: 'number', default: 10, min: 2, max: 100 },
@@ -466,7 +497,7 @@ async function completeEmbedSendRequest(requestId, status, result) {
 }
 
 async function createServerTask(guildId, requestedBy, taskType, backupId = null) {
-    if (!['backup', 'restore'].includes(taskType)) throw new Error('Invalid server task type.');
+    if (!['backup', 'restore', 'verification-panel'].includes(taskType)) throw new Error('Invalid server task type.');
     const database = await getReadySql();
     const rows = await database`
         INSERT INTO ys_bot_server_tasks (guild_id, requested_by, task_type, backup_id)

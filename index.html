@@ -1003,6 +1003,32 @@
             margin: 10px 0;
             font-family: monospace;
         }
+
+        /* YS assistant glass panel and translucent chat controls. */
+        .ai-assistant-panel {
+            border-color: rgba(185, 160, 255, .3);
+            background: linear-gradient(145deg, rgba(66, 47, 96, .72), rgba(10, 24, 40, .7));
+            box-shadow: inset 0 1px rgba(255, 255, 255, .07), 0 20px 50px rgba(0, 0, 0, .28);
+            -webkit-backdrop-filter: blur(24px) saturate(145%);
+            backdrop-filter: blur(24px) saturate(145%);
+        }
+        .ai-assistant-toggle,
+        .ai-message.assistant,
+        .ai-message.user,
+        .ai-image-preview,
+        .ai-chat-input,
+        .ai-chat-attach,
+        .ai-chat-send,
+        .ai-chat-login {
+            -webkit-backdrop-filter: blur(14px) saturate(135%);
+            backdrop-filter: blur(14px) saturate(135%);
+        }
+        .ai-message.assistant { background: rgba(88, 55, 126, .25); }
+        .ai-message.user { background: rgba(15, 112, 154, .24); }
+        .ai-chat-input { background: rgba(5, 16, 31, .48); }
+        @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+            .ai-assistant-panel { background: rgba(20, 28, 48, .97); }
+        }
     </style>
 </head>
 <body>
@@ -1254,7 +1280,7 @@
                 <a id="hero-discord-login" data-discord-login-link href="https://discord.com/oauth2/authorize?client_id=1546870264749494272&amp;redirect_uri=https%3A%2F%2Fys-bot.vercel.app%2Fdashboard.html&amp;response_type=token&amp;scope=identify%20guilds%20email" class="btn btn-primary" data-i18n="discordLogin">تسجيل الدخول عبر ديسكورد</a>
                 </div>
                 <div class="hero-feature-pills" aria-label="ميزات الحماية">
-                    <span>Anti-Spam</span><span>Anti-Raid</span><span>Anti-Nuke</span><a class="hero-text-link" href="#pricing" data-i18n="viewPlans">عرض خطط الاشتراك</a>
+                    <span class="hero-feature-pill"><svg class="feature-icon feature-icon--spam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><path d="M8 9h8M8 12h5m-5 3h7"/><path d="m17.5 3 .7 1.8L20 5.5l-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg>Anti-Spam</span><span class="hero-feature-pill"><svg class="feature-icon feature-icon--raid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6z"/><path d="M12 7v5m0 3h.01"/><path d="M3 3 5 5m16-2-2 2"/></svg>Anti-Raid</span><span class="hero-feature-pill"><svg class="feature-icon feature-icon--nuke" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="M19 15v5m-2.5-2.5h5"/></svg>Anti-Nuke</span><a class="hero-text-link" href="#pricing" data-i18n="viewPlans">عرض خطط الاشتراك</a>
                 </div>
             </div>
             <div class="hero-visual" aria-hidden="true">
@@ -1274,7 +1300,7 @@
     <section id="quick-start" class="quick-start-section" aria-labelledby="quick-start-title">
         <div class="container">
             <h2 class="section-title" id="quick-start-title" data-i18n="quickStartTitle">ابدأ مع YS-Bot بثلاث خطوات</h2>
-            <div class="quick-start-grid">
+            <div class="quick-start-grid" id="quick-start-grid">
                 <article class="quick-start-card">
                     <span class="quick-start-step" aria-hidden="true">01</span>
                     <h3 data-i18n="stepInviteTitle">أضف البوت إلى سيرفرك</h3>
@@ -2832,5 +2858,30 @@
     </script>
 
     <script src="button-effects.js" defer></script>
+    <script>
+        (() => {
+            const section = document.getElementById('quick-start');
+            const grid = document.getElementById('quick-start-grid');
+            if (!section || !grid) return;
+            let frame = 0;
+            const updateProgress = () => {
+                frame = 0;
+                const bounds = section.getBoundingClientRect();
+                const start = window.innerHeight * .82;
+                const end = window.innerHeight * .24;
+                const progress = Math.max(0, Math.min(1, (start - bounds.top) / (bounds.height + start - end)));
+                grid.style.setProperty('--step-progress', `${(progress * 100).toFixed(1)}%`);
+                grid.querySelectorAll('.quick-start-step').forEach((step, index) => {
+                    step.classList.toggle('is-progressed', progress >= (index + 1) / 3);
+                });
+            };
+            const scheduleProgress = () => {
+                if (!frame) frame = window.requestAnimationFrame(updateProgress);
+            };
+            window.addEventListener('scroll', scheduleProgress, { passive: true });
+            window.addEventListener('resize', scheduleProgress, { passive: true });
+            updateProgress();
+        })();
+    </script>
 </body>
 </html>

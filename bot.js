@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { Client, GatewayIntentBits, AuditLogEvent, EmbedBuilder, SlashCommandBuilder, REST, Routes, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, AttachmentBuilder, Partials, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, AuditLogEvent, EmbedBuilder, ContainerBuilder, TextDisplayBuilder, MessageFlags, SlashCommandBuilder, REST, Routes, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, AttachmentBuilder, Partials, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const fs = require('fs');
 const { exec } = require('child_process');
@@ -66,6 +66,7 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildInvites,
+        GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages
@@ -102,13 +103,19 @@ function guildState(guildId) {
     data.religiousReminders ||= {};
     data.starboard ||= {};
     data.counting ||= { current: 0, lastUserId: null };
+    data.afk ||= {};
+    data.birthdays ||= {};
+    data.reminders ||= [];
+    data.temporaryRoles ||= [];
+    data.stickyMessages ||= {};
+    data.lastBirthdayAnnouncementDate ||= '';
     return data;
 }
 
 async function submitReport(interaction, settings) {
     const advanced = settings?.advancedSettings || {};
     if (!interaction.guild) return interaction.reply({ content: 'استخدم /report داخل السيرفر.', ephemeral: true });
-    if (!advanced.reportEnabled || !advanced.reportChannelId) return interaction.reply({ content: 'نظام البلاغات غير مفعّل في إعدادات هذا السيرفر.', ephemeral: true });
+    if (!advanced.reportChannelId) return interaction.reply({ content: 'حدد قناة البلاغات في إعدادات السيرفر أولًا.', ephemeral: true });
     const reportedUser = interaction.options.getUser('member', true);
     const reason = interaction.options.getString('reason', true).trim();
     if (reportedUser.id === interaction.user.id) return interaction.reply({ content: 'ما تقدر ترفع بلاغًا على نفسك.', ephemeral: true });
@@ -130,6 +137,25 @@ async function submitReport(interaction, settings) {
     const sent = await channel.send({ embeds: [embed], allowedMentions: { parse: [] } }).then(() => true).catch(() => false);
     if (!sent) return interaction.reply({ content: 'تعذر إرسال البلاغ. تحقق من صلاحية البوت في قناة البلاغات.', ephemeral: true });
     return interaction.reply({ content: 'وصل بلاغك لفريق الإشراف للمراجعة. شكرًا لمساعدتك.', ephemeral: true });
+}
+
+async function submitAnonymousConfession(interaction) {
+    if (!interaction.guild) return interaction.reply({ content: 'أرسل الاعتراف من داخل السيرفر.', ephemeral: true });
+    const settings = await loadGuildSettings(interaction.guild.id);
+    const advanced = settings.advancedSettings || {};
+    if (!advanced.confessionsChannelId) return interaction.reply({ content: 'حدد قناة الاعترافات في إعدادات السيرفر أولًا.', ephemeral: true });
+    const text = interaction.fields.getTextInputValue('confession_text').trim().slice(0, 1000);
+    if (!text) return interaction.reply({ content: 'اكتب نص الاعتراف أولًا.', ephemeral: true });
+    const data = guildState(interaction.guild.id);
+    const now = Date.now();
+    if (now - Number(data.lastConfessionAt?.[interaction.user.id] || 0) < 60000) return interaction.reply({ content: 'انتظر دقيقة قبل إرسال اعتراف آخر.', ephemeral: true });
+    const channel = await interaction.guild.channels.fetch(advanced.confessionsChannelId).catch(() => null);
+    if (!channel?.isTextBased() || !channel.send) return interaction.reply({ content: 'قناة الاعترافات غير صالحة أو لا يستطيع البوت الإرسال فيها.', ephemeral: true });
+    data.lastConfessionAt ||= {};
+    data.lastConfessionAt[interaction.user.id] = now;
+    saveBotState();
+    const sent = await channel.send({ embeds: [new EmbedBuilder().setColor(0x35cdb7).setTitle('اعتراف مجهول').setDescription(text).setFooter({ text: 'YS-Bot · صندوق الاعترافات' }).setTimestamp()], allowedMentions: { parse: [] } }).then(() => true).catch(() => false);
+    return interaction.reply({ content: sent ? 'وصل اعترافك بدون إظهار اسمك.' : 'تعذر الإرسال؛ تحقق من صلاحيات البوت في قناة الاعترافات.', ephemeral: true });
 }
 
 async function syncStarboardReaction(reaction) {
@@ -197,24 +223,16 @@ async function handleCountingMessage(message, settings) {
     return true;
 }
 
-const FEATURE_COMMAND_SETTINGS = {
-    ping: 'featurePingEnabled', serverinfo: 'featureServerInfoEnabled', userinfo: 'featureUserInfoEnabled',
-    avatar: 'featureAvatarEnabled', servericon: 'featureServerIconEnabled', membercount: 'featureMemberCountEnabled',
-    roleinfo: 'featureRoleInfoEnabled', channelinfo: 'featureChannelInfoEnabled', botinfo: 'featureBotInfoEnabled',
-    quote: 'featureQuoteEnabled', choose: 'featureChooseEnabled', roll: 'featureRollEnabled', coinflip: 'featureCoinflipEnabled',
-    nickname: 'featureNicknameEnabled', announce: 'featureAnnounceEnabled', say: 'featureSayEnabled', lock: 'featureLockEnabled',
-    unlock: 'featureUnlockEnabled', slowmode: 'featureSlowmodeEnabled', rolelist: 'featureRoleListEnabled'
-};
+const FEATURE_COMMAND_NAMES = new Set([
+    'ping','serverinfo','userinfo','avatar','servericon','membercount','roleinfo','channelinfo','botinfo','quote',
+    'choose','roll','coinflip','nickname','announce','say','lock','unlock','slowmode','rolelist','selfrole','afk',
+    'birthday','remindme','confess','temprole','topic','move','rolecolor','timestamp','eightball','random','reverse','mock'
+]);
 
 async function handleFeatureCommand(interaction, settings) {
-    const settingKey = FEATURE_COMMAND_SETTINGS[interaction.commandName];
-    if (!settingKey) return false;
+    if (!FEATURE_COMMAND_NAMES.has(interaction.commandName)) return false;
     if (!interaction.guild) {
         await interaction.reply({ content: 'هذا الأمر يعمل داخل السيرفر فقط.', ephemeral: true });
-        return true;
-    }
-    if (settings?.advancedSettings?.[settingKey] === false) {
-        await interaction.reply({ content: 'هذا الأمر معطّل من لوحة تحكم السيرفر.', ephemeral: true });
         return true;
     }
     const guild = interaction.guild;
@@ -373,8 +391,191 @@ async function handleFeatureCommand(interaction, settings) {
             if (guild.iconURL()) embed.setThumbnail(guild.iconURL({ size: 256 }));
             return interaction.reply({ embeds: [embed], allowedMentions: noMentions });
         }
+        case 'selfrole': {
+            const role = interaction.options.getRole('role', true);
+            const allowed = String(settings?.advancedSettings?.selfRoleAllowedIds || '').split(/[\s,]+/).filter(Boolean);
+            if (!allowed.includes(role.id)) return interaction.reply({ content: 'هذه الرتبة غير مفعّلة ضمن قائمة الرتب الاختيارية.', ephemeral: true });
+            if (role.id === guild.id || role.managed || !role.editable) return interaction.reply({ content: 'لا يمكن إضافة هذه الرتبة تلقائيًا. راجع ترتيب رتب البوت.', ephemeral: true });
+            const member = await guild.members.fetch(interaction.user.id).catch(() => null);
+            if (!member) return interaction.reply({ content: 'تعذر جلب عضويتك.', ephemeral: true });
+            const hadRole = member.roles.cache.has(role.id);
+            const changed = await (hadRole ? member.roles.remove(role, 'Self-role opt-out') : member.roles.add(role, 'Self-role opt-in')).then(() => true).catch(() => false);
+            return interaction.reply({ content: changed ? (hadRole ? `تمت إزالة رتبة **${role.name}**.` : `تمت إضافة رتبة **${role.name}**.`) : 'تعذر تعديل الرتبة. تحقق من صلاحيات البوت وترتيب رتبته.', ephemeral: true });
+        }
+        case 'afk': {
+            const reason = safeText(interaction.options.getString('reason') || 'متغيب مؤقتًا').slice(0, 160);
+            const data = guildState(guild.id);
+            data.afk[interaction.user.id] = { reason, since: Date.now() };
+            saveBotState();
+            return interaction.reply({ content: `تم تفعيل حالة AFK: ${reason}`, ephemeral: true });
+        }
+        case 'birthday': {
+            const day = interaction.options.getInteger('day', true);
+            const month = interaction.options.getInteger('month', true);
+            const daysInMonth = new Date(Date.UTC(2024, month, 0)).getUTCDate();
+            if (day > daysInMonth) return interaction.reply({ content: 'هذا اليوم غير موجود في الشهر المحدد.', ephemeral: true });
+            const data = guildState(guild.id);
+            data.birthdays[interaction.user.id] = { day, month };
+            saveBotState();
+            return interaction.reply({ content: `حفظت يوم ميلادك: **${day}/${month}**. سيظهر في قناة التهاني عند تفعيلها.`, ephemeral: true });
+        }
+        case 'remindme': {
+            const minutes = interaction.options.getInteger('minutes', true);
+            const text = interaction.options.getString('text', true).trim().slice(0, 300);
+            const data = guildState(guild.id);
+            const active = data.reminders.filter((reminder) => reminder.userId === interaction.user.id).length;
+            if (active >= 10 || data.reminders.length >= 250) return interaction.reply({ content: 'وصلت للحد الحالي من التذكيرات. انتظر حتى يكتمل أحدها ثم جرّب.', ephemeral: true });
+            const dueAt = Date.now() + minutes * 60000;
+            data.reminders.push({ userId: interaction.user.id, text, dueAt });
+            saveBotState();
+            return interaction.reply({ content: `تمام، بذكّرك برسالة خاصة بعد **${minutes}** دقيقة. تأكد أن رسائلك الخاصة مفتوحة من أعضاء السيرفر.`, ephemeral: true });
+        }
+        case 'confess': {
+            const modal = new ModalBuilder().setCustomId('ys_anonymous_confession').setTitle('اعتراف مجهول');
+            const input = new TextInputBuilder().setCustomId('confession_text').setLabel('اكتب اعترافك').setStyle(TextInputStyle.Paragraph).setMinLength(1).setMaxLength(1000).setRequired(true);
+            modal.addComponents(new ActionRowBuilder().addComponents(input));
+            return interaction.showModal(modal);
+        }
+        case 'temprole': {
+            if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles)) return interaction.reply({ content: 'تحتاج صلاحية Manage Roles.', ephemeral: true });
+            const user = interaction.options.getUser('member', true);
+            const role = interaction.options.getRole('role', true);
+            const minutes = interaction.options.getInteger('minutes', true);
+            const member = await guild.members.fetch(user.id).catch(() => null);
+            if (!member || role.id === guild.id || role.managed || !role.editable) return interaction.reply({ content: 'تعذر إعطاء هذه الرتبة؛ تأكد من العضو وترتيب رتب البوت.', ephemeral: true });
+            const added = await member.roles.add(role, `Temporary role requested by ${interaction.user.tag}`).then(() => true).catch(() => false);
+            if (!added) return interaction.reply({ content: 'تعذر إعطاء الرتبة. تحقق من صلاحيات البوت.', ephemeral: true });
+            const expiresAt = Date.now() + minutes * 60000;
+            const scheduled = guildState(guild.id).temporaryRoles;
+            const previousIndex = scheduled.findIndex((assignment) => assignment.userId === user.id && assignment.roleId === role.id);
+            if (previousIndex >= 0) scheduled.splice(previousIndex, 1);
+            scheduled.push({ userId: user.id, roleId: role.id, expiresAt });
+            saveBotState();
+            return interaction.reply({ content: `أُعطيت رتبة **${role.name}** لـ ${user} لمدة **${minutes}** دقيقة.`, ephemeral: true, allowedMentions: noMentions });
+        }
+        case 'topic': {
+            if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels)) return interaction.reply({ content: 'تحتاج صلاحية Manage Channels.', ephemeral: true });
+            const channel = interaction.channel;
+            if (![ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(channel?.type)) return interaction.reply({ content: 'استخدم الأمر في قناة نصية أو قناة إعلانات.', ephemeral: true });
+            const topic = interaction.options.getString('topic', true).trim();
+            const updated = await channel.setTopic(topic || null, `Topic changed by ${interaction.user.tag}`).then(() => true).catch(() => false);
+            return interaction.reply({ content: updated ? 'تم تحديث موضوع القناة.' : 'تعذر تحديث الموضوع؛ تحقق من صلاحية البوت.', ephemeral: true });
+        }
+        case 'move': {
+            if (!interaction.memberPermissions?.has(PermissionFlagsBits.MoveMembers)) return interaction.reply({ content: 'تحتاج صلاحية Move Members.', ephemeral: true });
+            const user = interaction.options.getUser('member', true);
+            const target = interaction.options.getChannel('channel', true);
+            const member = await guild.members.fetch(user.id).catch(() => null);
+            if (!member?.voice.channel || ![ChannelType.GuildVoice, ChannelType.GuildStageVoice].includes(target.type)) return interaction.reply({ content: 'يجب أن يكون العضو داخل قناة صوتية وأن يكون الهدف قناة صوتية صالحة.', ephemeral: true });
+            const moved = await member.voice.setChannel(target, `Moved by ${interaction.user.tag}`).then(() => true).catch(() => false);
+            return interaction.reply({ content: moved ? `تم نقل ${user} إلى <#${target.id}>.` : 'تعذر نقل العضو. تحقق من صلاحية Move Members.', ephemeral: true, allowedMentions: noMentions });
+        }
+        case 'rolecolor': {
+            if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageRoles)) return interaction.reply({ content: 'تحتاج صلاحية Manage Roles.', ephemeral: true });
+            const role = interaction.options.getRole('role', true);
+            const colorText = interaction.options.getString('color', true).trim();
+            if (!/^#[\da-f]{6}$/i.test(colorText) || !role.editable || role.managed) return interaction.reply({ content: 'أدخل لون HEX مثل #32CDB8 وتأكد أن البوت يستطيع تعديل الرتبة.', ephemeral: true });
+            const changed = await role.setColor(Number.parseInt(colorText.slice(1), 16), `Color changed by ${interaction.user.tag}`).then(() => true).catch(() => false);
+            return interaction.reply({ content: changed ? `تم تغيير لون **${role.name}** إلى ${colorText.toUpperCase()}.` : 'تعذر تعديل لون الرتبة.', ephemeral: true });
+        }
+        case 'timestamp': {
+            const seconds = interaction.options.getInteger('unix_seconds', true);
+            const date = new Date(seconds * 1000);
+            if (!Number.isFinite(date.getTime())) return interaction.reply({ content: 'وقت Unix غير صالح.', ephemeral: true });
+            return interaction.reply({ content: `الوقت المحلي: <t:${seconds}:F>\nنسبي: <t:${seconds}:R>\nالتاريخ: ${date.toISOString()}`, ephemeral: true });
+        }
+        case 'eightball': {
+            const answers = ['أكيد!', 'غالبًا نعم.', 'الإشارات تقول نعم.', 'ممكن.', 'جرّب تسألني بعدين.', 'ما أظن.', 'غالبًا لا.', 'صعب أحكم الآن.'];
+            const question = interaction.options.getString('question', true).trim().slice(0, 250);
+            return interaction.reply({ content: `🎱 **${question}**\n${answers[Math.floor(Math.random() * answers.length)]}`, allowedMentions: noMentions });
+        }
+        case 'random': {
+            const min = interaction.options.getInteger('minimum', true);
+            const max = interaction.options.getInteger('maximum', true);
+            if (min > max) return interaction.reply({ content: 'الحد الأدنى لازم يكون أصغر من أو يساوي الحد الأعلى.', ephemeral: true });
+            return interaction.reply({ content: `الرقم العشوائي: **${Math.floor(Math.random() * (max - min + 1)) + min}**`, allowedMentions: noMentions });
+        }
+        case 'reverse': {
+            const text = interaction.options.getString('text', true);
+            return interaction.reply({ content: [...text].reverse().join('').slice(0, 1800), allowedMentions: noMentions });
+        }
+        case 'mock': {
+            const text = [...interaction.options.getString('text', true)];
+            let upper = true;
+            const result = text.map((character) => {
+                if (!/[\p{L}]/u.test(character)) return character;
+                const out = upper ? character.toLocaleUpperCase() : character.toLocaleLowerCase();
+                upper = !upper;
+                return out;
+            }).join('').slice(0, 1800);
+            return interaction.reply({ content: result, allowedMentions: noMentions });
+        }
         default:
             return false;
+    }
+}
+
+async function processDashboardAutomations() {
+    const now = Date.now();
+    const today = new Date(now);
+    const todayKey = `${today.getUTCMonth() + 1}-${today.getUTCDate()}`;
+    for (const guild of client.guilds.cache.values()) {
+        const settings = await loadGuildSettings(guild.id).catch(() => null);
+        if (!settings) continue;
+        const advanced = settings.advancedSettings || {};
+        const data = guildState(guild.id);
+        let changed = false;
+
+        const pendingReminders = [];
+        for (const reminder of data.reminders) {
+            if (reminder.dueAt > now) { pendingReminders.push(reminder); continue; }
+            const user = await client.users.fetch(reminder.userId).catch(() => null);
+            if (user) await user.send(`⏰ تذكيرك من **${guild.name}**: ${reminder.text}`).catch(() => {});
+            changed = true;
+        }
+        data.reminders = pendingReminders;
+
+        const pendingRoles = [];
+        for (const assignment of data.temporaryRoles) {
+            if (assignment.expiresAt > now) { pendingRoles.push(assignment); continue; }
+            const member = await guild.members.fetch(assignment.userId).catch(() => null);
+            const role = guild.roles.cache.get(assignment.roleId);
+            if (member?.roles.cache.has(assignment.roleId) && role?.editable) {
+                await member.roles.remove(role, 'YS-Bot temporary role expired').catch(() => {});
+            }
+            changed = true;
+        }
+        data.temporaryRoles = pendingRoles;
+
+        if (advanced.stickyMessageEnabled && advanced.stickyMessageChannelId && advanced.stickyMessageText?.trim()) {
+            const channel = await guild.channels.fetch(advanced.stickyMessageChannelId).catch(() => null);
+            if (channel?.isTextBased() && channel.send) {
+                const existingId = data.stickyMessages[channel.id];
+                const existing = existingId ? await channel.messages.fetch(existingId).catch(() => null) : null;
+                if (!existing) {
+                    const posted = await channel.send({ content: advanced.stickyMessageText.slice(0, 1800), allowedMentions: { parse: [] } }).catch(() => null);
+                    if (posted) { data.stickyMessages[channel.id] = posted.id; changed = true; }
+                } else if (existing.content !== advanced.stickyMessageText.slice(0, 1800)) {
+                    await existing.edit({ content: advanced.stickyMessageText.slice(0, 1800), allowedMentions: { parse: [] } }).catch(() => {});
+                }
+            }
+        }
+
+        if (advanced.birthdayChannelId && data.lastBirthdayAnnouncementDate !== todayKey) {
+            const channel = await guild.channels.fetch(advanced.birthdayChannelId).catch(() => null);
+            if (channel?.isTextBased() && channel.send) {
+                const birthdayIds = Object.entries(data.birthdays)
+                    .filter(([, birthday]) => birthday.day === today.getUTCDate() && birthday.month === today.getUTCMonth() + 1)
+                    .map(([userId]) => userId)
+                    .slice(0, 40);
+                if (birthdayIds.length) {
+                    await channel.send({ content: `🎂 كل عام بخير ${birthdayIds.map((id) => `<@${id}>`).join(' ')}!`, allowedMentions: { users: birthdayIds } }).catch(() => {});
+                }
+                data.lastBirthdayAnnouncementDate = todayKey;
+                changed = true;
+            }
+        }
+        if (changed) saveBotState();
     }
 }
 
@@ -809,6 +1010,20 @@ client.on('ready', async () => {
         new SlashCommandBuilder().setName('unlock').setDescription('فتح الإرسال في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).addChannelOption(option => option.setName('channel').setDescription('القناة المطلوب فتحها')),
         new SlashCommandBuilder().setName('slowmode').setDescription('تعيين الوضع البطيء لقناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).addIntegerOption(option => option.setName('seconds').setDescription('مدة الانتظار بالثواني').setMinValue(0).setMaxValue(21600).setRequired(true)).addChannelOption(option => option.setName('channel').setDescription('القناة المستهدفة')),
         new SlashCommandBuilder().setName('rolelist').setDescription('عرض قائمة رتب السيرفر'),
+        new SlashCommandBuilder().setName('selfrole').setDescription('إضافة أو إزالة رتبة اختيارية').addRoleOption(option => option.setName('role').setDescription('الرتبة المسموحة').setRequired(true)),
+        new SlashCommandBuilder().setName('afk').setDescription('تعيين حالة غيابك مؤقتًا').addStringOption(option => option.setName('reason').setDescription('سبب الغياب (اختياري)').setMaxLength(160)),
+        new SlashCommandBuilder().setName('birthday').setDescription('تسجيل يوم وشهر ميلادك').addIntegerOption(option => option.setName('day').setDescription('اليوم').setMinValue(1).setMaxValue(31).setRequired(true)).addIntegerOption(option => option.setName('month').setDescription('الشهر').setMinValue(1).setMaxValue(12).setRequired(true)),
+        new SlashCommandBuilder().setName('remindme').setDescription('إعداد تذكير شخصي برسالة خاصة').addIntegerOption(option => option.setName('minutes').setDescription('بعد كم دقيقة (1 إلى 10080)').setMinValue(1).setMaxValue(10080).setRequired(true)).addStringOption(option => option.setName('text').setDescription('محتوى التذكير').setMaxLength(300).setRequired(true)),
+        new SlashCommandBuilder().setName('confess').setDescription('إرسال اعتراف مجهول عبر نموذج خاص'),
+        new SlashCommandBuilder().setName('temprole').setDescription('إعطاء عضو رتبة مؤقتة').setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).addUserOption(option => option.setName('member').setDescription('العضو').setRequired(true)).addRoleOption(option => option.setName('role').setDescription('الرتبة').setRequired(true)).addIntegerOption(option => option.setName('minutes').setDescription('المدة بالدقائق (1 إلى 10080)').setMinValue(1).setMaxValue(10080).setRequired(true)),
+        new SlashCommandBuilder().setName('topic').setDescription('تغيير موضوع القناة الحالية').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).addStringOption(option => option.setName('topic').setDescription('موضوع القناة الجديد').setMaxLength(1024).setRequired(true)),
+        new SlashCommandBuilder().setName('move').setDescription('نقل عضو إلى قناة صوتية').setDefaultMemberPermissions(PermissionFlagsBits.MoveMembers).addUserOption(option => option.setName('member').setDescription('العضو').setRequired(true)).addChannelOption(option => option.setName('channel').setDescription('القناة الصوتية').addChannelTypes(ChannelType.GuildVoice, ChannelType.GuildStageVoice).setRequired(true)),
+        new SlashCommandBuilder().setName('rolecolor').setDescription('تغيير لون رتبة').setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles).addRoleOption(option => option.setName('role').setDescription('الرتبة').setRequired(true)).addStringOption(option => option.setName('color').setDescription('لون HEX مثل #32CDB8').setMaxLength(7).setRequired(true)),
+        new SlashCommandBuilder().setName('timestamp').setDescription('إنشاء توقيت Discord من Unix').addIntegerOption(option => option.setName('unix_seconds').setDescription('ثواني Unix').setMinValue(1).setMaxValue(4102444800).setRequired(true)),
+        new SlashCommandBuilder().setName('eightball').setDescription('اسأل كرة الإجابات العشوائية').addStringOption(option => option.setName('question').setDescription('سؤالك').setMaxLength(250).setRequired(true)),
+        new SlashCommandBuilder().setName('random').setDescription('اختيار رقم ضمن نطاق').addIntegerOption(option => option.setName('minimum').setDescription('الحد الأدنى').setMinValue(-1000000).setMaxValue(1000000).setRequired(true)).addIntegerOption(option => option.setName('maximum').setDescription('الحد الأعلى').setMinValue(-1000000).setMaxValue(1000000).setRequired(true)),
+        new SlashCommandBuilder().setName('reverse').setDescription('عكس ترتيب حروف النص').addStringOption(option => option.setName('text').setDescription('النص').setMaxLength(1000).setRequired(true)),
+        new SlashCommandBuilder().setName('mock').setDescription('تحويل النص إلى حروف متناوبة').addStringOption(option => option.setName('text').setDescription('النص').setMaxLength(1000).setRequired(true)),
         new SlashCommandBuilder()
             .setName('warn')
             .setDescription('تسجيل تحذير لعضو')
@@ -861,6 +1076,8 @@ client.on('ready', async () => {
     await initializeInviteSnapshots();
     setInterval(() => syncTicketPanels().catch((error) => console.error('Ticket panel sync failed:', error.message)), 60000);
     setInterval(() => runGuildAutomations().catch((error) => console.error('Guild automation failed:', error.message)), 60000);
+    processDashboardAutomations().catch((error) => console.error('Dashboard automations failed:', error.message));
+    setInterval(() => processDashboardAutomations().catch((error) => console.error('Dashboard automations failed:', error.message)), 60000);
     setInterval(() => processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message)), 4000);
     processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message));
     setInterval(() => processServerTasks().catch((error) => console.error('Server backup processing failed:', error.message)), 5000);
@@ -1295,7 +1512,19 @@ async function processServerTasks() {
                 let message;
                 let backupId = null;
                 let snapshot = null;
-                if (task.taskType === 'backup') {
+                if (task.taskType === 'verification-panel') {
+                    await updateServerTaskProgress(task, 25, 'جارٍ تجهيز لوحة التحقق وإرسالها إلى القناة المحددة...');
+                    const settings = await loadGuildSettings(guild.id);
+                    const advanced = settings.advancedSettings || {};
+                    if (!advanced.verificationEnabled || String(advanced.verificationChannelId || '') !== String(task.backupId || '')) {
+                        throw new Error('إعداد التحقق أو قناة اللوحة تغيّر قبل الإرسال. احفظ الإعدادات وحاول مجددًا.');
+                    }
+                    if (!guild.roles.cache.has(String(advanced.verificationRoleId || ''))) throw new Error('رتبة التحقق غير موجودة في هذا السيرفر.');
+                    const channel = await guild.channels.fetch(String(task.backupId)).catch(() => null);
+                    if (!channel?.isTextBased() || !channel.send) throw new Error('قناة التحقق غير موجودة أو لا تقبل الرسائل.');
+                    await channel.send({ components: buildVerificationPanelComponents(), flags: MessageFlags.IsComponentsV2, allowedMentions: { parse: [] } });
+                    message = `تم إرسال لوحة التحقق إلى #${channel.name}.`;
+                } else if (task.taskType === 'backup') {
                     await updateServerTaskProgress(task, 10, 'جارٍ قراءة إعدادات السيرفر والرتب...');
                     snapshot = await collectServerSnapshot(task, guild);
                     message = `اكتمل النسخ: ${snapshot.roles.length} رتبة و${snapshot.channels.length} قناة/تصنيف. النسخة محفوظة بأمان.`;
@@ -1344,7 +1573,7 @@ async function syncTicketPanels() {
     for (const guild of client.guilds.cache.values()) {
         const settings = await loadGuildSettings(guild.id);
         const advanced = settings.advancedSettings || {};
-        if (!advanced.ticketEnabled || !advanced.ticketPanelChannelId) continue;
+        if (!advanced.ticketPanelChannelId) continue;
         const channel = await guild.channels.fetch(advanced.ticketPanelChannelId).catch(() => null);
         if (!channel?.isTextBased() || !channel.messages) continue;
         const recent = await channel.messages.fetch({ limit: 50 }).catch(() => null);
@@ -1375,7 +1604,6 @@ async function createTicket(interaction, submittedReason = '') {
     if (!interaction.guild || !interaction.member) return interaction.editReply('استخدم فتح التذكرة داخل السيرفر.');
     const settings = await loadGuildSettings(interaction.guild.id);
     const advanced = settings.advancedSettings || {};
-    if (!advanced.ticketEnabled) return interaction.editReply('نظام التذاكر غير مفعّل. فعّله من لوحة الموقع واحفظ الإعدادات.');
 
     const existing = interaction.guild.channels.cache.filter((channel) => channel.topic === `ys-ticket-owner:${interaction.user.id}`);
     const maxOpen = Math.max(1, Number(advanced.ticketMaxOpen || 1));
@@ -1472,7 +1700,6 @@ async function submitSuggestion(interaction) {
     if (!interaction.guild) return interaction.editReply('استخدم الاقتراحات داخل السيرفر.');
     const settings = await loadGuildSettings(interaction.guild.id);
     const advanced = settings.advancedSettings || {};
-    if (!advanced.suggestionEnabled) return interaction.editReply('الاقتراحات غير مفعّلة. فعّلها من لوحة الموقع واحفظ الإعدادات.');
     const destinationId = advanced.suggestionChannelId || advanced.suggestionReviewChannelId;
     const destination = destinationId ? await interaction.guild.channels.fetch(destinationId).catch(() => null) : null;
     if (!destination?.isTextBased()) return interaction.editReply('لم أجد قناة الاقتراحات. أضف معرّف قناة صحيحة من لوحة الموقع.');
@@ -1535,7 +1762,6 @@ async function submitPoll(interaction) {
     if (!interaction.guild || !interaction.channel?.isTextBased()) return interaction.editReply('استخدم التصويت داخل قناة نصية في السيرفر.');
     const settings = await loadGuildSettings(interaction.guild.id);
     const advanced = settings.advancedSettings || {};
-    if (!advanced.pollEnabled) return interaction.editReply('التصويت غير مفعّل في لوحة الموقع.');
     const allowedChannels = (advanced.pollChannelIds || '').split(/[\s,]+/).filter(Boolean);
     if (allowedChannels.length && !allowedChannels.includes(interaction.channel.id)) return interaction.editReply('التصويت غير مسموح في هذه القناة.');
     const embed = new EmbedBuilder().setColor(0x5865f2).setTitle('تصويت جديد').setDescription(interaction.options.getString('question', true)).setFooter({ text: `بواسطة ${interaction.user.username}` }).setTimestamp();
@@ -1586,7 +1812,7 @@ function gameLabel(item, field, language) {
 }
 
 function getGameMenuOptions(advanced) {
-    return GAME_OPTIONS.filter((game) => advanced[game.flag] !== false);
+    return GAME_OPTIONS;
 }
 
 async function showGamesMenu(interaction, settings) {
@@ -1594,7 +1820,6 @@ async function showGamesMenu(interaction, settings) {
     const language=gameLanguage(settings), ui=GAME_UI[language];
     if (!interaction.guild) return respond({ content:ui.onlyGuild, ephemeral:true });
     const advanced = settings?.advancedSettings || {};
-    if (advanced.gamesEnabled === false) return respond({ content:ui.disabled, ephemeral:true });
     const allowedChannels = String(advanced.gameChannelIds || '').split(/[\s,]+/).filter(Boolean);
     if (allowedChannels.length && !allowedChannels.includes(interaction.channelId)) {
         return respond({ content:`${ui.channel} ${allowedChannels.map((id) => `<#${id}>`).join(' ')}`, ephemeral:true });
@@ -1619,7 +1844,6 @@ async function showGamesMenu(interaction, settings) {
 async function sendGamesMenu(message, settings) {
     const advanced=settings?.advancedSettings || {};
     const language=gameLanguage(settings), ui=GAME_UI[language];
-    if (advanced.gamesEnabled===false) return message.reply(ui.disabled);
     const games=getGameMenuOptions(advanced);
     if (!games.length) return message.reply(ui.none);
     const prefix=settings.commandPrefix || '!';
@@ -1639,7 +1863,6 @@ async function showGamesCategory(interaction) {
     const advanced=settings.advancedSettings || {};
     const language=gameLanguage(settings), ui=GAME_UI[language];
     const categoryId=interaction.values[0];
-    if (advanced.gamesEnabled===false) return respond({content:language==='en'?'Games are disabled in the server dashboard.':'الألعاب متوقفة من لوحة تحكم السيرفر.',embeds:[],components:[]});
     const allowedChannels=String(advanced.gameChannelIds||'').split(/[\s,]+/).filter(Boolean);
     if (allowedChannels.length&&!allowedChannels.includes(interaction.channelId)) return respond({content:`${ui.channel} ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`,embeds:[],components:[]});
     const category=GAME_CATEGORIES.find((item)=>item.id===categoryId);
@@ -1846,8 +2069,7 @@ async function launchGameTarget(target, gameId, categoryId) {
     const advanced=settings.advancedSettings||{};
     const language=gameLanguage(advanced), en=language==='en';
     const game=GAME_OPTIONS.find((item)=>item.id===gameId);
-    if (advanced.gamesEnabled===false) return respondGameStatus(target,en?'Games are disabled in the server dashboard.':'الألعاب متوقفة من لوحة تحكم السيرفر.');
-    if (!game||advanced[game.flag]===false||!game.categories.includes(categoryId)) return respondGameStatus(target,en?'This game is disabled or unavailable in this category.':'هذه اللعبة غير مفعّلة أو غير متاحة بهذا القسم.');
+    if (!game||!game.categories.includes(categoryId)) return respondGameStatus(target,en?'This game is unavailable in this category.':'هذه اللعبة غير متاحة بهذا القسم.');
     const allowedChannels=String(advanced.gameChannelIds||'').split(/[\s,]+/).filter(Boolean);
     if (allowedChannels.length&&!allowedChannels.includes(channelId)) return respondGameStatus(target,`${en?'Games are only available in:':'الألعاب متاحة في:'} ${allowedChannels.map((id)=>`<#${id}>`).join(' ')}`);
     const cooldownMs=Math.max(0,Number(advanced.gamesCooldownSeconds??8))*1000;
@@ -2099,7 +2321,7 @@ async function verifyMember(interaction) {
     await interaction.deferReply({ ephemeral: true });
     const settings = await loadGuildSettings(interaction.guild.id);
     const advanced = settings.advancedSettings || {};
-    if (!advanced.verificationEnabled || !advanced.verificationRoleId) return interaction.editReply('التحقق غير مفعّل أو لم تُحدد رتبته في لوحة الموقع.');
+    if (!advanced.verificationRoleId) return interaction.editReply('حدد رتبة التحقق في إعدادات السيرفر أولًا.');
     const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
     if (!member?.roles.cache.has(advanced.verificationRoleId)) return interaction.editReply('لا توجد عليك رتبة التحقق المطلوبة.');
     const minimumAge = Number(advanced.verificationMinAccountAgeDays || 0) * 86400000;
@@ -2110,6 +2332,22 @@ async function verifyMember(interaction) {
     if (timer) clearTimeout(timer);
     verificationTimers.delete(`${interaction.guild.id}:${interaction.user.id}`);
     return interaction.editReply('تم التحقق من حسابك بنجاح.');
+}
+
+function buildVerificationPanelComponents() {
+    const container = new ContainerBuilder()
+        .setAccentColor(0x35cdb7)
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('<:Activateprotection:1564469759981133865>  كابتشا التحقق من الحساب'),
+            new TextDisplayBuilder().setContent('يرجى إكمال التحقق بالضغط على الزر أدناه للوصول إلى كامل قنوات السيرفر.')
+        )
+        .addActionRowComponents(new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('ys_verify_complete')
+                .setLabel('اضغط هنا للتحقق 🔗')
+                .setStyle(ButtonStyle.Secondary)
+        ));
+    return [container];
 }
 
 async function showSupportChannel(interaction) {
@@ -2221,6 +2459,7 @@ client.on('interactionCreate', async (interaction) => {
         return launchSelectedGame(interaction);
     }
     if (interaction.isButton()) {
+        if (interaction.customId === 'ys_verify_complete') return verifyMember(interaction);
         if (interaction.customId.startsWith('ys_game_')) return handleGameButton(interaction);
         if (interaction.customId === 'ys_ticket_open') return createTicket(interaction);
         if (interaction.customId === 'ys_ticket_close') return closeTicket(interaction);
@@ -2229,6 +2468,9 @@ client.on('interactionCreate', async (interaction) => {
     }
     if (interaction.isModalSubmit() && interaction.customId === 'ys_ticket_reason') {
         return createTicket(interaction, interaction.fields.getTextInputValue('reason').trim());
+    }
+    if (interaction.isModalSubmit() && interaction.customId === 'ys_anonymous_confession') {
+        return submitAnonymousConfession(interaction);
     }
     if (!interaction.isChatInputCommand()) return;
     if (interaction.commandName === 'games') await interaction.deferReply();
@@ -2242,7 +2484,7 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
         guildSettings = await loadGuildSettings(interaction.guild.id);
-        if (guildSettings.advancedSettings?.logBotCommands) {
+        if (guildSettings.advancedSettings?.logBotCommands && interaction.commandName !== 'confess') {
             await sendGuildLog(interaction.guild, guildSettings, `<@${interaction.user.id}> استخدم الأمر /${interaction.commandName}.`);
         }
     }
@@ -2251,7 +2493,7 @@ client.on('interactionCreate', async (interaction) => {
     if (guildSettings?.advancedSettings) addSlashReplyEmoji(interaction);
 
     if (interaction.commandName === 'profile') return showUserProfile(interaction);
-    if (FEATURE_COMMAND_SETTINGS[interaction.commandName]) return handleFeatureCommand(interaction, guildSettings);
+    if (FEATURE_COMMAND_NAMES.has(interaction.commandName)) return handleFeatureCommand(interaction, guildSettings);
     if (interaction.commandName === 'ticket') return createTicket(interaction);
     if (interaction.commandName === 'suggest') return submitSuggestion(interaction);
     if (interaction.commandName === 'report') return submitReport(interaction, guildSettings);
@@ -2270,8 +2512,8 @@ client.on('interactionCreate', async (interaction) => {
             .setColor(0x35cdb7)
             .setTitle(english ? 'YS-Bot commands' : 'أوامر YS-Bot')
             .setDescription(english
-                ? '`/ping` latency · `/serverinfo` server details · `/userinfo` member details · `/avatar` avatar · `/servericon` server icon · `/membercount` member count · `/roleinfo` role details · `/channelinfo` channel details · `/botinfo` bot uptime · `/quote` quote a message · `/choose` random choice · `/roll` dice · `/coinflip` coin toss · `/nickname` change your nickname · `/announce` admin announcement · `/say` send as bot · `/lock` and `/unlock` channel · `/slowmode` channel slowmode · `/rolelist` roles · `/profile` member stats · `/games` interactive games · `/ticket` support ticket · `/suggest` submit suggestion · `/report` private report · `/poll` create poll · `/warn` warn a member · `/clear` delete recent messages · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send configured embed.'
-                : '`/ping` سرعة البوت · `/serverinfo` معلومات السيرفر · `/userinfo` معلومات عضو · `/avatar` صورة العضو · `/servericon` أيقونة السيرفر · `/membercount` عدد الأعضاء · `/roleinfo` معلومات رتبة · `/channelinfo` معلومات قناة · `/botinfo` وقت تشغيل البوت · `/quote` اقتباس رسالة · `/choose` اختيار عشوائي · `/roll` نرد · `/coinflip` عملة · `/nickname` تغيير لقبك · `/announce` إعلان إداري · `/say` إرسال باسم البوت · `/lock` و`/unlock` قفل وفتح قناة · `/slowmode` الوضع البطيء · `/rolelist` قائمة الرتب · `/profile` إحصاءات عضو · `/games` ألعاب تفاعلية · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/report` بلاغ خاص للمشرفين · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/clear` مسح رسائل حديثة · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
+                ? '`/selfrole` self roles · `/afk` away status · `/birthday` birthday · `/remindme` private reminder · `/confess` anonymous confession · `/temprole` temporary role · `/topic` channel topic · `/move` voice member · `/rolecolor` role color · `/timestamp` Discord timestamp · `/eightball` answer game · `/random` number range · `/reverse` reverse text · `/mock` alternating case · `/ping` latency · `/serverinfo` server details · `/userinfo` member details · `/avatar` avatar · `/servericon` server icon · `/membercount` member count · `/roleinfo` role details · `/channelinfo` channel details · `/botinfo` bot uptime · `/quote` quote a message · `/choose` random choice · `/roll` dice · `/coinflip` coin toss · `/nickname` change your nickname · `/announce` admin announcement · `/say` send as bot · `/lock` and `/unlock` channel · `/slowmode` channel slowmode · `/rolelist` roles · `/profile` member stats · `/games` interactive games · `/ticket` support ticket · `/suggest` submit suggestion · `/report` private report · `/poll` create poll · `/warn` warn a member · `/clear` delete recent messages · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send configured embed.'
+                : '`/selfrole` رتب اختيارية · `/afk` حالة الغياب · `/birthday` تسجيل الميلاد · `/remindme` تذكير خاص · `/confess` اعتراف مجهول · `/temprole` رتبة مؤقتة · `/topic` موضوع القناة · `/move` نقل صوتي · `/rolecolor` لون رتبة · `/timestamp` توقيت Discord · `/eightball` إجابة عشوائية · `/random` رقم ضمن نطاق · `/reverse` عكس نص · `/mock` كتابة متناوبة · `/ping` سرعة البوت · `/serverinfo` معلومات السيرفر · `/userinfo` معلومات عضو · `/avatar` صورة العضو · `/servericon` أيقونة السيرفر · `/membercount` عدد الأعضاء · `/roleinfo` معلومات رتبة · `/channelinfo` معلومات قناة · `/botinfo` وقت تشغيل البوت · `/quote` اقتباس رسالة · `/choose` اختيار عشوائي · `/roll` نرد · `/coinflip` عملة · `/nickname` تغيير لقبك · `/announce` إعلان إداري · `/say` إرسال باسم البوت · `/lock` و`/unlock` قفل وفتح قناة · `/slowmode` الوضع البطيء · `/rolelist` قائمة الرتب · `/profile` إحصاءات عضو · `/games` ألعاب تفاعلية · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/report` بلاغ خاص للمشرفين · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/clear` مسح رسائل حديثة · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
             .setFooter({ text: english ? 'YS-Bot • Use / to browse commands' : 'YS-Bot • اكتب / لاستعراض الأوامر' });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -2741,6 +2983,18 @@ client.on('guildMemberRemove', async (member) => {
     if (advanced.logMemberLeaves) await sendGuildLog(member.guild, settings, `غادر ${member.user.tag} السيرفر.`, 0x64748b);
 });
 
+client.on('voiceStateUpdate', async (before, after) => {
+    const guild = after.guild || before.guild;
+    if (!guild) return;
+    const settings = await loadGuildSettings(guild.id);
+    if (!settings.advancedSettings?.voiceLogEnabled) return;
+    const member = after.member || before.member;
+    const name = member?.user?.tag || after.id;
+    if (!before.channelId && after.channelId) await sendGuildLog(guild, settings, `دخل ${name} إلى القناة الصوتية <#${after.channelId}>.`, 0x22c55e);
+    else if (before.channelId && !after.channelId) await sendGuildLog(guild, settings, `غادر ${name} القناة الصوتية <#${before.channelId}>.`, 0x64748b);
+    else if (before.channelId !== after.channelId) await sendGuildLog(guild, settings, `انتقل ${name} من <#${before.channelId}> إلى <#${after.channelId}>.`, 0x38bdf8);
+});
+
 client.on('guildMemberUpdate', async (before, after) => {
     const added = after.roles.cache.filter((role) => !before.roles.cache.has(role.id));
     const removed = before.roles.cache.filter((role) => !after.roles.cache.has(role.id));
@@ -2805,7 +3059,18 @@ client.on('channelUpdate', async (before, after) => {
 client.on('messageDelete', async (message) => {
     if (!message.guild) return;
     const settings = await loadGuildSettings(message.guild.id);
-    if (!settings.advancedSettings?.logDeletedMessages) return;
+    const advanced = settings.advancedSettings || {};
+    const data = guildState(message.guild.id);
+    if (advanced.stickyMessageEnabled && advanced.stickyMessageChannelId === message.channel.id && data.stickyMessages[message.channel.id] === message.id) {
+        delete data.stickyMessages[message.channel.id];
+        const channel = await message.guild.channels.fetch(message.channel.id).catch(() => null);
+        const reposted = channel?.isTextBased() && channel.send
+            ? await channel.send({ content: String(advanced.stickyMessageText || '').slice(0, 1800), allowedMentions: { parse: [] } }).catch(() => null)
+            : null;
+        if (reposted) data.stickyMessages[message.channel.id] = reposted.id;
+        saveBotState();
+    }
+    if (!advanced.logDeletedMessages) return;
     if (message.partial) message = await message.fetch().catch(() => message);
     if (message.author?.bot) return;
     const author = message.author ? `<@${message.author.id}>` : 'عضو غير معروف';
@@ -2826,6 +3091,48 @@ client.on('messageCreate', async (message) => {
 
     const settings = await loadGuildSettings(message.guild.id);
     const advanced = settings.advancedSettings || {};
+    if (advanced.autoReactionEnabled && advanced.autoReactionChannelId === message.channel.id && advanced.autoReactionEmoji) {
+        await message.react(advanced.autoReactionEmoji).catch(() => {});
+    }
+    if (advanced.autoPublishEnabled && message.channel.type === ChannelType.GuildAnnouncement && message.crosspostable) {
+        await message.crosspost().catch(() => {});
+    }
+    {
+        const state = guildState(message.guild.id);
+        const ownAfk = state.afk[message.author.id];
+        if (ownAfk) {
+            delete state.afk[message.author.id];
+            saveBotState();
+            message.channel.send(`رجعت بالسلامة ${message.author}، شلت حالة AFK.`).then((notice) => setTimeout(() => notice.delete().catch(() => {}), 7000)).catch(() => {});
+        }
+        const afkMentions = message.mentions.users.filter((user) => state.afk[user.id]);
+        if (afkMentions.size) {
+            const details = afkMentions.map((user) => `${user.username}: ${String(state.afk[user.id].reason).slice(0, 120)}`).join(' · ').slice(0, 900);
+            message.channel.send({ content: `حالة غياب: ${details}`, allowedMentions: { parse: [] } }).then((notice) => setTimeout(() => notice.delete().catch(() => {}), 8000)).catch(() => {});
+        }
+    }
+    if (advanced.keywordAlertEnabled && advanced.keywordAlertChannelId && advanced.keywordAlertWords) {
+        const terms = String(advanced.keywordAlertWords).split(/[\n,،]/).map((term) => term.trim()).filter((term) => term.length >= 2);
+        const content = message.content.toLocaleLowerCase();
+        const match = terms.find((term) => content.includes(term.toLocaleLowerCase()));
+        if (match) {
+            const alertChannel = await message.guild.channels.fetch(advanced.keywordAlertChannelId).catch(() => null);
+            if (alertChannel?.isTextBased() && alertChannel.send) {
+                const notice = new EmbedBuilder().setColor(0xf59e0b).setTitle('تنبيه كلمة مفتاحية')
+                    .setDescription(`تم رصد كلمة محددة في <#${message.channel.id}>.`)
+                    .addFields({ name: 'العضو', value: `${message.author.tag} (${message.author.id})`, inline: true }, { name: 'الكلمة', value: match.slice(0, 100), inline: true })
+                    .setURL(message.url).setTimestamp();
+                await alertChannel.send({ embeds: [notice], allowedMentions: { parse: [] } }).catch(() => {});
+            }
+        }
+    }
+    if (advanced.mediaOnlyEnabled && advanced.mediaOnlyChannelId === message.channel.id && !message.member?.permissions.has(PermissionFlagsBits.ManageMessages)) {
+        const hasMedia = message.attachments.size > 0 || message.embeds.some((embed) => Boolean(embed.image || embed.video));
+        if (!hasMedia) {
+            if (message.deletable) await message.delete().catch(() => {});
+            return;
+        }
+    }
     if (await handleCountingMessage(message, settings)) return;
     const canDeleteMessages = message.guild.members.me?.permissionsIn(message.channel).has(PermissionFlagsBits.ManageMessages);
     const isModerator = message.member?.permissions.has(PermissionFlagsBits.ManageMessages);
@@ -3079,7 +3386,6 @@ client.on('messageCreate', async (message) => {
         return;
     }
 
-    if (advanced.commandsEnabled === false) return;
     if (advanced.commandsAllowedChannelIds) {
         const allowedChannels = advanced.commandsAllowedChannelIds.split(/[\s,]+/).filter(Boolean);
         if (!allowedChannels.includes(message.channel.id)) return;
@@ -3112,7 +3418,6 @@ client.on('messageCreate', async (message) => {
         return;
     }
     if (gameCommand) {
-        if(advanced.gamesEnabled===false||advanced[gameCommand.flag]===false){await message.reply('هذه اللعبة متوقفة من لوحة تحكم السيرفر.').catch(()=>{});return;}
         await launchPrefixGame(message,gameCommand);
         if(advanced.commandDeleteAfterUse)await message.delete().catch(()=>{});
         return;
