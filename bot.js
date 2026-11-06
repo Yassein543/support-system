@@ -1004,6 +1004,7 @@ client.on('ready', async () => {
         new SlashCommandBuilder().setName('roll').setDescription('رمي نرد عشوائي').addIntegerOption(option => option.setName('sides').setDescription('عدد أوجه النرد').setMinValue(2).setMaxValue(1000)),
         new SlashCommandBuilder().setName('coinflip').setDescription('رمي قطعة نقدية'),
         new SlashCommandBuilder().setName('nickname').setDescription('تغيير لقبك في السيرفر').addStringOption(option => option.setName('name').setDescription('اللقب الجديد').setMaxLength(32).setRequired(true)),
+        new SlashCommandBuilder().setName('allocation').setDescription('إنشاء رابط مؤقت لتخصيص صورة ولقب البوت في هذا السيرفر').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
         new SlashCommandBuilder().setName('announce').setDescription('إرسال إعلان إداري في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild).addChannelOption(option => option.setName('channel').setDescription('قناة الإعلان').setRequired(true)).addStringOption(option => option.setName('message').setDescription('محتوى الإعلان').setMaxLength(1500).setRequired(true)),
         new SlashCommandBuilder().setName('say').setDescription('إرسال رسالة عبر البوت').setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).addStringOption(option => option.setName('message').setDescription('محتوى الرسالة').setMaxLength(1500).setRequired(true)).addChannelOption(option => option.setName('channel').setDescription('القناة المستهدفة')),
         new SlashCommandBuilder().setName('lock').setDescription('قفل الإرسال في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).addChannelOption(option => option.setName('channel').setDescription('القناة المطلوب قفلها')),
@@ -2505,6 +2506,36 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.commandName === 'support') return showSupportChannel(interaction);
     if (interaction.commandName === 'invites') return showInviteCount(interaction);
     if (interaction.commandName === 'embed') return sendConfiguredEmbed(interaction);
+
+    if (interaction.commandName === 'allocation') {
+        if (!interaction.guild) return interaction.reply({ content: 'استخدم /allocation داخل السيرفر المطلوب.', ephemeral: true });
+        const isOwner = interaction.guild.ownerId === interaction.user.id;
+        const canManage = interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild) || interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
+        if (!isOwner && !canManage) return interaction.reply({ content: 'هذا الأمر متاح لمالك السيرفر أو لمن لديه Administrator أو Manage Server فقط.', ephemeral: true });
+        if (!process.env.BOT_API_SECRET) return interaction.reply({ content: 'خدمة الروابط المؤقتة غير مهيأة على البوت حاليًا.', ephemeral: true });
+        await interaction.deferReply({ ephemeral: true });
+        try {
+            const baseUrl = (process.env.BOT_API_URL || 'https://ys-bot.vercel.app').replace(/\/$/, '');
+            const response = await fetch(`${baseUrl}/api/internal/bot/allocation-link`, {
+                method: 'POST',
+                headers: { authorization: `Bearer ${process.env.BOT_API_SECRET}`, 'content-type': 'application/json' },
+                body: JSON.stringify({ guildId: interaction.guild.id, ownerId: interaction.user.id }),
+                signal: AbortSignal.timeout(10000)
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const { url, expiresAt } = await response.json();
+            const discordTimestamp = Math.floor(new Date(expiresAt).getTime() / 1000);
+            const embed = new EmbedBuilder()
+                .setColor(0x35cdb7)
+                .setTitle('رابط تخصيص YS-Bot')
+                .setDescription(`افتح الرابط لتغيير **لقب البوت وصورته في هذا السيرفر فقط**.\n\n[فتح صفحة التخصيص](${url})\n\nينتهي <t:${discordTimestamp}:R> ويعمل لحسابك فقط.`)
+                .setFooter({ text: 'YS-Bot • رابط أحادي الاستخدام' });
+            return interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            console.error('Allocation link request failed:', error.message);
+            return interaction.editReply('تعذر إنشاء رابط التخصيص الآن. تأكد من اتصال البوت بخدمة الموقع وحاول مجددًا.');
+        }
+    }
 
     if (interaction.commandName === 'help') {
         const english = guildSettings?.advancedSettings?.commandLanguage === 'en';
