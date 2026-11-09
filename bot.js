@@ -1079,9 +1079,10 @@ client.on('ready', async () => {
     setInterval(() => runGuildAutomations().catch((error) => console.error('Guild automation failed:', error.message)), 60000);
     processDashboardAutomations().catch((error) => console.error('Dashboard automations failed:', error.message));
     setInterval(() => processDashboardAutomations().catch((error) => console.error('Dashboard automations failed:', error.message)), 60000);
-    setInterval(() => processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message)), 4000);
+    // Poll queued work less often while idle to reduce empty Vercel function calls.
+    setInterval(() => processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message)), 30000);
     processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message));
-    setInterval(() => processServerTasks().catch((error) => console.error('Server backup processing failed:', error.message)), 5000);
+    setInterval(() => processServerTasks().catch((error) => console.error('Server backup processing failed:', error.message)), 30000);
     processServerTasks().catch((error) => console.error('Server backup processing failed:', error.message));
 });
 
