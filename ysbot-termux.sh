@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 APP_NAME="ys-bot"
+SUPPORT_APP_NAME="ys-bot-support"
 REPO_URL="https://github.com/Yassein543/support-system.git"
 BOT_DIR="${YSBOT_DIR:-$HOME/ys-bot}"
 BOOT_DIR="$HOME/.termux/boot"
@@ -101,6 +102,54 @@ update_project() {
   else
     say "تم التحديث. شغّل البوت من القائمة."
   fi
+  if pm2 describe "$SUPPORT_APP_NAME" >/dev/null 2>&1; then
+    pm2 restart "$SUPPORT_APP_NAME" --update-env
+    pm2 save
+  fi
+}
+
+configure_support_token() {
+  ensure_project
+  printf 'الصق توكن بوت الدعم (لن يظهر أثناء الكتابة): '
+  IFS= read -r -s support_token
+  printf '\n'
+  [[ -n "$support_token" ]] || fail "توكن بوت الدعم مطلوب."
+
+  SUPPORT_DISCORD_TOKEN="$support_token" node <<'NODE'
+const fs = require('node:fs');
+const path = require('node:path');
+const file = path.join(process.cwd(), '.env');
+const token = process.env.SUPPORT_DISCORD_TOKEN;
+let lines = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split(/\r?\n/) : [];
+lines = lines.filter((line) => !/^\s*(?:export\s+)?SUPPORT_DISCORD_TOKEN\s*=/.test(line));
+while (lines.length && lines[lines.length - 1] === '') lines.pop();
+lines.push(`SUPPORT_DISCORD_TOKEN=${JSON.stringify(token)}`);
+fs.writeFileSync(file, `${lines.join('\n')}\n`, { mode: 0o600 });
+fs.chmodSync(file, 0o600);
+NODE
+  unset support_token
+  say "انحفظ توكن بوت الدعم محليًا في .env، ولم يُعرض أو يُرسل إلى GitHub."
+}
+
+start_support_bot() {
+  ensure_project
+  has pm2 || fail "PM2 غير موجود. نفّذ الخيار 1 أولًا."
+  if ! node -e "require('dotenv').config(); process.exit(process.env.SUPPORT_DISCORD_TOKEN ? 0 : 1)"; then
+    configure_support_token
+  fi
+  if pm2 describe "$SUPPORT_APP_NAME" >/dev/null 2>&1; then
+    pm2 restart "$SUPPORT_APP_NAME" --update-env
+  else
+    pm2 start support-bot.js --name "$SUPPORT_APP_NAME" --time
+  fi
+  pm2 save
+  say "بوت الدعم يعمل كعملية مستقلة، وسيرسل القوانين إلى روم الدعم عند اتصاله."
+}
+
+stop_support_bot() {
+  has pm2 || fail "PM2 غير موجود. نفّذ الخيار 1 أولًا."
+  pm2 stop "$SUPPORT_APP_NAME" || say "بوت الدعم متوقف أصلًا."
+  pm2 save
 }
 
 enable_boot() {
@@ -129,6 +178,11 @@ show_menu() {
   printf '7) تحديث الكود من GitHub\n'
   printf '8) إيقاف البوت\n'
   printf '9) تشغيل تلقائي بعد إعادة تشغيل الهاتف\n'
+  printf '10) إعداد/تغيير توكن بوت الدعم\n'
+  printf '11) تشغيل أو إعادة تشغيل بوت الدعم\n'
+  printf '12) عرض حالة بوت الدعم\n'
+  printf '13) عرض سجلات بوت الدعم\n'
+  printf '14) إيقاف بوت الدعم\n'
   printf '0) خروج\n\n'
   read -r -p 'اختَر رقمًا: ' choice
   case "$choice" in
@@ -141,6 +195,11 @@ show_menu() {
     7) update_project ;;
     8) stop_bot ;;
     9) enable_boot ;;
+    10) configure_support_token ;;
+    11) start_support_bot ;;
+    12) has pm2 && pm2 status "$SUPPORT_APP_NAME" || fail "PM2 غير موجود. نفّذ الخيار 1 أولًا." ;;
+    13) has pm2 && pm2 logs "$SUPPORT_APP_NAME" --lines 80 || fail "PM2 غير موجود. نفّذ الخيار 1 أولًا." ;;
+    14) stop_support_bot ;;
     0) exit 0 ;;
     *) fail "اختيار غير معروف." ;;
   esac
