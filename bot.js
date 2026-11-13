@@ -3123,6 +3123,37 @@ client.on('messageCreate', async (message) => {
 
     const settings = await loadGuildSettings(message.guild.id);
     const advanced = settings.advancedSettings || {};
+    if (advanced.phishingGuardEnabled && advanced.phishingGuardChannelId === message.channel.id) {
+        const member = message.member || await message.guild.members.fetch(message.author.id).catch(() => null);
+        if (member && message.author.id !== message.guild.ownerId && !member.permissions.has(PermissionFlagsBits.Administrator) && !member.permissions.has(PermissionFlagsBits.ManageGuild) && !member.permissions.has(PermissionFlagsBits.ManageMessages)) {
+            const action = advanced.phishingGuardAction || 'timeout24h';
+            const actionLabel = action === 'kick' ? 'طرد' : action === 'ban' ? 'حظر' : 'تايم أوت 24 ساعة';
+            const reason = 'YS Phishing Guard: message sent in the dedicated monitored channel';
+            if (message.deletable) await message.delete().catch(() => {});
+
+            let success = false;
+            try {
+                if (action === 'kick' && member.kickable) {
+                    await member.kick(reason);
+                    success = true;
+                } else if (action === 'ban' && member.bannable) {
+                    await member.ban({ reason, deleteMessageSeconds: 0 });
+                    success = true;
+                } else if (action === 'timeout24h' && member.moderatable) {
+                    await member.timeout(24 * 60 * 60 * 1000, reason);
+                    success = true;
+                }
+            } catch (error) {
+                console.warn(`[YS Phishing Guard] ${message.guild.id}/${message.author.id}:`, error.message);
+            }
+
+            await sendGuildLog(message.guild, settings,
+                `YS Phishing Guard: ${success ? 'تم التنفيذ' : 'تعذر التنفيذ'} — الإجراء: ${actionLabel} — العضو: <@${message.author.id}> — القناة: <#${message.channel.id}>. لم يُسجّل محتوى الرسالة.`,
+                success ? 0xef4444 : 0xf59e0b);
+            if (!success) console.warn(`[YS Phishing Guard] Could not apply ${action} in guild ${message.guild.id}; check bot permissions and role hierarchy.`);
+            return;
+        }
+    }
     if (advanced.autoReactionEnabled && advanced.autoReactionChannelId === message.channel.id && advanced.autoReactionEmoji) {
         await message.react(advanced.autoReactionEmoji).catch(() => {});
     }
