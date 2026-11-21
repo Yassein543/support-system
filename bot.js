@@ -1004,7 +1004,7 @@ client.on('ready', async () => {
         new SlashCommandBuilder().setName('roll').setDescription('رمي نرد عشوائي').addIntegerOption(option => option.setName('sides').setDescription('عدد أوجه النرد').setMinValue(2).setMaxValue(1000)),
         new SlashCommandBuilder().setName('coinflip').setDescription('رمي قطعة نقدية'),
         new SlashCommandBuilder().setName('nickname').setDescription('تغيير لقبك في السيرفر').addStringOption(option => option.setName('name').setDescription('اللقب الجديد').setMaxLength(32).setRequired(true)),
-        new SlashCommandBuilder().setName('allocation').setDescription('إنشاء رابط مؤقت لتخصيص لقب البوت في هذا السيرفر').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+        new SlashCommandBuilder().setName('allocation').setDescription('إنشاء رابط مؤقت لتخصيص صورة ولقب البوت في هذا السيرفر').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
         new SlashCommandBuilder().setName('announce').setDescription('إرسال إعلان إداري في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild).addChannelOption(option => option.setName('channel').setDescription('قناة الإعلان').setRequired(true)).addStringOption(option => option.setName('message').setDescription('محتوى الإعلان').setMaxLength(1500).setRequired(true)),
         new SlashCommandBuilder().setName('say').setDescription('إرسال رسالة عبر البوت').setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).addStringOption(option => option.setName('message').setDescription('محتوى الرسالة').setMaxLength(1500).setRequired(true)).addChannelOption(option => option.setName('channel').setDescription('القناة المستهدفة')),
         new SlashCommandBuilder().setName('lock').setDescription('قفل الإرسال في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).addChannelOption(option => option.setName('channel').setDescription('القناة المطلوب قفلها')),
@@ -1079,8 +1079,7 @@ client.on('ready', async () => {
     setInterval(() => runGuildAutomations().catch((error) => console.error('Guild automation failed:', error.message)), 60000);
     processDashboardAutomations().catch((error) => console.error('Dashboard automations failed:', error.message));
     setInterval(() => processDashboardAutomations().catch((error) => console.error('Dashboard automations failed:', error.message)), 60000);
-    // Idle queue checks invoke the Vercel API; a 30-second interval keeps the
-    // bot features active while avoiding a continuous stream of empty requests.
+    // Poll queued work less often while idle to reduce empty Vercel function calls.
     setInterval(() => processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message)), 30000);
     processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message));
     setInterval(() => processServerTasks().catch((error) => console.error('Server backup processing failed:', error.message)), 30000);
@@ -2560,7 +2559,7 @@ client.on('interactionCreate', async (interaction) => {
             const discordTimestamp = Math.floor(new Date(expiresAt).getTime() / 1000);
             const embed = new EmbedBuilder()
                 .setColor(0x35cdb7)
-                .setTitle('رابط تخصيص لقب YS-Bot')
+                .setTitle('رابط تخصيص YS-Bot')
                 .setDescription(`افتح الرابط لتغيير **لقب البوت وصورته في هذا السيرفر فقط**.\n\n[فتح صفحة التخصيص](${url})\n\nينتهي <t:${discordTimestamp}:R> ويعمل لحسابك فقط.`)
                 .setFooter({ text: 'YS-Bot • رابط أحادي الاستخدام' });
             return interaction.editReply({ embeds: [embed] });
@@ -3158,33 +3157,32 @@ client.on('messageCreate', async (message) => {
     if (advanced.phishingGuardEnabled && advanced.phishingGuardChannelId === message.channel.id) {
         const member = message.member || await message.guild.members.fetch(message.author.id).catch(() => null);
         if (member && message.author.id !== message.guild.ownerId && !member.permissions.has(PermissionFlagsBits.Administrator) && !member.permissions.has(PermissionFlagsBits.ManageGuild) && !member.permissions.has(PermissionFlagsBits.ManageMessages)) {
+            const action = advanced.phishingGuardAction || 'timeout24h';
+            const actionLabel = action === 'kick' ? 'طرد' : action === 'ban' ? 'حظر' : 'تايم أوت 24 ساعة';
+            const reason = 'YS Phishing Guard: message sent in the dedicated monitored channel';
+            if (message.deletable) await message.delete().catch(() => {});
 
-        const action = advanced.phishingGuardAction || 'timeout24h';
-        const actionLabel = action === 'kick' ? 'طرد' : action === 'ban' ? 'حظر' : 'تايم أوت 24 ساعة';
-        const reason = 'YS Phishing Guard: message sent in the dedicated monitored channel';
-        if (message.deletable) await message.delete().catch(() => {});
-
-        let success = false;
-        try {
-            if (action === 'kick' && member.kickable) {
-                await member.kick(reason);
-                success = true;
-            } else if (action === 'ban' && member.bannable) {
-                await member.ban({ reason, deleteMessageSeconds: 0 });
-                success = true;
-            } else if (action === 'timeout24h' && member.moderatable) {
-                await member.timeout(24 * 60 * 60 * 1000, reason);
-                success = true;
+            let success = false;
+            try {
+                if (action === 'kick' && member.kickable) {
+                    await member.kick(reason);
+                    success = true;
+                } else if (action === 'ban' && member.bannable) {
+                    await member.ban({ reason, deleteMessageSeconds: 0 });
+                    success = true;
+                } else if (action === 'timeout24h' && member.moderatable) {
+                    await member.timeout(24 * 60 * 60 * 1000, reason);
+                    success = true;
+                }
+            } catch (error) {
+                console.warn(`[YS Phishing Guard] ${message.guild.id}/${message.author.id}:`, error.message);
             }
-        } catch (error) {
-            console.warn(`[YS Phishing Guard] ${message.guild.id}/${message.author.id}:`, error.message);
-        }
 
-        await sendGuildLog(message.guild, settings,
-            `YS Phishing Guard: ${success ? 'تم التنفيذ' : 'تعذر التنفيذ'} — الإجراء: ${actionLabel} — العضو: <@${message.author.id}> — القناة: <#${message.channel.id}>. لم يُسجّل محتوى الرسالة.`,
-            success ? 0xef4444 : 0xf59e0b);
-        if (!success) console.warn(`[YS Phishing Guard] Could not apply ${action} in guild ${message.guild.id}; check bot permissions and role hierarchy.`);
-        return;
+            await sendGuildLog(message.guild, settings,
+                `YS Phishing Guard: ${success ? 'تم التنفيذ' : 'تعذر التنفيذ'} — الإجراء: ${actionLabel} — العضو: <@${message.author.id}> — القناة: <#${message.channel.id}>. لم يُسجّل محتوى الرسالة.`,
+                success ? 0xef4444 : 0xf59e0b);
+            if (!success) console.warn(`[YS Phishing Guard] Could not apply ${action} in guild ${message.guild.id}; check bot permissions and role hierarchy.`);
+            return;
         }
     }
     if (advanced.autoReactionEnabled && advanced.autoReactionChannelId === message.channel.id && advanced.autoReactionEmoji) {
