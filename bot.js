@@ -1004,6 +1004,7 @@ client.on('ready', async () => {
         new SlashCommandBuilder().setName('roll').setDescription('رمي نرد عشوائي').addIntegerOption(option => option.setName('sides').setDescription('عدد أوجه النرد').setMinValue(2).setMaxValue(1000)),
         new SlashCommandBuilder().setName('coinflip').setDescription('رمي قطعة نقدية'),
         new SlashCommandBuilder().setName('nickname').setDescription('تغيير لقبك في السيرفر').addStringOption(option => option.setName('name').setDescription('اللقب الجديد').setMaxLength(32).setRequired(true)),
+        new SlashCommandBuilder().setName('allocation').setDescription('إنشاء رابط مؤقت لتخصيص لقب البوت في هذا السيرفر').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
         new SlashCommandBuilder().setName('announce').setDescription('إرسال إعلان إداري في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild).addChannelOption(option => option.setName('channel').setDescription('قناة الإعلان').setRequired(true)).addStringOption(option => option.setName('message').setDescription('محتوى الإعلان').setMaxLength(1500).setRequired(true)),
         new SlashCommandBuilder().setName('say').setDescription('إرسال رسالة عبر البوت').setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages).addStringOption(option => option.setName('message').setDescription('محتوى الرسالة').setMaxLength(1500).setRequired(true)).addChannelOption(option => option.setName('channel').setDescription('القناة المستهدفة')),
         new SlashCommandBuilder().setName('lock').setDescription('قفل الإرسال في قناة').setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels).addChannelOption(option => option.setName('channel').setDescription('القناة المطلوب قفلها')),
@@ -1078,9 +1079,11 @@ client.on('ready', async () => {
     setInterval(() => runGuildAutomations().catch((error) => console.error('Guild automation failed:', error.message)), 60000);
     processDashboardAutomations().catch((error) => console.error('Dashboard automations failed:', error.message));
     setInterval(() => processDashboardAutomations().catch((error) => console.error('Dashboard automations failed:', error.message)), 60000);
-    setInterval(() => processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message)), 4000);
+    // Idle queue checks invoke the Vercel API; a 30-second interval keeps the
+    // bot features active while avoiding a continuous stream of empty requests.
+    setInterval(() => processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message)), 30000);
     processEmbedQueue().catch((error) => console.error('Embed queue processing failed:', error.message));
-    setInterval(() => processServerTasks().catch((error) => console.error('Server backup processing failed:', error.message)), 5000);
+    setInterval(() => processServerTasks().catch((error) => console.error('Server backup processing failed:', error.message)), 30000);
     processServerTasks().catch((error) => console.error('Server backup processing failed:', error.message));
 });
 
@@ -1119,6 +1122,9 @@ let guildSettingsWarningShown = false;
 let guildSettingsBridgeConnected = false;
 const guildSettingsCache = new Map();
 const discordAccountBanCache = new Map();
+const serverActivityCooldowns = new Map();
+const pendingServerActivity = new Map();
+let serverActivityFlushTimer = null;
 let accountBanLookupWarningShown = false;
 const recentMessages = new Map();
 const autoReplyCooldowns = new Map();
@@ -1172,6 +1178,34 @@ async function botBridgeRequest(route, options = {}) {
     if (!response.ok) throw new Error(`Bot bridge returned ${response.status}`);
     return response;
 }
+
+async function flushServerActivityBatch() {
+    if (serverActivityFlushTimer) {
+        clearTimeout(serverActivityFlushTimer);
+        serverActivityFlushTimer = null;
+    }
+    if (!pendingServerActivity.size || !process.env.BOT_API_SECRET) return;
+    const batch = [...pendingServerActivity.entries()];
+    pendingServerActivity.clear();
+    await Promise.allSettled(batch.map(async ([guildId, interactions]) => {
+        let remaining = interactions;
+        while (remaining > 0) {
+            const count = Math.min(remaining, 1000);
+            try {
+                await botBridgeRequest('/api/internal/bot/server-activity', {
+                    method: 'POST', body: JSON.stringify({ guildId, interactions: count })
+                });
+                remaining -= count;
+            } catch (error) {
+                pendingServerActivity.set(guildId, (pendingServerActivity.get(guildId) || 0) + remaining);
+                console.warn(`Server activity sync delayed for guild ${guildId}: ${error.message}`);
+                break;
+            }
+        }
+    }));
+}
+
+setInterval(() => { void flushServerActivityBatch(); }, 30000).unref();
 
 async function getBotLanguage(userId, fallback = 'ar') {
     if (!process.env.BOT_API_SECRET) return getBotLanguageFromDb(userId, fallback);
@@ -2506,14 +2540,44 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.commandName === 'invites') return showInviteCount(interaction);
     if (interaction.commandName === 'embed') return sendConfiguredEmbed(interaction);
 
+    if (interaction.commandName === 'allocation') {
+        if (!interaction.guild) return interaction.reply({ content: 'استخدم /allocation داخل السيرفر المطلوب.', ephemeral: true });
+        const isOwner = interaction.guild.ownerId === interaction.user.id;
+        const canManage = interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild) || interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
+        if (!isOwner && !canManage) return interaction.reply({ content: 'هذا الأمر متاح لمالك السيرفر أو لمن لديه Administrator أو Manage Server فقط.', ephemeral: true });
+        if (!process.env.BOT_API_SECRET) return interaction.reply({ content: 'خدمة الروابط المؤقتة غير مهيأة على البوت حاليًا.', ephemeral: true });
+        await interaction.deferReply({ ephemeral: true });
+        try {
+            const baseUrl = (process.env.BOT_API_URL || 'https://ys-bot.vercel.app').replace(/\/$/, '');
+            const response = await fetch(`${baseUrl}/api/internal/bot/allocation-link`, {
+                method: 'POST',
+                headers: { authorization: `Bearer ${process.env.BOT_API_SECRET}`, 'content-type': 'application/json' },
+                body: JSON.stringify({ guildId: interaction.guild.id, ownerId: interaction.user.id }),
+                signal: AbortSignal.timeout(10000)
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const { url, expiresAt } = await response.json();
+            const discordTimestamp = Math.floor(new Date(expiresAt).getTime() / 1000);
+            const embed = new EmbedBuilder()
+                .setColor(0x35cdb7)
+                .setTitle('رابط تخصيص لقب YS-Bot')
+                .setDescription(`افتح الرابط لتغيير **لقب البوت وصورته في هذا السيرفر فقط**.\n\n[فتح صفحة التخصيص](${url})\n\nينتهي <t:${discordTimestamp}:R> ويعمل لحسابك فقط.`)
+                .setFooter({ text: 'YS-Bot • رابط أحادي الاستخدام' });
+            return interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            console.error('Allocation link request failed:', error.message);
+            return interaction.editReply('تعذر إنشاء رابط التخصيص الآن. تأكد من اتصال البوت بخدمة الموقع وحاول مجددًا.');
+        }
+    }
+
     if (interaction.commandName === 'help') {
         const english = guildSettings?.advancedSettings?.commandLanguage === 'en';
         const embed = new EmbedBuilder()
             .setColor(0x35cdb7)
             .setTitle(english ? 'YS-Bot commands' : 'أوامر YS-Bot')
             .setDescription(english
-                ? '`/selfrole` self roles · `/afk` away status · `/birthday` birthday · `/remindme` private reminder · `/confess` anonymous confession · `/temprole` temporary role · `/topic` channel topic · `/move` voice member · `/rolecolor` role color · `/timestamp` Discord timestamp · `/eightball` answer game · `/random` number range · `/reverse` reverse text · `/mock` alternating case · `/ping` latency · `/serverinfo` server details · `/userinfo` member details · `/avatar` avatar · `/servericon` server icon · `/membercount` member count · `/roleinfo` role details · `/channelinfo` channel details · `/botinfo` bot uptime · `/quote` quote a message · `/choose` random choice · `/roll` dice · `/coinflip` coin toss · `/nickname` change your nickname · `/announce` admin announcement · `/say` send as bot · `/lock` and `/unlock` channel · `/slowmode` channel slowmode · `/rolelist` roles · `/profile` member stats · `/games` interactive games · `/ticket` support ticket · `/suggest` submit suggestion · `/report` private report · `/poll` create poll · `/warn` warn a member · `/clear` delete recent messages · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send configured embed.'
-                : '`/selfrole` رتب اختيارية · `/afk` حالة الغياب · `/birthday` تسجيل الميلاد · `/remindme` تذكير خاص · `/confess` اعتراف مجهول · `/temprole` رتبة مؤقتة · `/topic` موضوع القناة · `/move` نقل صوتي · `/rolecolor` لون رتبة · `/timestamp` توقيت Discord · `/eightball` إجابة عشوائية · `/random` رقم ضمن نطاق · `/reverse` عكس نص · `/mock` كتابة متناوبة · `/ping` سرعة البوت · `/serverinfo` معلومات السيرفر · `/userinfo` معلومات عضو · `/avatar` صورة العضو · `/servericon` أيقونة السيرفر · `/membercount` عدد الأعضاء · `/roleinfo` معلومات رتبة · `/channelinfo` معلومات قناة · `/botinfo` وقت تشغيل البوت · `/quote` اقتباس رسالة · `/choose` اختيار عشوائي · `/roll` نرد · `/coinflip` عملة · `/nickname` تغيير لقبك · `/announce` إعلان إداري · `/say` إرسال باسم البوت · `/lock` و`/unlock` قفل وفتح قناة · `/slowmode` الوضع البطيء · `/rolelist` قائمة الرتب · `/profile` إحصاءات عضو · `/games` ألعاب تفاعلية · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/report` بلاغ خاص للمشرفين · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/clear` مسح رسائل حديثة · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
+                ? '`/selfrole` self roles · `/afk` away status · `/birthday` birthday · `/remindme` private reminder · `/confess` anonymous confession · `/temprole` temporary role · `/topic` channel topic · `/move` voice member · `/rolecolor` role color · `/timestamp` Discord timestamp · `/eightball` answer game · `/random` number range · `/reverse` reverse text · `/mock` alternating case · `/ping` latency · `/serverinfo` server details · `/userinfo` member details · `/avatar` avatar · `/servericon` server icon · `/membercount` member count · `/roleinfo` role details · `/channelinfo` channel details · `/botinfo` bot uptime · `/quote` quote a message · `/choose` random choice · `/roll` dice · `/coinflip` coin toss · `/nickname` change your nickname · `/allocation` create a temporary bot nickname link · `/announce` admin announcement · `/say` send as bot · `/lock` and `/unlock` channel · `/slowmode` channel slowmode · `/rolelist` roles · `/profile` member stats · `/games` interactive games · `/ticket` support ticket · `/suggest` submit suggestion · `/report` private report · `/poll` create poll · `/warn` warn a member · `/clear` delete recent messages · `/verify` finish verification · `/support` support channel · `/invites` invite count · `/plan` subscription · `/anticrash` protection status · `/embed` send configured embed.'
+                : '`/selfrole` رتب اختيارية · `/afk` حالة الغياب · `/birthday` تسجيل الميلاد · `/remindme` تذكير خاص · `/confess` اعتراف مجهول · `/temprole` رتبة مؤقتة · `/topic` موضوع القناة · `/move` نقل صوتي · `/rolecolor` لون رتبة · `/timestamp` توقيت Discord · `/eightball` إجابة عشوائية · `/random` رقم ضمن نطاق · `/reverse` عكس نص · `/mock` كتابة متناوبة · `/ping` سرعة البوت · `/serverinfo` معلومات السيرفر · `/userinfo` معلومات عضو · `/avatar` صورة العضو · `/servericon` أيقونة السيرفر · `/membercount` عدد الأعضاء · `/roleinfo` معلومات رتبة · `/channelinfo` معلومات قناة · `/botinfo` وقت تشغيل البوت · `/quote` اقتباس رسالة · `/choose` اختيار عشوائي · `/roll` نرد · `/coinflip` عملة · `/nickname` تغيير لقبك · `/allocation` رابط مؤقت لتغيير لقب البوت · `/announce` إعلان إداري · `/say` إرسال باسم البوت · `/lock` و`/unlock` قفل وفتح قناة · `/slowmode` الوضع البطيء · `/rolelist` قائمة الرتب · `/profile` إحصاءات عضو · `/games` ألعاب تفاعلية · `/ticket` فتح تذكرة · `/suggest` إرسال اقتراح · `/report` بلاغ خاص للمشرفين · `/poll` إنشاء تصويت · `/warn` تحذير عضو · `/clear` مسح رسائل حديثة · `/verify` إكمال التحقق · `/support` قناة الدعم · `/invites` عدد الدعوات · `/plan` حالة الاشتراك · `/anticrash` حالة الحماية · `/embed` إرسال الإمبيد المحفوظ.')
             .setFooter({ text: english ? 'YS-Bot • Use / to browse commands' : 'YS-Bot • اكتب / لاستعراض الأوامر' });
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -3091,6 +3155,38 @@ client.on('messageCreate', async (message) => {
 
     const settings = await loadGuildSettings(message.guild.id);
     const advanced = settings.advancedSettings || {};
+    if (advanced.phishingGuardEnabled && advanced.phishingGuardChannelId === message.channel.id) {
+        const member = message.member || await message.guild.members.fetch(message.author.id).catch(() => null);
+        if (member && message.author.id !== message.guild.ownerId && !member.permissions.has(PermissionFlagsBits.Administrator) && !member.permissions.has(PermissionFlagsBits.ManageGuild) && !member.permissions.has(PermissionFlagsBits.ManageMessages)) {
+
+        const action = advanced.phishingGuardAction || 'timeout24h';
+        const actionLabel = action === 'kick' ? 'طرد' : action === 'ban' ? 'حظر' : 'تايم أوت 24 ساعة';
+        const reason = 'YS Phishing Guard: message sent in the dedicated monitored channel';
+        if (message.deletable) await message.delete().catch(() => {});
+
+        let success = false;
+        try {
+            if (action === 'kick' && member.kickable) {
+                await member.kick(reason);
+                success = true;
+            } else if (action === 'ban' && member.bannable) {
+                await member.ban({ reason, deleteMessageSeconds: 0 });
+                success = true;
+            } else if (action === 'timeout24h' && member.moderatable) {
+                await member.timeout(24 * 60 * 60 * 1000, reason);
+                success = true;
+            }
+        } catch (error) {
+            console.warn(`[YS Phishing Guard] ${message.guild.id}/${message.author.id}:`, error.message);
+        }
+
+        await sendGuildLog(message.guild, settings,
+            `YS Phishing Guard: ${success ? 'تم التنفيذ' : 'تعذر التنفيذ'} — الإجراء: ${actionLabel} — العضو: <@${message.author.id}> — القناة: <#${message.channel.id}>. لم يُسجّل محتوى الرسالة.`,
+            success ? 0xef4444 : 0xf59e0b);
+        if (!success) console.warn(`[YS Phishing Guard] Could not apply ${action} in guild ${message.guild.id}; check bot permissions and role hierarchy.`);
+        return;
+        }
+    }
     if (advanced.autoReactionEnabled && advanced.autoReactionChannelId === message.channel.id && advanced.autoReactionEmoji) {
         await message.react(advanced.autoReactionEmoji).catch(() => {});
     }
@@ -3346,6 +3442,26 @@ client.on('messageCreate', async (message) => {
         } else if (slowmode === 0 && tracked !== undefined) {
             channelSlowmodeOriginals.delete(message.channel.id);
             await message.channel.setRateLimitPerUser(tracked, 'Dashboard slowmode disabled').catch(() => {});
+        }
+    }
+
+    const activityHasContent = plainText.length > 0 || message.attachments.size > 0;
+    const isPrefixedCommand = plainText.startsWith(String(settings.commandPrefix || '!'));
+    if (advanced.activityStatsEnabled !== false && activityHasContent && !isPrefixedCommand && !message.webhookId) {
+        const now = Date.now();
+        const activityKey = `${message.guild.id}:${message.author.id}`;
+        if (now - (serverActivityCooldowns.get(activityKey) || 0) >= 60000) {
+            serverActivityCooldowns.set(activityKey, now);
+            pendingServerActivity.set(message.guild.id, (pendingServerActivity.get(message.guild.id) || 0) + 1);
+            if (!serverActivityFlushTimer) {
+                serverActivityFlushTimer = setTimeout(() => { void flushServerActivityBatch(); }, 8000);
+                serverActivityFlushTimer.unref();
+            }
+        }
+        if (serverActivityCooldowns.size > 10000) {
+            for (const [key, timestamp] of serverActivityCooldowns) {
+                if (now - timestamp > 3600000) serverActivityCooldowns.delete(key);
+            }
         }
     }
 

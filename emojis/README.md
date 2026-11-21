@@ -10,5 +10,6 @@ These transparent SVG icons use the YS-Bot teal and blue palette.
 - `ys-lock.svg` — locked or protected feature
 - `ys-premium.svg` — Premium badge
 - `ys-online.svg` — online status
+- `ys-translate.svg` — translation and language selection
 
 Use them on the site as `/emojis/ys-check.svg`. Discord custom emoji uploads generally need PNG or GIF, so convert a copy to PNG before uploading it there.

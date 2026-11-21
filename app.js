@@ -13,6 +13,9 @@ const { activatePayment, cancelGuildSubscription, claimPremiumOffer, creditTopup
 const { getGuildSettings, saveGuildSettings, validateExtraSettings, EXTRA_DEFAULTS, EXTRA_SETTING_SCHEMA, enqueueEmbedSend, getEmbedSendRequest, claimEmbedSendRequests, completeEmbedSendRequest, createServerTask, listServerBackups, getServerBackup, getServerTask, claimServerTasks, getServerBackupForBot, updateServerTask, completeServerTask } = require('./services/guild-settings');
 const { normalizePlan, getLockedSettings, applyPlanSettings, mergePlanSettings } = require('./services/subscription-plans');
 
+const { recordServerActivity, getServerActivity } = require('./services/server-activity');
+const { createAllocationLink, getAllocationLink, consumeAllocationLink } = require('./services/allocation-link');
+
 const app = express();
 const aiAssistantUsage = new Map();
 
@@ -56,7 +59,8 @@ const servePublicFile = express.static(__dirname, {
     }
 });
 const PUBLIC_FILES = new Set([
-    '/index.html', '/dashboard.html', '/ip-admin.html', '/privacy.html', '/wallet.html', '/emoji-pack.html', '/style.css', '/button-effects.js', '/ys-bot-avatar.svg',
+    '/index.html', '/dashboard.html', '/ip-admin.html', '/privacy.html', '/terms.html', '/refunds.html', '/acceptable-use.html', '/cookies.html', '/wallet.html', '/emoji-pack.html', '/allocation.html', '/style.css', '/refresh.css', '/legal.css', '/button-effects.js', '/consent.js', '/ys-bot-avatar.svg',
+    '/images/dashboard-guides/protection.svg', '/images/dashboard-guides/activity.svg', '/images/dashboard-guides/verification.svg', '/images/dashboard-guides/backup.svg',
     '/emojis/ys-logo.svg', '/emojis/ys-check.svg', '/emojis/ys-error.svg', '/emojis/ys-warning.svg',
     '/emojis/ys-loading.svg', '/emojis/ys-lock.svg', '/emojis/ys-premium.svg', '/emojis/ys-online.svg'
 ]);
@@ -75,8 +79,12 @@ app.get('/support', (req, res) => {
 });
 
 app.get('/terms', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'terms.html'));
 });
+
+app.get('/refunds', (req, res) => res.sendFile(path.join(__dirname, 'refunds.html')));
+app.get('/acceptable-use', (req, res) => res.sendFile(path.join(__dirname, 'acceptable-use.html')));
+app.get('/cookies', (req, res) => res.sendFile(path.join(__dirname, 'cookies.html')));
 
 app.get('/privacy', (req, res) => {
     res.sendFile(path.join(__dirname, 'privacy.html'));
@@ -84,6 +92,10 @@ app.get('/privacy', (req, res) => {
 
 app.get('/wallet', (req, res) => {
     res.sendFile(path.join(__dirname, 'wallet.html'));
+});
+
+app.get('/allocation', (req, res) => {
+    res.sendFile(path.join(__dirname, 'allocation.html'));
 });
 
 // إعداد الجلسات بأمان للبيئة السحابية
@@ -579,6 +591,18 @@ app.get('/api/guild-settings/:guildId', async (req, res) => {
     }
 });
 
+app.get('/api/guild-settings/:guildId/activity', async (req, res) => {
+    const user = await getManageableDiscordGuild(req, res, req.params.guildId);
+    if (!user) return;
+    try {
+        const [activity, settings] = await Promise.all([getServerActivity(req.params.guildId), getGuildSettings(req.params.guildId)]);
+        res.set('Cache-Control', 'no-store').json({ ...activity, enabled: settings.advancedSettings.activityStatsEnabled !== false });
+    } catch (error) {
+        console.error('Failed to load server activity:', error.message);
+        res.status(503).json({ error: 'تعذر تحميل إحصاءات النشاط الآن.' });
+    }
+});
+
 // Private read-only bridge used by the bot runtime. Discord admins still edit settings through the user-authenticated routes above.
 app.get('/api/internal/bot/guild-settings/:guildId', async (req, res) => {
     const configuredSecret = process.env.BOT_API_SECRET || '';
@@ -632,6 +656,22 @@ function isAuthorizedBotBridgeRequest(req) {
     const supplied = Buffer.from(suppliedSecret);
     return Boolean(configuredSecret && expected.length === supplied.length && crypto.timingSafeEqual(expected, supplied));
 }
+
+app.post('/api/internal/bot/server-activity', async (req, res) => {
+    if (!isAuthorizedBotBridgeRequest(req)) return res.status(401).json({ error: 'Unauthorized' });
+    const guildId = String(req.body?.guildId || '');
+    const interactions = Number(req.body?.interactions);
+    if (!/^\d{17,20}$/.test(guildId) || !Number.isInteger(interactions) || interactions < 1 || interactions > 1000) {
+        return res.status(400).json({ error: 'Invalid server activity data' });
+    }
+    try {
+        await recordServerActivity(guildId, interactions);
+        res.status(204).end();
+    } catch (error) {
+        console.error('Bot server activity bridge failed:', error.message);
+        res.status(503).json({ error: 'Server activity unavailable' });
+    }
+});
 
 app.get('/api/internal/bot/user-language/:userId', async (req, res) => {
     if (!isAuthorizedBotBridgeRequest(req)) return res.status(401).json({ error: 'Unauthorized' });
@@ -793,6 +833,9 @@ app.put('/api/guild-settings/:guildId', async (req, res) => {
         advancedSettings = validateExtraSettings(req.body?.advancedSettings || {});
     } catch (error) {
         return res.status(400).json({ error: 'يوجد إعداد إضافي غير صالح: ' + error.message });
+    }
+    if (advancedSettings.phishingGuardEnabled && !/^\d{17,20}$/.test(advancedSettings.phishingGuardChannelId)) {
+        return res.status(400).json({ error: 'أدخل معرّف روم Discord صحيحًا لنظام YS Phishing Guard.' });
     }
     try {
         const [planStatus, currentSettings] = await Promise.all([
@@ -1467,6 +1510,82 @@ app.post('/api/2fa/enable', async (req, res) => {
     } catch (error) {
         console.error('خطأ في تفعيل 2FA:', error);
         res.status(503).json({ error: 'تعذر تفعيل 2FA' });
+    }
+});
+
+app.post('/api/internal/bot/allocation-link', async (req, res) => {
+    if (!isAuthorizedBotBridgeRequest(req)) return res.status(401).json({ error: 'Unauthorized' });
+    const guildId = String(req.body?.guildId || '');
+    const ownerId = String(req.body?.ownerId || '');
+    if (!/^\d{17,20}$/.test(guildId) || !/^\d{17,20}$/.test(ownerId)) return res.status(400).json({ error: 'Invalid guild or owner id' });
+    try {
+        const token = crypto.randomBytes(24).toString('base64url').slice(0, 30);
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        await createAllocationLink(tokenHash, guildId, ownerId, expiresAt);
+        res.set('Cache-Control', 'no-store').json({ url: `https://ys-bot.vercel.app/allocation?token=${token}`, expiresAt: expiresAt.toISOString() });
+    } catch (error) {
+        console.error('Allocation link creation failed:', error.message);
+        res.status(503).json({ error: 'Could not create allocation link' });
+    }
+});
+
+app.post('/api/allocation/apply', async (req, res) => {
+    const accessToken = req.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!accessToken) return res.status(401).json({ error: 'سجّل الدخول بحساب Discord الذي أنشأ الرابط.' });
+    const token = String(req.body?.token || '');
+    const nickname = typeof req.body?.nickname === 'string' ? req.body.nickname.trim() : '';
+    const avatarDataUrl = typeof req.body?.avatar === 'string' ? req.body.avatar : '';
+    if (!/^[A-Za-z0-9_-]{30}$/.test(token)) return res.status(400).json({ error: 'الرابط غير صالح.' });
+    if (!nickname || nickname.length > 32 || /[\u0000-\u001f\u007f]/.test(nickname)) return res.status(400).json({ error: 'اكتب اسمًا من 1 إلى 32 حرفًا.' });
+    let avatar = null;
+    if (avatarDataUrl) {
+        const match = avatarDataUrl.match(/^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/]+={0,2})$/);
+        if (!match) return res.status(400).json({ error: 'صيغة الصورة غير مدعومة. استخدم PNG أو JPG أو GIF أو WebP.' });
+        avatar = Buffer.from(match[2], 'base64');
+        if (!avatar.length || avatar.length > 2 * 1024 * 1024 || avatar.toString('base64') !== match[2]) return res.status(400).json({ error: 'حجم الصورة يجب أن يكون أقل من 2 ميغابايت.' });
+        const mime = match[1];
+        const signatureValid = mime === 'png' ? avatar.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
+            : mime === 'jpeg' ? avatar[0] === 0xff && avatar[1] === 0xd8 && avatar[2] === 0xff
+                : mime === 'gif' ? ['GIF87a', 'GIF89a'].includes(avatar.subarray(0, 6).toString('ascii'))
+                    : avatar.subarray(0, 4).toString('ascii') === 'RIFF' && avatar.subarray(8, 12).toString('ascii') === 'WEBP';
+        if (!signatureValid) return res.status(400).json({ error: 'محتوى الصورة لا يطابق صيغتها.' });
+    }
+    try {
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        const allocation = await getAllocationLink(tokenHash);
+        if (!allocation || allocation.consumedAt || new Date(allocation.expiresAt).getTime() <= Date.now()) {
+            return res.status(410).json({ error: 'انتهت صلاحية الرابط أو سبق استخدامه. اطلب رابطًا جديدًا من /allocation.' });
+        }
+        const discordHeaders = { authorization: `Bearer ${accessToken}` };
+        const [userResponse, guildsResponse] = await Promise.all([
+            axios.get('https://discord.com/api/users/@me', { headers: discordHeaders, timeout: 10000 }),
+            axios.get('https://discord.com/api/users/@me/guilds', { headers: discordHeaders, timeout: 10000 })
+        ]);
+        if (String(userResponse.data.id) !== allocation.ownerId) return res.status(403).json({ error: 'هذا الرابط مخصص لحساب Discord الذي أنشأه فقط.' });
+        const guild = guildsResponse.data.find((item) => String(item.id) === allocation.guildId);
+        const isOwner = guild?.owner === true;
+        const permissions = BigInt(guild?.permissions || '0');
+        if (!guild || (!isOwner && (permissions & 8n) !== 8n && (permissions & 32n) !== 32n)) {
+            return res.status(403).json({ error: 'يجب أن تكون مالك السيرفر أو تملك Administrator أو Manage Server.' });
+        }
+        if (!process.env.DISCORD_TOKEN) return res.status(503).json({ error: 'خدمة البوت غير مهيأة حاليًا.' });
+        const consumed = await consumeAllocationLink(tokenHash);
+        if (!consumed) return res.status(410).json({ error: 'تم استخدام الرابط أو انتهت صلاحيته. اطلب رابطًا جديدًا.' });
+        const memberUpdate = { nick: nickname };
+        if (avatar) memberUpdate.avatar = avatarDataUrl;
+        await axios.patch(`https://discord.com/api/v10/guilds/${allocation.guildId}/members/@me`, memberUpdate, {
+            headers: { authorization: `Bot ${process.env.DISCORD_TOKEN}`, 'content-type': 'application/json' }, timeout: 12000
+        });
+        res.set('Cache-Control', 'no-store').json({ success: true, message: `تم تغيير لقب البوت في سيرفر ${guild.name}.` });
+    } catch (error) {
+        console.error('Allocation apply failed:', error.response?.data || error.message);
+        if (error.response?.status === 401) return res.status(401).json({ error: 'انتهت جلسة Discord. سجّل الدخول مرة أخرى.' });
+        if (error.response?.status === 403) return res.status(403).json({ error: 'تحقق أن البوت موجود في السيرفر ويملك صلاحية تغيير لقبه، ثم أنشئ رابطًا جديدًا.' });
+        if (error.response?.status === 404) return res.status(404).json({ error: 'لم أجد البوت داخل السيرفر المرتبط بهذا الرابط.' });
+        if (error.response?.status === 400) return res.status(400).json({ error: 'رفض Discord الصورة أو الاسم. جرّب صورة PNG/JPG أصغر واسمًا مختلفًا.' });
+        if (error.code === 'DATABASE_URL' || error.message?.includes('DATABASE_URL')) return res.status(503).json({ error: 'خدمة الروابط غير مهيأة على الخادم.' });
+        res.status(503).json({ error: 'تعذر تطبيق الاسم الآن. أنشئ رابطًا جديدًا وحاول مجددًا.' });
     }
 });
 

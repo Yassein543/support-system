@@ -9,8 +9,10 @@
           "*.html",
           "*.css",
           "ys-bot-avatar.svg",
+          "images/dashboard-guides/*.svg",
           "emojis/*.svg",
           "button-effects.js",
+          "consent.js",
           "services/**"
         ]
       }

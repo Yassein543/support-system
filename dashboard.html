@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم | Yenson Security</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=login-persistence-1">
+    <script src="/consent.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { position: relative; isolation: isolate; min-height: 100vh; overflow-x: hidden; font-family: 'Tajawal', sans-serif; background-color: #08121f; background-image: radial-gradient(ellipse at 12% 4%, rgba(35, 176, 158, .16), transparent 34%), radial-gradient(ellipse at 88% 18%, rgba(74, 112, 214, .13), transparent 30%), linear-gradient(145deg, #0b1725 0%, #08111d 55%, #0d1a28 100%); color: #f2f7fa; margin: 0; padding: 20px; }
@@ -140,6 +141,31 @@
         .dashboard-summary-card strong { display:block; overflow:hidden; color:#edf9fa; font-size:1rem; text-overflow:ellipsis; white-space:nowrap; }
         .dashboard-summary-card[data-state="ready"] strong { color:#72e0cb; }
         .dashboard-summary-card[data-state="loading"] strong { color:#ffd27b; }
+        .server-activity-panel { margin:0 0 20px; padding:18px; border:1px solid rgba(71,215,194,.2); border-radius:16px; background:linear-gradient(145deg,rgba(17,39,54,.94),rgba(10,24,39,.97)); }
+        .server-activity-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+        .server-activity-heading h4 { margin:0; color:#dcf7f4; font-size:1rem; }
+        .server-activity-heading p { margin:4px 0 0; color:#91a8b7; font-size:.78rem; }
+        .server-activity-heading-copy { min-width:0; }
+        .server-activity-trend { display:inline-flex; align-items:center; gap:6px; margin-top:8px; padding:5px 9px; border:1px solid rgba(121,157,176,.25); border-radius:999px; background:rgba(113,164,190,.08); color:#b8cbd4; font-size:.75rem; font-weight:800; }
+        .server-activity-trend[data-trend="up"] { border-color:rgba(60,214,155,.3); background:rgba(35,185,126,.11); color:#68e0ad; }
+        .server-activity-trend[data-trend="down"] { border-color:rgba(255,102,120,.32); background:rgba(255,87,104,.1); color:#ff7c88; }
+        .server-activity-refresh { flex:0 0 auto; border:1px solid rgba(71,215,194,.28); border-radius:9px; padding:8px 11px; background:rgba(31,164,146,.12); color:#a6f0e3; font:700 .8rem 'Tajawal',sans-serif; cursor:pointer; }
+        .server-activity-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+        .server-activity-stat { min-width:0; padding:12px; border:1px solid rgba(113,164,190,.16); border-radius:12px; background:rgba(5,18,30,.48); }
+        .server-activity-stat small { display:block; margin-bottom:6px; color:#91a8b7; font-size:.75rem; }
+        .server-activity-stat strong { display:block; overflow:hidden; color:#effbfa; font-size:1rem; text-overflow:ellipsis; white-space:nowrap; }
+        .server-activity-chart { margin-top:15px; padding:12px 12px 8px; border:1px solid rgba(113,164,190,.13); border-radius:12px; background:rgba(5,18,30,.32); }
+        .server-activity-svg { display:block; width:100%; height:clamp(150px,24vw,210px); overflow:visible; }
+        .server-activity-gridline { stroke:rgba(146,178,193,.14); stroke-width:1; stroke-dasharray:4 7; }
+        .server-activity-segment { fill:none; stroke-width:4; stroke-linecap:round; filter:drop-shadow(0 0 5px currentColor); stroke-dasharray:900; stroke-dashoffset:900; animation:activity-line-draw 1s ease forwards; }
+        .server-activity-segment[data-trend="up"] { stroke:#49dda2; color:#49dda2; }
+        .server-activity-segment[data-trend="down"] { stroke:#ff6575; color:#ff6575; }
+        .server-activity-segment[data-trend="flat"] { stroke:#71a8b8; color:#71a8b8; }
+        .server-activity-point { stroke:#0d1928; stroke-width:3; }
+        .server-activity-labels { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; padding:0 2px; color:#91a8b7; text-align:center; font-size:.68rem; }
+        .server-activity-labels span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        @keyframes activity-line-draw { to { stroke-dashoffset:0; } }
+        .server-activity-footnote { margin:10px 0 0; color:#8297a5; font-size:.72rem; line-height:1.6; }
         .settings-new-badge { display:inline-flex; align-items:center; margin-inline-start:auto; padding:3px 8px; border:1px solid rgba(71,215,194,.28); border-radius:999px; background:rgba(31,164,146,.12); color:#83e5d5; font-size:.68rem; font-weight:900; white-space:nowrap; }
         .settings-result-category { display:block; flex:1 0 100%; color:#70cfc2; font-size:.7rem; font-weight:700; }
         .settings-result-category[hidden] { display:none; }
@@ -225,6 +251,7 @@
         .dashboard-menu-toggle img { width:23px; height:23px; border:1px solid rgba(71,215,194,.32); border-radius:7px; object-fit:cover; }
         .dashboard-menu-toggle svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
         .dashboard-menu-toggle:hover, .dashboard-menu-toggle:focus-visible { border-color:rgba(71,215,194,.62); box-shadow:0 0 0 3px rgba(71,215,194,.1); outline:none; }
+        .dashboard-mobile-footer { display:none; }
         .dashboard-menu-backdrop { position:fixed; inset:0; z-index:79; border:0; background:rgba(2,8,15,.62); backdrop-filter:blur(3px); }
         .dashboard-menu-backdrop[hidden], #dashboard-nav[hidden] { display:none !important; }
         .dashboard-side-nav { position:sticky; inset:auto; top:16px; z-index:30; display:flex; width:auto; height:calc(100dvh - 32px); max-height:860px; box-sizing:border-box; flex-direction:column; align-self:start; gap:12px; overflow:auto; padding:15px 12px; border-color:rgba(113,164,190,.18); border-radius:17px; background:linear-gradient(165deg,rgba(17,29,44,.98),rgba(10,17,28,.98)); box-shadow:0 16px 44px rgba(0,0,0,.26),inset 0 1px rgba(255,255,255,.025); scrollbar-width:thin; scrollbar-color:rgba(113,164,190,.28) transparent; }
@@ -259,6 +286,19 @@
         .dashboard-menu-links button:disabled { opacity:.5; cursor:not-allowed; }
         .dashboard-menu-category > summary .dashboard-nav-icon { width:27px; height:27px; flex-basis:27px; border-radius:9px; }
         .dashboard-menu-category > summary .dashboard-nav-icon svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+        .dashboard-menu-description { display:block; margin:-3px 44px 7px; color:#718898; font-size:.68rem; line-height:1.45; }
+        .dashboard-category-count { display:inline-grid; min-width:21px; height:20px; place-items:center; margin-inline-start:auto; padding:0 6px; border:1px solid rgba(113,164,190,.18); border-radius:999px; background:rgba(8,20,32,.48); color:#8da4b3; font-size:.65rem; font-weight:800; }
+        .dashboard-insights { margin:0 0 14px; overflow:hidden; border:1px solid rgba(119,177,197,.17); border-radius:14px; background:rgba(11,27,42,.35); }
+        .dashboard-insights > summary { display:flex; min-height:48px; align-items:center; gap:10px; padding:10px 14px; color:#dce9ed; font-size:.86rem; font-weight:900; cursor:pointer; list-style:none; }
+        .dashboard-insights > summary::-webkit-details-marker { display:none; }
+        .dashboard-insights > summary::before { display:grid; width:25px; height:25px; flex:0 0 25px; place-items:center; border:1px solid rgba(82,211,192,.25); border-radius:8px; background:rgba(28,115,108,.14); color:#68dec9; content:'+'; }
+        .dashboard-insights[open] > summary { border-bottom:1px solid rgba(119,177,197,.13); }
+        .dashboard-insights[open] > summary::before { content:'−'; }
+        .dashboard-insights-hint { margin-inline-start:auto; color:#8197a7; font-size:.72rem; font-weight:600; }
+        .dashboard-insights-content { display:grid; gap:14px; padding:14px; }
+        .dashboard-insights-content > .dashboard-visual-guide, .dashboard-insights-content > .server-activity-panel { margin:0; }
+        .dashboard-menu-category[data-tone="tools"] > summary .dashboard-nav-icon { color:#b5c9ff; }
+        @media(max-width:520px) { .dashboard-menu-description { margin-inline-start:43px; } .dashboard-insights-hint { display:none; } .dashboard-insights-content { padding:10px; } }
         .dashboard-nav-hint { margin: auto 3px 0; padding:12px 4px 2px; }
         #dashboard-nav .dashboard-nav-hint { display:block; }
         .dashboard-workspace { display:grid; grid-template-columns:minmax(225px,260px) minmax(0,1fr); align-items:start; gap:22px; direction:ltr; }
@@ -467,6 +507,27 @@
             #dashboard-menu-toggle { display:grid; }
         }
         @media(max-width:480px) { #dashboard-nav.dashboard-side-nav { inset-block:8px; inset-inline-end:8px; width:min(370px,calc(100vw - 16px)); max-height:calc(100dvh - 16px); } }
+        @media(max-width:780px) {
+            body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+            .dashboard-brand { margin-bottom: 12px; }
+            #dashboard-menu-toggle { display:none !important; }
+            .dashboard-mobile-footer { position:fixed; inset-inline:10px; inset-block-end:calc(8px + env(safe-area-inset-bottom)); z-index:70; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px; padding:7px; border:1px solid rgba(103,209,196,.24); border-radius:18px; background:linear-gradient(145deg,rgba(17,37,53,.94),rgba(7,18,30,.96)); box-shadow:0 12px 38px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.045); -webkit-backdrop-filter:blur(18px) saturate(140%); backdrop-filter:blur(18px) saturate(140%); }
+            .dashboard-mobile-footer button { display:flex; min-width:0; min-height:55px; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:5px 2px; border:1px solid transparent; border-radius:12px; background:transparent; color:#9db1bf; font:700 .68rem/1.1 'Tajawal',sans-serif; cursor:pointer; transition:background .18s ease,color .18s ease,border-color .18s ease,transform .18s ease; }
+            .dashboard-mobile-footer button:hover, .dashboard-mobile-footer button:focus-visible, .dashboard-mobile-footer button[aria-current="page"] { border-color:rgba(71,215,194,.2); background:linear-gradient(145deg,rgba(39,136,128,.22),rgba(20,62,75,.2)); color:#a6f0e3; outline:none; }
+            .dashboard-mobile-footer button:active { transform:scale(.96); }
+            .dashboard-mobile-footer svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+            .dashboard-mobile-footer span { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            #dashboard-nav.dashboard-side-nav { inset-block:10px; }
+        }
+        @media(max-width:360px) { .dashboard-mobile-footer { inset-inline:6px; gap:1px; padding:5px; } .dashboard-mobile-footer button { font-size:.62rem; } }
+        @media(max-width:780px) {
+            .advanced-group { overflow:hidden; }
+            .advanced-group > summary { min-height:42px; align-items:center; padding-inline-end:34px; cursor:pointer; list-style:none; }
+            .advanced-group > summary::-webkit-details-marker { display:none; }
+            .advanced-group > summary::after { position:absolute; inset-inline-end:3px; display:grid; width:25px; height:25px; place-items:center; border:1px solid rgba(113,164,190,.2); border-radius:8px; background:rgba(8,20,32,.48); color:#79daca; content:'+'; font-size:1.05rem; line-height:1; }
+            .advanced-group[open] > summary::after { content:'−'; }
+            .advanced-group[open] > summary { margin-bottom:12px; }
+        }
 
         /* Glass surfaces: keep the dashboard depth while letting its background show through. */
         .dashboard-brand,
@@ -505,6 +566,20 @@
         }
         #dashboard-nav.dashboard-side-nav { background: linear-gradient(155deg, rgba(21, 45, 64, .88), rgba(8, 20, 33, .84)); }
         .dashboard-menu-backdrop { background: rgba(2, 8, 15, .48); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+        .dashboard-visual-guide { margin:0 0 16px; padding:17px; border:1px solid rgba(119,177,197,.18); border-radius:16px; background:linear-gradient(145deg,rgba(19,42,59,.64),rgba(8,20,33,.62)); box-shadow:inset 0 1px rgba(255,255,255,.05); -webkit-backdrop-filter:blur(18px) saturate(140%); backdrop-filter:blur(18px) saturate(140%); }
+        .dashboard-visual-guide-heading { display:flex; align-items:end; justify-content:space-between; gap:10px; margin-bottom:13px; }
+        .dashboard-visual-guide-heading h4 { margin:0; color:#e9f7f6; font-size:1rem; }
+        .dashboard-visual-guide-heading p { margin:0; color:#91a8b7; font-size:.76rem; }
+        .dashboard-visual-guide-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+        .dashboard-visual-guide-card { min-width:0; overflow:hidden; border:1px solid rgba(133,179,198,.17); border-radius:13px; background:rgba(5,17,29,.42); transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+        .dashboard-visual-guide-card:hover { transform:translateY(-2px); border-color:rgba(91,221,201,.38); box-shadow:0 10px 24px rgba(0,0,0,.16); }
+        .dashboard-visual-guide-card img { display:block; width:100%; aspect-ratio:2/1; object-fit:cover; border-bottom:1px solid rgba(133,179,198,.13); }
+        .dashboard-visual-guide-card-copy { padding:10px 11px 12px; }
+        .dashboard-visual-guide-card-copy small { display:block; margin-bottom:4px; color:#72d9ca; font-size:.66rem; font-weight:900; letter-spacing:.025em; }
+        .dashboard-visual-guide-card-copy strong { display:block; color:#eaf4f6; font-size:.85rem; }
+        .dashboard-visual-guide-card-copy p { margin:4px 0 0; color:#a5b6c0; font-size:.73rem; line-height:1.65; }
+        @media(max-width:900px) { .dashboard-visual-guide-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+        @media(max-width:520px) { .dashboard-visual-guide { padding:12px; } .dashboard-visual-guide-heading { display:block; } .dashboard-visual-guide-heading p { margin-top:4px; } .dashboard-visual-guide-grid { grid-template-columns:1fr; gap:9px; } .dashboard-visual-guide-card { display:grid; grid-template-columns:minmax(105px,.8fr) minmax(0,1fr); align-items:stretch; } .dashboard-visual-guide-card img { height:100%; min-height:112px; aspect-ratio:auto; border-right:0; border-bottom:0; border-inline-end:1px solid rgba(133,179,198,.13); object-fit:cover; } .dashboard-visual-guide-card-copy { align-self:center; padding:9px 10px; } }
         @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
             .dashboard-brand, .dashboard-side-nav, .user-header, .guild-list-section, .personal-settings,
             .server-settings-panel, .guild-card, .dashboard-summary-card, .settings-actions, .setting-card,
@@ -513,6 +588,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/refresh.css?v=radical-redesign-2">
 </head>
 <body>
     <label class="settings-note" for="dashboard-language" style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:0 auto;max-width:1000px"><span>لغة الموقع</span><select id="dashboard-language" aria-label="لغة الموقع" style="padding:8px;border-radius:8px;background:#0a1421;color:#fff;border:1px solid #33485e"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ko">한국어</option><option value="ja">日本語</option></select></label>
@@ -539,11 +615,12 @@
                         <button id="dashboard-nav-server-settings" type="button" disabled title="اختر سيرفرًا أولًا"><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg></span><span>إعدادات السيرفر المحدد</span></button>
                     </div>
                     <div class="dashboard-menu-categories" id="dashboard-menu-categories">
-                        <details class="dashboard-menu-category" data-tone="protection"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span>الحماية</span></summary><div class="dashboard-menu-links" data-menu-category="protection"></div></details>
-                        <details class="dashboard-menu-category" data-tone="games"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7.5 8h9a4.5 4.5 0 0 1 4.3 5.8l-1 3a2 2 0 0 1-3.2.9L14 15H10l-2.6 2.7a2 2 0 0 1-3.3-.9l-1-3A4.5 4.5 0 0 1 7.5 8Z"/><path d="M7 10.5v4m-2-2h4m7-.8h.01m2.5 2h.01"/></svg></span><span>الألعاب</span></summary><div class="dashboard-menu-links" data-menu-category="games"></div></details>
-                        <details class="dashboard-menu-category" data-tone="moderation"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m8.5 12 2.4 2.4 4.8-5"/></svg></span><span>الإشراف</span></summary><div class="dashboard-menu-links" data-menu-category="moderation"></div></details>
-                        <details class="dashboard-menu-category" data-tone="members"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0m4-11v6m-3-3h6"/></svg></span><span>الأعضاء</span></summary><div class="dashboard-menu-links" data-menu-category="members"></div></details>
-                        <details class="dashboard-menu-category" data-tone="community"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="18.5" cy="5" r="2"/><circle cx="18.5" cy="19" r="2"/><path d="m7 11 9.5-5M7 13l9.5 5"/></svg></span><span>المجتمع والخدمات</span></summary><div class="dashboard-menu-links" data-menu-category="community"></div></details>
+                        <details class="dashboard-menu-category" data-tone="protection"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span>الحماية</span></summary><small class="dashboard-menu-description">مكافحة السبام والغارات والروابط</small><div class="dashboard-menu-links" data-menu-category="protection"></div></details>
+                        <details class="dashboard-menu-category" data-tone="games"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7.5 8h9a4.5 4.5 0 0 1 4.3 5.8l-1 3a2 2 0 0 1-3.2.9L14 15H10l-2.6 2.7a2 2 0 0 1-3.3-.9l-1-3A4.5 4.5 0 0 1 7.5 8Z"/><path d="M7 10.5v4m-2-2h4m7-.8h.01m2.5 2h.01"/></svg></span><span>الألعاب والتفاعل</span></summary><small class="dashboard-menu-description">ألعاب السيرفر، التصويت، والنشاط</small><div class="dashboard-menu-links" data-menu-category="games"></div></details>
+                        <details class="dashboard-menu-category" data-tone="moderation"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m8.5 12 2.4 2.4 4.8-5"/></svg></span><span>الإشراف</span></summary><small class="dashboard-menu-description">الأوامر، السجلات، وإدارة السيرفر</small><div class="dashboard-menu-links" data-menu-category="moderation"></div></details>
+                        <details class="dashboard-menu-category" data-tone="members"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0m4-11v6m-3-3h6"/></svg></span><span>الأعضاء</span></summary><small class="dashboard-menu-description">الترحيب، التحقق، والرتب</small><div class="dashboard-menu-links" data-menu-category="members"></div></details>
+                        <details class="dashboard-menu-category" data-tone="community"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="18.5" cy="5" r="2"/><circle cx="18.5" cy="19" r="2"/><path d="m7 11 9.5-5M7 13l9.5 5"/></svg></span><span>المجتمع والخدمات</span></summary><small class="dashboard-menu-description">التذاكر، الرسائل، والإعلانات</small><div class="dashboard-menu-links" data-menu-category="community"></div></details>
+                        <details class="dashboard-menu-category" data-tone="tools"><summary><span class="dashboard-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 8h8M8 12h5M8 16h8"/><circle cx="17" cy="12" r="1"/></svg></span><span>أدوات السيرفر</span></summary><small class="dashboard-menu-description">المعلومات، النسخ، والتخصيص</small><div class="dashboard-menu-links" data-menu-category="tools"></div></details>
                     </div>
                     <div class="dashboard-nav-hint" id="dashboard-nav-hint">اختر سيرفرًا ثم اختر فئة لفتح إعداداتها</div>
                 </nav>
@@ -586,6 +663,30 @@
                     <article class="dashboard-summary-card"><small>خطة السيرفر</small><strong id="summary-plan">Free</strong></article>
                     <article class="dashboard-summary-card"><small>الحمايات المفعّلة</small><strong id="summary-protections">0 مفعّلة</strong></article>
                 </div>
+                <details class="dashboard-insights">
+                    <summary><span>نظرة عامة ودليل الإعداد</span><small class="dashboard-insights-hint">الإحصاءات والشروحات — اضغط للعرض</small></summary>
+                    <div class="dashboard-insights-content">
+                <section class="dashboard-visual-guide" aria-labelledby="dashboard-visual-guide-title">
+                    <div class="dashboard-visual-guide-heading"><h4 id="dashboard-visual-guide-title">دليل مصوّر لإعداد السيرفر</h4><p>شرح سريع لأهم الأدوات في لوحة التحكم</p></div>
+                    <div class="dashboard-visual-guide-grid">
+                        <article class="dashboard-visual-guide-card"><img src="/images/dashboard-guides/protection.svg" alt="رسم توضيحي لخيارات الحماية" loading="lazy"><div class="dashboard-visual-guide-card-copy"><small>01 · الحماية</small><strong>اختر مستوى الحماية</strong><p>راجع الخيارات التي سيتغير إعدادها، ثم احفظها.</p></div></article>
+                        <article class="dashboard-visual-guide-card"><img src="/images/dashboard-guides/activity.svg" alt="رسم توضيحي لمخطط نشاط السيرفر" loading="lazy"><div class="dashboard-visual-guide-card-copy"><small>02 · النشاط</small><strong>تابع تفاعل الأعضاء</strong><p>راقب نشاط الأيام؛ عودة الرسائل ترفع الخط بالأخضر.</p></div></article>
+                        <article class="dashboard-visual-guide-card"><img src="/images/dashboard-guides/verification.svg" alt="رسم توضيحي لرسالة التحقق" loading="lazy"><div class="dashboard-visual-guide-card-copy"><small>03 · التحقق</small><strong>جهّز لوحة التحقق</strong><p>حدد قناة التحقق، أرسل اللوحة، ثم اختبر الزر.</p></div></article>
+                        <article class="dashboard-visual-guide-card"><img src="/images/dashboard-guides/backup.svg" alt="رسم توضيحي لنسخ واسترجاع إعدادات السيرفر" loading="lazy"><div class="dashboard-visual-guide-card-copy"><small>04 · النسخ</small><strong>انسخ قبل التغييرات</strong><p>احفظ نسخة من الهيكل واسترجعها عند الحاجة.</p></div></article>
+                    </div>
+                </section>
+                <section id="server-activity-panel" class="server-activity-panel" aria-labelledby="server-activity-title">
+                    <div class="server-activity-heading"><div class="server-activity-heading-copy"><h4 id="server-activity-title">اقتصاد ونشاط السيرفر</h4><p id="server-activity-status" aria-live="polite">جارٍ تحميل الإحصاءات…</p><span id="server-activity-trend" class="server-activity-trend" data-trend="flat">—</span></div><button id="refresh-server-activity" class="server-activity-refresh" type="button">تحديث</button></div>
+                    <div class="server-activity-stats">
+                        <div class="server-activity-stat"><small>آخر تفاعل مسجّل</small><strong id="server-activity-last">—</strong></div>
+                        <div class="server-activity-stat"><small>تفاعلات اليوم</small><strong id="server-activity-today">0</strong></div>
+                        <div class="server-activity-stat"><small>رصيد النشاط الافتراضي</small><strong id="server-activity-credits">0 نقطة</strong></div>
+                    </div>
+                    <div id="server-activity-chart" class="server-activity-chart" role="img" aria-label="رسم نشاط السيرفر خلال آخر سبعة أيام"><svg id="server-activity-svg" class="server-activity-svg" viewBox="0 0 700 210" preserveAspectRatio="none" aria-hidden="true"></svg><div id="server-activity-labels" class="server-activity-labels" aria-hidden="true"></div></div>
+                    <p class="server-activity-footnote">تُحتسب رسالة واحدة لكل عضو كل دقيقة كحد أقصى. إذا كان التفاعل أمس صفرًا، فرسالة مؤهلة واحدة اليوم ترفع الخط بالأخضر. عند انعدام التفاعل ينزل المؤشر بالأحمر؛ أعداد الرسائل المعروضة فعلية، والنقاط افتراضية وليست مالًا.</p>
+                </section>
+                    </div>
+                </details>
                 <div class="settings-actions">
                     <button id="save-guild-settings" class="settings-save" type="button">حفظ الإعدادات</button>
                     <button id="cancel-guild-settings" class="settings-cancel" type="button" disabled>إلغاء التغييرات</button>
@@ -640,12 +741,20 @@
 
                 </main>
             </div>
+            <nav class="dashboard-mobile-footer" id="dashboard-mobile-footer" aria-label="التنقل السريع">
+                <button type="button" data-footer-action="servers" aria-current="page" aria-label="سيرفراتي"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg><span>السيرفرات</span></button>
+                <button type="button" data-footer-action="protection" aria-label="الحماية"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>الحماية</span></button>
+                <button type="button" data-footer-action="games" aria-label="الألعاب"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 8h9a4.5 4.5 0 0 1 4.3 5.8l-1 3a2 2 0 0 1-3.2.9L14 15H10l-2.6 2.7a2 2 0 0 1-3.3-.9l-1-3A4.5 4.5 0 0 1 7.5 8Z"/><path d="M7 10.5v4m-2-2h4m7-.8h.01m2.5 2h.01"/></svg><span>الألعاب</span></button>
+                <button type="button" data-footer-action="settings" aria-label="إعدادات السيرفر"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg><span>الإعدادات</span></button>
+                <button type="button" data-footer-action="more" aria-label="المزيد من الأقسام"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg><span>المزيد</span></button>
+            </nav>
         </div>
     </div>
 
     <script>
         let selectedGuildId = null;
         let selectedGuild = null;
+        let serverActivityPanelNode = null;
         let selectedGuildPlan = 'Free';
         let activeDashboardGroupIndex = 0;
         let lockedSettingKeys = new Set();
@@ -681,6 +790,18 @@
             'لغة الموقع':'Website language','جاري جلب بيانات حسابك وسيرفراتك من Discord... ⏳':'Loading your account and Discord servers... ⏳','اختر السيرفر الذي ترغب بإدارته وترقيته':'Choose a server to manage','سيرفراتك التي تديرها:':'Servers you manage:','إعدادات السيرفر':'Server settings','حفظ الإعدادات':'Save settings','إعدادات متقدمة — أكثر من 50 خيارًا':'Advanced settings — 50+ options','الخيارات المعلّمة «يعمل الآن» مرتبطة بسلوك البوت. الخيارات المعلّمة «قيد الربط» تُحفظ للسيرفر لكنها لا تغيّر سلوكه حتى يُضاف دعمها البرمجي.':'“Active” options affect bot behavior. “In progress” options are saved but do not affect behavior until implemented.','منع الروابط':'Block links','يحذف الروابط والدعوات من رسائل الأعضاء. المشرفون مستثنون.':'Deletes links and invites from member messages. Administrators are exempt.','مكافحة السبام':'Anti-spam','يحذف الرسائل ابتداءً من الرسالة الخامسة خلال 8 ثوانٍ. المشرفون مستثنون.':'Deletes messages starting at the fifth message within 8 seconds. Administrators are exempt.','بادئة الأوامر':'Command prefix','إعدادات متقدمة':'Advanced settings','الأذكار والقرآن':'Adhkar and Quran','يعمل الآن':'Active','قيد الربط':'In progress','تفعيل التحقق بخطوتين':'Enable two-factor authentication','غير مفعّل':'Disabled','مفعّل':'Enabled','إلغاء التحقق بخطوتين':'Disable two-factor authentication','جاري تحميل الإعدادات...':'Loading settings...','تم تحميل الإعدادات المحفوظة.':'Saved settings loaded.','جاري الحفظ...':'Saving...','انحفظت الإعدادات بنجاح.':'Settings saved successfully.','اختر ما تريد تفعيله. حماية الروابط والسبام تحذف الرسالة المخالفة فقط، وتتطلب صلاحية':'Choose what to enable. Link and spam protection only delete offending messages and require the bot to have permission:','إدارة الرسائل':'Manage Messages','أضف البوت للسيرفر حتى تعمل الحماية.':'Add the bot to your server for protection to work.','من 1 إلى 3 رموز؛ مثل ! أو ? (أوامر: plan و anticrash).':'Use 1–3 symbols, such as ! or ? (commands: plan and anticrash).','إعدادات البوت':'Bot settings','الأوامر والصلاحيات':'Commands and permissions','مكافحة السبام':'Anti-spam','الروابط والاستثناءات':'Links and exceptions','فلاتر الرسائل':'Message filters','سجل الأحداث':'Event log','الترحيب والمغادرة':'Welcome and farewell','التحقق والرتب':'Verification and roles','الإشراف وإعدادات إضافية':'Moderation and more','الحماية من الغارات':'Anti-raid protection','الدعوات والمكافآت':'Invites and rewards','التذاكر والاقتراحات':'Tickets and suggestions','التصويت والمستويات والنسخ الاحتياطي':'Polls, levels and backups'
         };
         Object.assign(dashboardEnglish, {
+            'الألعاب والتفاعل':'Games and engagement','أدوات السيرفر':'Server tools',
+            'مكافحة السبام والغارات والروابط':'Spam, raid and link protection',
+            'الأوامر، السجلات، وإدارة السيرفر':'Commands, logs and server management',
+            'الترحيب، التحقق، والرتب':'Welcome, verification and roles',
+            'التذاكر، الرسائل، والإعلانات':'Tickets, messages and announcements',
+            'ألعاب السيرفر، التصويت، والنشاط':'Server games, polls and activity',
+            'المعلومات، النسخ، والتخصيص':'Information, backups and customization',
+            'نظرة عامة ودليل الإعداد':'Overview and setup guide',
+            'الإحصاءات والشروحات — اضغط للعرض':'Stats and guides — click to view',
+            'إعدادات':'settings'
+        });
+        Object.assign(dashboardEnglish, {
             'أمر قياس سرعة البوت':'Bot latency command','أمر معلومات السيرفر':'Server information command','أمر معلومات العضو':'Member information command','أمر صورة العضو':'Member avatar command','أمر صورة السيرفر':'Server icon command','أمر عدد الأعضاء':'Member count command','أمر معلومات الرتبة':'Role information command','أمر معلومات القناة':'Channel information command','أمر معلومات البوت':'Bot information command','أمر اقتباس رسالة':'Message quote command','أمر اختيار عشوائي':'Random choice command','أمر رمي النرد':'Dice roll command','أمر رمي العملة':'Coin flip command','أمر تغيير الاسم الشخصي':'Self nickname command','أمر إعلان إداري':'Admin announcement command','أمر إرسال رسالة باسم البوت':'Send as bot command','أمر قفل القناة':'Lock channel command','أمر فتح القناة':'Unlock channel command','أمر الوضع البطيء':'Slowmode command','أمر قائمة الرتب':'Role list command',
             'رجوع':'Back','شخصي':'Profile','السيرفرات':'Servers','الإعدادات':'Settings',
             'قائمة لوحة التحكم':'Dashboard menu','الحماية':'Protection','الألعاب':'Games','الإشراف':'Moderation','الأعضاء':'Members','الأعضاء الجدد':'New members','المجتمع والخدمات':'Community and services','التفاعل والأدوات':'Community and tools','إعداداتي الشخصية':'Personal settings','سيرفراتي':'My servers','إعدادات السيرفر المحدد':'Selected server settings','اختر سيرفرًا ثم اختر فئة لفتح إعداداتها':'Choose a server, then pick a category to open its settings','اختر سيرفرًا أولًا لعرض إعدادات هذه الفئة':'Choose a server first to view this category','إغلاق القائمة':'Close menu',
@@ -712,6 +833,8 @@
             antiSpamTimeoutEnabled:'Enable automatic timeout (Basic)',antiSpamTimeoutMinutes:'Automatic timeout duration (minutes)',antiRaidLockdownDurationMinutes:'Raid lockdown duration (minutes, VIP)',commandCooldownSeconds:'Command cooldown (seconds)',commandsEnabled:'Enable text commands',commandsRoleId:'Command access role ID',commandsAllowedChannelIds:'Allowed command channels',commandLanguage:'Command response language',commandDeleteAfterUse:'Delete command after use',antiSpamLimit:'Messages before action',antiSpamWindowSeconds:'Spam detection window (seconds)',antiSpamAction:'Spam action',antiSpamWarning:'Spam warning text',antiSpamIgnoreAdmins:'Ignore administrators',antiSpamIgnoreChannels:'Channels exempt from spam filter',antiLinksBlockInvites:'Block Discord invites',antiLinksBlockExternal:'Block external links',antiLinksAllowedDomains:'Allowed domains',antiLinksWarning:'Link warning text',antiLinksIgnoreChannels:'Channels exempt from link filter',antiLinksIgnoreRoleIds:'Roles exempt from link filter',capsFilterEnabled:'Enable uppercase filter',capsThresholdPercent:'Uppercase percentage threshold',capsMinimumLength:'Minimum message length',capsAction:'Uppercase filter action',duplicateFilterEnabled:'Enable duplicate message filter',duplicateMessageLimit:'Duplicate message limit',duplicateWindowSeconds:'Duplicate detection window (seconds)',mentionSpamEnabled:'Block mention spam',mentionLimit:'Maximum mentions',mentionSpamAction:'Mention spam action',blockedWordsEnabled:'Enable blocked words filter',blockedWords:'Blocked words',blockedWordsAction:'Blocked words action',modLogChannelId:'Moderation log channel ID',logDeletedMessages:'Log deleted messages',logEditedMessages:'Log edited messages',logMemberJoins:'Log member joins',logMemberLeaves:'Log member departures',logModerationActions:'Log moderation actions',logRoleChanges:'Log role changes',logChannelChanges:'Log channel changes',logBotCommands:'Log bot commands',welcomeEnabled:'Enable welcome message',welcomeChannelId:'Welcome channel ID',welcomeMessage:'Welcome message',welcomeRoleId:'New member auto-role ID',welcomeSendDm:'Send welcome DM',welcomeDmMessage:'Welcome DM text',welcomeIgnoreBots:'Ignore bots in welcome',farewellEnabled:'Enable farewell message',farewellChannelId:'Farewell channel ID',farewellMessage:'Farewell message',verificationEnabled:'Enable member verification',verificationRoleId:'Verification role ID',verificationTimeoutMinutes:'Verification timeout (minutes)',verificationMinAccountAgeDays:'Minimum account age (days)',autoRoleEnabled:'Enable automatic role',autoRoleId:'Automatic role ID',antiRaidEnabled:'Enable anti-raid protection',ticketEnabled:'Enable ticket system',ticketPanelChannelId:'Ticket panel channel ID',ticketPanelTitle:'Ticket panel title',ticketPanelDescription:'Ticket panel description',ticketPanelColor:'Ticket panel color',ticketPanelButtonLabel:'Open ticket button text',ticketPanelButtonStyle:'Open ticket button color',ticketPanelButtonEmoji:'Open ticket button emoji',ticketWelcomeMessage:'Ticket welcome message',ticketCloseMessage:'Ticket close message',suggestionEnabled:'Enable suggestions',suggestionChannelId:'Suggestion channel ID',suggestionReviewChannelId:'Suggestion review channel ID',suggestionEmbedTitle:'Suggestion card title',suggestionConfirmationMessage:'Suggestion confirmation message',pollEnabled:'Enable polls',levelSystemEnabled:'Enable level system',autorunBackupEnabled:'Enable scheduled backups',azkarEnabled:'Enable scheduled Adhkar',azkarChannelId:'Adhkar channel ID',azkarMessage:'Adhkar text',azkarIntervalHours:'Adhkar interval (hours)',quranReminderEnabled:'Enable Quran reminder',quranChannelId:'Quran channel ID',quranMessage:'Verse or reading text',quranIntervalHours:'Quran interval (hours)'
         };
         Object.assign(dashboardEnglishLabels, {
+            phishingGuardEnabled:'Enable YS Phishing Guard', phishingGuardChannelId:'Monitored channel ID', phishingGuardAction:'Action for messages in monitored channel',
+            activityStatsEnabled:'Enable activity statistics',
             gamesEnabled:'Enable the games menu', gameChannelIds:'Allowed game channels', gamesCooldownSeconds:'Cooldown between games (seconds)',
             gamesTriviaEnabled:'General knowledge quiz', gamesPictureGuessEnabled:'Drawn-picture guessing', gamesSpotDifferenceEnabled:'Spot the difference', gamesScrambleEnabled:'Word scramble',
             gamesRiddleEnabled:'Riddles', gamesMathEnabled:'Quick math challenge', gamesMemoryEnabled:'Memory sequence',
@@ -735,6 +858,7 @@
         };
         Object.assign(dashboardEnglish, {
             'القائمة':'Navigation',
+            'السيرفرات':'Servers', 'الإعدادات':'Settings', 'المزيد':'More', 'التنقل السريع':'Quick navigation',
             'الألعاب التفاعلية':'Interactive games',
             'قائمة السيرفرات':'Server list',
             'إعداداتي الشخصية':'Personal settings',
@@ -800,6 +924,26 @@
             document.body.classList.add('dashboard-menu-open');
             document.getElementById('dashboard-menu-close').focus();
         }
+        const dashboardMobileFooter = document.getElementById('dashboard-mobile-footer');
+        dashboardMobileFooter.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-footer-action]');
+            if (!button) return;
+            dashboardMobileFooter.querySelectorAll('button').forEach((item) => item.removeAttribute('aria-current'));
+            button.setAttribute('aria-current', 'page');
+            const action = button.dataset.footerAction;
+            if (action === 'more') { openDashboardMenu(); return; }
+            if (action === 'servers') {
+                dashboardNav.querySelector('.dashboard-nav-top a[href="#guild-list"]').click();
+                return;
+            }
+            if (action === 'settings') {
+                if (!selectedGuildId) { dashboardNav.querySelector('.dashboard-nav-top a[href="#guild-list"]').click(); return; }
+                document.getElementById('dashboard-nav-server-settings').click();
+                return;
+            }
+            const category = dashboardNav.querySelector(`[data-menu-category="${action}"]`);
+            category?.querySelector('[data-dashboard-menu-group], [data-dashboard-special]')?.click();
+        });
         dashboardMenuToggle.addEventListener('click', () => dashboardNav.hidden ? openDashboardMenu() : closeDashboardMenu());
         document.getElementById('dashboard-menu-close').addEventListener('click', () => closeDashboardMenu(true));
         dashboardMenuBackdrop.addEventListener('click', () => closeDashboardMenu(true));
@@ -840,6 +984,30 @@
         };
         const verificationPanelButtonCopy = { ar:'إرسال / إعادة إرسال لوحة التحقق', en:'Send / resend verification panel', fr:'Envoyer / renvoyer le panneau de vérification', es:'Enviar / reenviar panel de verificación', de:'Verifizierungspanel senden / erneut senden', pt:'Enviar / reenviar painel de verificação', ko:'인증 패널 보내기 / 다시 보내기', ja:'認証パネルを送信 / 再送信' };
         function dashboardText(arabic) { if (dashboardLanguage === 'ar') return arabic; return (dashboardLocales[dashboardLanguage] || {})[arabic] || dashboardEnglish[arabic] || arabic; }
+        Object.assign(dashboardEnglish, {
+            'روم مخصص للحماية: أي رسالة يرسلها عضو عادي إلى الروم المحدد تُحذف ويُطبّق عليه الإجراء المختار. لا يفحص محتوى الرسالة ولا يقرر إن كانت احتيالية؛ خصص الروم لهذا الغرض فقط. البوتات والإدارة مستثناة. يحتاج البوت صلاحية إدارة الرسائل، وصلاحية الإجراء ورتبة أعلى من العضو.':'Dedicated-channel protection: every message sent by a regular member in the selected channel is deleted and the chosen action is applied. It does not inspect message content or determine whether it is phishing; reserve this channel for this purpose. Bots and moderators are exempt. The bot needs Manage Messages, the selected moderation permission, and a higher role than the member.',
+            'YS Phishing Guard':'YS Phishing Guard', 'تفعيل YS Phishing Guard':'Enable YS Phishing Guard', 'معرّف روم الحماية':'Protection channel ID', 'العقوبة عند إرسال رسالة':'Action for sending a message',
+            'يشغّل الإجراء على كل رسالة يرسلها عضو غير إداري في الروم المحدد، حتى لو لم تكن الرسالة احتيالية. خصص رومًا منفصلًا لهذا النظام؛ لن يفحص البوت محتوى الرسائل. يتطلب صلاحيات البوت المناسبة ورتبة أعلى من العضو.':'Applies the action to every message sent by a non-moderator in the selected channel, even if it is not phishing. Reserve a separate channel for this feature; the bot does not inspect message content. The bot needs the right permissions and a higher role than the member.',
+            'معرّف الروم المخصص للحماية (17–20 رقمًا). سيُعاقب العضو العادي على أي رسالة يرسلها داخل هذا الروم.':'ID of the dedicated protection channel (17–20 digits). Regular members are actioned for any message they send there.',
+            'اختر عقوبة واحدة: تايم أوت 24 ساعة، طرد، أو باند. الطرد والباند لا يمكن التراجع عنهما تلقائيًا.':'Choose one action: timeout for 24 hours, kick, or ban. Kicks and bans cannot be automatically reversed.',
+            'تايم أوت 24 ساعة':'Timeout for 24 hours', 'طرد':'Kick', 'باند':'Ban'
+        });
+        Object.assign(dashboardEnglish, {
+            'اقتصاد ونشاط السيرفر':'Server activity and virtual economy', 'جارٍ تحميل الإحصاءات…':'Loading activity stats…', 'آخر تفاعل مسجّل':'Last recorded activity', 'تفاعلات اليوم':'Interactions today', 'رصيد النشاط الافتراضي':'Virtual activity balance', 'نقطة':'points', 'تحديث':'Refresh', 'لا يوجد نشاط بعد':'No activity recorded yet', 'آخر 7 أيام':'Last 7 days', 'تفاعل':'interactions', 'رسم نشاط السيرفر خلال آخر سبعة أيام':'Server activity over the last seven days', 'النشاط يرتفع عن أمس':'Activity is up from yesterday', 'النشاط ينخفض عن أمس':'Activity is down from yesterday', 'النشاط ثابت عن أمس':'Activity is unchanged from yesterday', 'تُحتسب رسالة واحدة لكل عضو كل دقيقة كحد أقصى. هذا الرصيد افتراضي للعرض فقط، وليس مالًا ولا يُسحب أو يُستبدل. لا نحفظ نصوص الرسائل أو أسماء الأعضاء.':'At most one message per member per minute is counted. Credits are display-only virtual points, not money, and cannot be withdrawn or exchanged. Message text and member names are not stored.', 'نشاط السيرفر':'Server activity', 'فعّل إحصاءات النشاط':'Enable activity statistics', 'يحتسب البوت رسالة واحدة لكل عضو كل دقيقة، ويجمع أعداد التفاعل يوميًا ويضيف نقطة افتراضية لكل تفاعل. لا يسجل محتوى الرسائل أو أسماء الأعضاء.':'The bot counts at most one message per member each minute, aggregates daily activity, and adds one virtual point per counted interaction. Message contents and member names are not stored.', 'الإحصاءات متوقفة. فعّلها من فئة نشاط السيرفر.':'Statistics are paused. Enable them in the Server activity category.'
+        });
+        Object.assign(dashboardEnglish, {
+            'خمول السيرفر · المؤشر يهبط':'Server idle · activity trend falling',
+            'تُحتسب رسالة واحدة لكل عضو كل دقيقة كحد أقصى. الرصيد افتراضي للعرض فقط، وليس مالًا. عند انعدام التفاعل يظهر نزول أحمر كمؤشر خمول؛ أعداد التفاعلات المعروضة فعلية. لا نحفظ نصوص الرسائل أو أسماء الأعضاء.':'At most one message per member per minute is counted. Credits are virtual display points, not money. With no interaction, the red falling line indicates server inactivity; displayed interaction counts remain actual. Message text and member names are not stored.',
+            'تُحتسب رسالة واحدة لكل عضو كل دقيقة كحد أقصى. إذا كان التفاعل أمس صفرًا، فرسالة مؤهلة واحدة اليوم ترفع الخط بالأخضر. عند انعدام التفاعل ينزل المؤشر بالأحمر؛ أعداد الرسائل المعروضة فعلية، والنقاط افتراضية وليست مالًا.':'At most one message per member each minute is counted. If yesterday had zero activity, even one eligible message today turns the line green and upward. With no activity, the line falls red; message counts are actual and points are virtual.'
+        });
+        Object.assign(dashboardEnglish, {
+            'دليل مصوّر لإعداد السيرفر':'Visual server setup guide',
+            'شرح سريع لأهم الأدوات في لوحة التحكم':'Quick explanations for the main dashboard tools',
+            'الحماية':'Protection', 'اختر مستوى الحماية':'Choose a protection level', 'راجع الخيارات التي سيتغير إعدادها، ثم احفظها.':'Review which options will change, then save them.',
+            'النشاط':'Activity', 'تابع تفاعل الأعضاء':'Track member activity', 'راقب نشاط الأيام؛ عودة الرسائل ترفع الخط بالأخضر.':'Follow activity by day; new messages lift the line in green.',
+            'التحقق':'Verification', 'جهّز لوحة التحقق':'Set up verification panel', 'حدد قناة التحقق، أرسل اللوحة، ثم اختبر الزر.':'Choose the verification channel, send the panel, then test its button.',
+            'النسخ':'Backups', 'انسخ قبل التغييرات':'Back up before changes', 'احفظ نسخة من الهيكل واسترجعها عند الحاجة.':'Save a server structure copy and restore it when needed.'
+        });
         function dashboardLabel(key, arabic) { if (dashboardLanguage === 'ar') return arabic; const english=dashboardEnglishLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()); return dashboardLocales[dashboardLanguage]?.[arabic] || english; }
         function applyDashboardLanguage(language) {
             dashboardLanguage = ['ar','en','fr','es','de','pt','ko','ja'].includes(language) ? language : 'ar';
@@ -863,6 +1031,9 @@
             { id: 'advanced-protection-settings', title: 'الحماية المتقدمة', note: 'اختر مستوى الحماية لتفعيل مجموعة متوازنة من الحمايات الموجودة فعليًا. المستويات لا تطرد ولا تحظر أحدًا تلقائيًا؛ عدّل القيم بعدها واحفظ.', items: [
                 ['protectionLevel', 'مستوى الحماية'],
                 ['antiMentionRaidEnabled', 'تفعيل حماية إغراق المنشنات'], ['antiMentionRaidBlockEveryone', 'منع @everyone'], ['antiMentionRaidBlockHere', 'منع @here'], ['antiMentionRaidLimit', 'حد المنشنات في الرسالة'], ['antiMentionRaidWindowSeconds', 'نافذة رصد تكرار المنشنات بالثواني'], ['antiMentionRaidMessageLimit', 'عدد رسائل المنشن قبل الإجراء'], ['antiMentionRaidTimeoutEnabled', 'إسكات تلقائي عند تكرار المنشنات'], ['antiMentionRaidTimeoutMinutes', 'مدة الإسكات بالدقائق'], ['antiSuspiciousActivityEnabled', 'رصد النشاط المشبوه'], ['antiSuspiciousActivityThreshold', 'عدد المؤشرات لإطلاق التنبيه'], ['antiSuspiciousActivityWindowSeconds', 'نافذة تجميع المؤشرات بالثواني'], ['antiSuspiciousAutoLockdownEnabled', 'قفل مؤقت عند تراكم المؤشرات'], ['antiSuspiciousLockdownDurationMinutes', 'مدة القفل المؤقت بالدقائق'], ['antiPermissionAbuseEnabled', 'رصد الصلاحيات الخطرة'], ['antiPermissionAbuseRevertEnabled', 'إلغاء الصلاحية الخطرة المضافة للرتبة'], ['antiBotEnabled', 'مراجعة البوتات الجديدة'], ['antiBotApprovedIds', 'معرّفات البوتات المعتمدة (مفصولة بفواصل)'], ['antiImpersonationEnabled', 'رصد انتحال الطاقم'], ['antiImpersonationStaffRoleIds', 'معرّفات رتب الطاقم الموثوقة (مفصولة بفواصل)'], ['antiAltEnabled', 'تفعيل Anti-Alt للحسابات البديلة'], ['antiAltMinAccountAgeDays', 'العمر الأدنى للحساب (بالأيام)'], ['antiAltAction', 'إجراء الحساب المشتبه به'], ['antiAltTimeoutMinutes', 'مدة الإسكات بالدقائق'], ['antiAltClusterLimit', 'عدد الحسابات الحديثة لتأكيد موجة'], ['antiAltWindowSeconds', 'نافذة رصد الحسابات الحديثة بالثواني']
+            ] },
+            { title: 'YS Phishing Guard', note: 'حماية روم مخصص: أي رسالة يرسلها عضو عادي إلى الروم المحدد تُحذف ويُطبّق عليه الإجراء المختار. لا يفحص محتوى الرسالة ولا يقرر إن كانت احتيالية؛ خصص الروم لهذا الغرض فقط. البوتات والإدارة مستثناة. يحتاج البوت صلاحية إدارة الرسائل، وصلاحية الإجراء ورتبة أعلى من العضو.', items: [
+                ['phishingGuardEnabled', 'تفعيل YS Phishing Guard'], ['phishingGuardChannelId', 'معرّف روم الحماية'], ['phishingGuardAction', 'العقوبة عند إرسال رسالة']
             ] },
             { title: 'الأوامر والصلاحيات', note: 'أوامر البادئة تعمل دائمًا. تقدر اختياريًا تحدد رتبة أو قنوات لاستخدامها، وتضبط مهلة الانتظار ولغة الردود.', items: [
                 ['commandCooldownSeconds', 'مدة انتظار أوامر البادئة بالثواني'], ['commandsRoleId', 'معرّف رتبة أوامر البادئة (اختياري)'], ['commandsAllowedChannelIds', 'قنوات أوامر البادئة المسموحة (اختياري)'], ['commandLanguage', 'لغة ردود البوت'], ['commandDeleteAfterUse', 'حذف رسالة أمر البادئة بعد الاستخدام']
@@ -912,6 +1083,9 @@
             { key: 'embedBuilder', title: 'إدارة الإمبيدات', note: 'حدد عدد الإمبيدات واكتب معرّف الروم لكل بطاقة. عند حفظ الإعدادات يرسل البوت كل إمبيد إلى الروم الخاص به.', items: [] },
             { title: 'الألعاب التفاعلية', note: 'الألعاب متاحة تلقائيًا من /games أو من أمر games مع بادئة السيرفر. يمكنك تحديد قنوات اللعب ومدة الانتظار؛ أسماء ورسائل اللعب تتبع لغة ردود البوت. رسومات الألعاب أصلية ومرسومة داخل YS-Bot وليست من حزمة الإيموجي.', items: [
                 ['gamesEnabled', 'تفعيل قائمة الألعاب'], ['gameChannelIds', 'القنوات المسموحة للألعاب'], ['gamesCooldownSeconds', 'فترة الانتظار بين الألعاب بالثواني'], ['gamesTriviaEnabled', 'لعبة المعلومات العامة'], ['gamesPictureGuessEnabled', 'لعبة تخمين الرسمة'], ['gamesSpotDifferenceEnabled', 'لعبة اكتشاف الاختلاف'], ['gamesScrambleEnabled', 'لعبة ترتيب الحروف'], ['gamesRiddleEnabled', 'لعبة الألغاز'], ['gamesMathEnabled', 'تحدي الحساب السريع'], ['gamesMemoryEnabled', 'لعبة الذاكرة البصرية'], ['gamesRpsEnabled', 'حجر ورقة مقص'], ['gamesDiceEnabled', 'تحدي النرد'], ['gamesTicTacToeEnabled', 'إكس أو ضد البوت'], ['gamesEmojiPuzzleEnabled', 'لغز الإيموجي'], ['gamesTrueFalseEnabled', 'لعبة صح أو خطأ'], ['gamesGeographyEnabled', 'تحدي العواصم'], ['gamesWordGuessEnabled', 'لعبة خمن الكلمة'], ['gamesTypingEnabled', 'تحدي الكتابة'], ['gamesOddOneEnabled', 'لعبة اختر المختلف'], ['gamesNumberGuessEnabled', 'خمن الرقم ضد البوت'], ['gamesCoinEnabled', 'تحدي العملة ضد البوت'], ['gamesHigherLowerEnabled', 'أعلى أو أقل ضد البوت']
+            ] },
+            { key: 'serverActivity', title: 'نشاط السيرفر', note: 'يجمع البوت عدد الرسائل المؤهلة يوميًا ويضيف نقطة افتراضية لكل تفاعل محتسب. لا يسجل محتوى الرسائل أو أسماء الأعضاء.', items: [
+                ['activityStatsEnabled', 'تفعيل إحصاءات النشاط']
             ] },
             { title: 'التصويت والمستويات والنسخ الاحتياطي', items: [
                 ['pollEnabled', 'تفعيل التصويت'], ['pollChannelIds', 'القنوات المسموحة للتصويت'], ['levelSystemEnabled', 'تفعيل نظام المستويات'], ['levelAnnouncementChannelId', 'قناة إعلان المستوى'], ['levelUpMessage', 'رسالة الترقية للمستوى'], ['levelCooldownSeconds', 'فترة احتساب الخبرة بالثواني'], ['autorunBackupEnabled', 'تفعيل النسخ الاحتياطي المجدول'], ['autorunBackupIntervalHours', 'فترة النسخ الاحتياطي بالساعات']
@@ -975,7 +1149,7 @@
             'logBotCommands', 'welcomeEnabled', 'welcomeSendDm', 'welcomeIgnoreBots', 'farewellEnabled', 'verificationEnabled', 'antiSpamTimeoutEnabled',
             'autoRoleEnabled', 'warningEscalationEnabled', 'antiRaidEnabled', 'inviteTrackingEnabled', 'ticketEnabled',
             'ticketAskReason', 'ticketTranscriptEnabled', 'ticketNotifySupport', 'ticketAllowMemberClose', 'suggestionAnonymousEnabled',
-            'suggestionEnabled', 'pollEnabled', 'levelSystemEnabled', 'autorunBackupEnabled', 'azkarEnabled', 'quranReminderEnabled',
+            'suggestionEnabled', 'pollEnabled', 'levelSystemEnabled', 'activityStatsEnabled', 'autorunBackupEnabled', 'azkarEnabled', 'quranReminderEnabled',
             'gamesEnabled', 'gamesTriviaEnabled', 'gamesPictureGuessEnabled', 'gamesSpotDifferenceEnabled', 'gamesScrambleEnabled', 'gamesRiddleEnabled', 'gamesMathEnabled', 'gamesMemoryEnabled', 'gamesRpsEnabled', 'gamesDiceEnabled', 'gamesTicTacToeEnabled', 'gamesEmojiPuzzleEnabled', 'gamesTrueFalseEnabled', 'gamesGeographyEnabled', 'gamesWordGuessEnabled', 'gamesTypingEnabled', 'gamesOddOneEnabled', 'gamesNumberGuessEnabled', 'gamesCoinEnabled', 'gamesHigherLowerEnabled',
             'antiNukeEnabled', 'antiNukeChannelCreateEnabled', 'antiNukeChannelDeleteEnabled', 'antiNukeRoleCreateEnabled', 'antiNukeRoleDeleteEnabled',
             'antiNukeRoleUpdateEnabled', 'antiNukeBanEnabled', 'antiNukeWebhookCreateEnabled', 'antiNukeWebhookDeleteEnabled',
@@ -995,6 +1169,7 @@
             antiNukeChannelCreateLimit: [1, 20], antiNukeChannelDeleteLimit: [1, 20], antiNukeRoleCreateLimit: [1, 20], antiNukeRoleDeleteLimit: [1, 20], antiNukeRoleUpdateLimit: [1, 20], antiNukeBanLimit: [1, 20], antiNukeWebhookCreateLimit: [1, 20], antiNukeWebhookDeleteLimit: [1, 20], antiNukeEmojiDeleteLimit: [1, 20], antiNukeStickerDeleteLimit: [1, 20], antiNukeWindowSeconds: [1, 600], antiNukeTimeoutMinutes: [1, 1440], antiNukeCooldownSeconds: [0, 3600], antiNukeLockdownDurationMinutes: [1, 60], antiMentionRaidLimit: [2, 30], antiMentionRaidWindowSeconds: [3, 120], antiMentionRaidMessageLimit: [2, 20], antiMentionRaidTimeoutMinutes: [1, 1440], antiSuspiciousActivityThreshold: [2, 20], antiSuspiciousActivityWindowSeconds: [5, 600], antiSuspiciousLockdownDurationMinutes: [1, 60], antiAltMinAccountAgeDays: [1, 365], antiAltTimeoutMinutes: [1, 1440], antiAltClusterLimit: [2, 20], antiAltWindowSeconds: [10, 600]
         };
         const extraChoiceOptions = {
+            phishingGuardAction: [['timeout24h', 'تايم أوت 24 ساعة'], ['kick', 'طرد'], ['ban', 'باند']],
             protectionLevel: [['custom', 'مخصص'], ['green', 'أخضر · أساسي'], ['yellow', 'أصفر · متوازن'], ['orange', 'برتقالي · متقدم'], ['red', 'أحمر · مشدد']],
             autoReplyMatchMode: [['exact', 'تطابق كامل'], ['includes', 'تحتوي على'], ['startsWith', 'تبدأ بـ']],
             antiRaidYoungAccountAction: [['alert', 'تنبيه فقط'], ['kick', 'طرد'], ['ban', 'حظر']],
@@ -1024,6 +1199,9 @@
         const extraTextLimits = { autoReactionChannelId:24, autoReactionEmoji:32, mediaOnlyChannelId:24, keywordAlertWords:1000, keywordAlertChannelId:24, stickyMessageChannelId:24, stickyMessageText:1800, selfRoleAllowedIds:500, birthdayChannelId:24, confessionsChannelId:24, reportChannelId:24, starboardChannelId:24, starboardEmoji:32, countingChannelId:24, autoReplyRules: 4000, antiBotApprovedIds: 1000, antiImpersonationStaffRoleIds: 500, antiRaidLockdownExcludeChannelIds: 500, antiRaidAlertRoleId: 24, autoReplyIgnoreChannelIds: 500, scheduledAnnouncementChannelId: 24, scheduledAnnouncementMessage: 1500, scheduledAnnouncementTitle: 100, scheduledAnnouncementImageUrl: 500, commandsRoleId: 24, commandsAllowedChannelIds: 500, gameChannelIds: 500, antiSpamWarning: 180, antiSpamIgnoreChannels: 500, antiLinksAllowedDomains: 500, antiLinksWarning: 180, antiLinksIgnoreChannels: 500, antiLinksIgnoreRoleIds: 500, modLogChannelId: 24, welcomeChannelId: 24, welcomeMessage: 500, welcomeRoleId: 24, welcomeDmMessage: 500, welcomeEmbedTitle: 256, welcomeEmbedImageUrl: 500, welcomeEmbedFooter: 200, farewellChannelId: 24, farewellMessage: 500, farewellEmbedTitle: 256, farewellEmbedImageUrl: 500, farewellEmbedFooter: 200, verificationRoleId: 24, autoRoleId: 24, blockedWords: 1000, supportChannelId: 24, antiRaidAlertChannelId: 24, antiNukeAlertChannelId: 24, antiNukeAlertRoleId: 24, antiNukeAllowlistedUserIds: 500, antiNukeAllowlistedRoleIds: 500, inviteRewardRoleId: 24, ticketPanelChannelId: 24, ticketCategoryId: 24, ticketSupportRoleId: 24, ticketTranscriptChannelId: 24, ticketPanelTitle: 100, ticketPanelDescription: 1000, ticketPanelButtonLabel: 80, ticketPanelButtonEmoji: 32, ticketReasonTitle: 100, ticketReasonPlaceholder: 100, ticketWelcomeTitle: 100, ticketWelcomeMessage: 1500, ticketWelcomeImageUrl: 500, ticketCloseButtonLabel: 80, ticketCloseMessage: 300, ticketConfirmationMessage: 200, ticketNamePrefix: 24, suggestionChannelId: 24, suggestionReviewChannelId: 24, suggestionEmbedTitle: 100, suggestionEmbedImageUrl: 500, suggestionUpvoteLabel: 40, suggestionDownvoteLabel: 40, suggestionUpvoteEmoji: 32, suggestionDownvoteEmoji: 32, suggestionConfirmationMessage: 200, suggestionReviewMessage: 300, levelAnnouncementChannelId: 24, levelUpMessage: 300, azkarChannelId: 24, azkarMessage: 1500, quranChannelId: 24, quranMessage: 1500, customEmbedChannelId: 24, customEmbedTitle: 256, customEmbedDescription: 4000, customEmbedThumbnailUrl: 500, customEmbedImageUrl: 500 };
         extraTextLimits.verificationChannelId = 24;
         function settingInstructions(key, labelText) {
+            if (key === 'phishingGuardEnabled') return 'يشغّل الإجراء على كل رسالة يرسلها عضو غير إداري في الروم المحدد، حتى لو لم تكن الرسالة احتيالية. خصص رومًا منفصلًا لهذا النظام؛ لن يفحص البوت محتوى الرسائل. يتطلب صلاحيات البوت المناسبة ورتبة أعلى من العضو.';
+            if (key === 'phishingGuardChannelId') return 'معرّف الروم المخصص للحماية (17–20 رقمًا). سيُعاقب العضو العادي على أي رسالة يرسلها داخل هذا الروم.';
+            if (key === 'phishingGuardAction') return 'اختر عقوبة واحدة: تايم أوت 24 ساعة، طرد، أو باند. الطرد والباند لا يمكن التراجع عنهما تلقائيًا.';
             if (key === 'protectionLevel') return 'اختر لونًا لتجهيز حمايات البوت وحساسيتها. يطبّقها البوت بعد حفظ الإعدادات، وتقدر بعدها تعدّل كل خيار لوحده.';
             if (key === 'reportEnabled') return 'فعّله وحدد قناة استقبال البلاغات، ثم احفظ. يستطيع العضو إرسال بلاغ خاص للمشرفين باستخدام /report.';
             if (key === 'reportChannelId') return 'ضع معرّف قناة خاصة بفريق الإشراف، وتأكد أن البوت يملك صلاحية إرسال الرسائل فيها.';
@@ -1077,6 +1255,7 @@
             if (key === 'commandPrefix') return 'اكتب بادئة من رمز إلى 3 رموز. مثال: ! ثم استخدم !plan أو !anticrash.';
             if (key === 'commandCooldownSeconds') return 'مدة الانتظار بين أوامر النص للشخص نفسه؛ اجعلها 0 لإيقاف الانتظار.';
             if (key === 'pollEnabled') return 'فعّل واحفظ، ثم استخدم /poll واكتب السؤال. يضيف البوت تصويتي 👍 و👎.';
+            if (key === 'activityStatsEnabled') return 'يحتسب البوت رسالة واحدة لكل عضو كل 60 ثانية، ويعرض وقت آخر تفاعل ورسمًا يوميًا ويضيف نقطة افتراضية لكل رسالة محتسبة. لا تُحفظ نصوص الرسائل أو أسماء الأعضاء.';
             if (key === 'pollChannelIds') return 'اختياري: معرّفات القنوات التي يُسمح فيها بأمر /poll، مفصولة بفواصل. اتركه فارغًا للسماح بكل القنوات.';
             if (key === 'levelSystemEnabled') return 'فعّل واحفظ. يكسب العضو خبرة عند الكتابة، ويعلن البوت عند ارتفاع مستواه.';
             if (key === 'levelCooldownSeconds') return 'الوقت الذي يجب أن يمر قبل احتساب خبرة جديدة للعضو.';
@@ -1142,9 +1321,10 @@
                     if (category) category.hidden = !query;
                     if (visible) visibleInGroup++;
                 });
-                group.hidden = query ? visibleInGroup === 0 : index !== activeDashboardGroupIndex;
+                const isMobileAccordion = window.matchMedia('(max-width: 780px)').matches;
+                group.hidden = query ? visibleInGroup === 0 : (!isMobileAccordion && index !== activeDashboardGroupIndex);
                 if (query && visibleInGroup) group.open = true;
-                if (!query) group.open = index === activeDashboardGroupIndex;
+                if (!query) group.open = isMobileAccordion ? false : index === activeDashboardGroupIndex;
                 matches += visibleInGroup;
             });
             count.textContent = query ? (dashboardLanguage === 'ar' ? `${matches} إعداد` : `${matches} settings`) : '';
@@ -1189,6 +1369,102 @@
             const advancedEnabled = [...document.querySelectorAll('[data-advanced-setting]')].filter((control) => dashboardProtectionKeys.has(control.dataset.advancedSetting) && control.checked).length;
             document.getElementById('summary-protections').textContent = `${baseEnabled + advancedEnabled} ${dashboardText('مفعّلة')}`;
         }
+        async function refreshServerActivity(guildId = selectedGuildId) {
+            if (!guildId) return;
+            document.getElementById('server-activity-title').textContent = dashboardText('اقتصاد ونشاط السيرفر');
+            document.getElementById('refresh-server-activity').textContent = dashboardText('تحديث');
+            document.querySelector('#server-activity-panel .server-activity-footnote').textContent = dashboardText('تُحتسب رسالة واحدة لكل عضو كل دقيقة كحد أقصى. إذا كان التفاعل أمس صفرًا، فرسالة مؤهلة واحدة اليوم ترفع الخط بالأخضر. عند انعدام التفاعل ينزل المؤشر بالأحمر؛ أعداد الرسائل المعروضة فعلية، والنقاط افتراضية وليست مالًا.');
+            const statLabels = document.querySelectorAll('#server-activity-panel .server-activity-stat small');
+            statLabels[0].textContent = dashboardText('آخر تفاعل مسجّل');
+            statLabels[1].textContent = dashboardText('تفاعلات اليوم');
+            statLabels[2].textContent = dashboardText('رصيد النشاط الافتراضي');
+            const status = document.getElementById('server-activity-status');
+            status.textContent = dashboardText('جارٍ تحميل الإحصاءات…');
+            try {
+                const response = await fetch(`/api/guild-settings/${encodeURIComponent(guildId)}/activity`, {
+                    headers: { authorization: `Bearer ${localStorage.getItem('discord_token')}` }, cache: 'no-store'
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'تعذر تحميل الإحصاءات');
+                if (selectedGuildId !== guildId) return;
+                document.getElementById('server-activity-chart').setAttribute('aria-label', dashboardText('رسم نشاط السيرفر خلال آخر سبعة أيام'));
+                const number = (value) => new Intl.NumberFormat(dashboardLanguage).format(Number(value || 0));
+                document.getElementById('server-activity-today').textContent = number(data.daily?.at(-1)?.interactions || 0);
+                document.getElementById('server-activity-credits').textContent = `${number(data.virtualCredits)} ${dashboardText('نقطة')}`;
+                const lastActive = data.lastActiveAt ? new Date(data.lastActiveAt) : null;
+                document.getElementById('server-activity-last').textContent = lastActive && !Number.isNaN(lastActive.getTime())
+                    ? new Intl.DateTimeFormat(dashboardLanguage, { dateStyle: 'medium', timeStyle: 'short' }).format(lastActive)
+                    : dashboardText('لا يوجد نشاط بعد');
+                const days = Array.isArray(data.daily) ? data.daily : [];
+                const actualCounts = days.map((day) => Number(day.interactions || 0));
+                const allInactive = actualCounts.length > 0 && actualCounts.every((count) => count === 0);
+                const todayCount = Number(days.at(-1)?.interactions || 0);
+                const yesterdayCount = Number(days.at(-2)?.interactions || 0);
+                const idleToday = todayCount === 0;
+                const trendValues = allInactive ? actualCounts.map((_, index) => actualCounts.length - index) : [...actualCounts];
+                if (!allInactive && idleToday && trendValues.length > 1) {
+                    const previousValue = trendValues.at(-2);
+                    trendValues[trendValues.length - 1] = previousValue - Math.max(1, Math.round(previousValue * 0.1));
+                }
+                const maxTrendValue = Math.max(1, ...trendValues);
+                const minTrendValue = Math.min(0, ...trendValues);
+                const trendRange = Math.max(1, maxTrendValue - minTrendValue);
+                const locale = ({ ar:'ar', en:'en', fr:'fr', es:'es', de:'de', pt:'pt', ko:'ko', ja:'ja' })[dashboardLanguage] || 'ar';
+                const direction = idleToday || todayCount < yesterdayCount ? 'down' : todayCount > yesterdayCount ? 'up' : 'flat';
+                const areaColor = direction === 'down' ? '#ff6575' : '#46d99f';
+                const svg = document.getElementById('server-activity-svg');
+                const labels = document.getElementById('server-activity-labels');
+                svg.replaceChildren(); labels.replaceChildren();
+                const ns = 'http://www.w3.org/2000/svg';
+                const makeSvg = (name, attrs = {}) => {
+                    const node = document.createElementNS(ns, name);
+                    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value)));
+                    return node;
+                };
+                const gradient = makeSvg('linearGradient', { id:'server-activity-fill', x1:'0', y1:'0', x2:'0', y2:'1' });
+                gradient.append(makeSvg('stop', { offset:'0%', 'stop-color':areaColor, 'stop-opacity':'.28' }), makeSvg('stop', { offset:'100%', 'stop-color':areaColor, 'stop-opacity':'0' }));
+                const defs = makeSvg('defs'); defs.appendChild(gradient); svg.appendChild(defs);
+                [42, 100, 158].forEach((y) => svg.appendChild(makeSvg('line', { x1:25, y1:y, x2:675, y2:y, class:'server-activity-gridline' })));
+                const points = days.map((day, index) => ({
+                    x:25 + (650 / Math.max(1, days.length - 1)) * index,
+                    y:42 + ((maxTrendValue - trendValues[index]) / trendRange) * 124,
+                    value:trendValues[index], count:Number(day.interactions || 0), day
+                }));
+                if (points.length) {
+                    const areaPath = `M ${points.map((point) => `${point.x} ${point.y}`).join(' L ')} L ${points.at(-1).x} 176 L ${points[0].x} 176 Z`;
+                    svg.appendChild(makeSvg('path', { d:areaPath, fill:'url(#server-activity-fill)' }));
+                    points.slice(1).forEach((point, index) => {
+                        const previous = points[index];
+                        const direction = point.value > previous.value ? 'up' : point.value < previous.value ? 'down' : 'flat';
+                        svg.appendChild(makeSvg('line', { x1:previous.x, y1:previous.y, x2:point.x, y2:point.y, class:'server-activity-segment', 'data-trend':direction }));
+                    });
+                    points.forEach((point, index) => {
+                        const direction = index === 0 ? (allInactive ? 'down' : 'flat') : point.value > points[index - 1].value ? 'up' : point.value < points[index - 1].value ? 'down' : 'flat';
+                        const color = direction === 'up' ? '#49dda2' : direction === 'down' ? '#ff6575' : '#71a8b8';
+                        const circle = makeSvg('circle', { cx:point.x, cy:point.y, r:index === points.length - 1 ? 6 : 4, fill:color, class:'server-activity-point' });
+                        const title = makeSvg('title'); title.textContent = `${number(point.count)} ${dashboardText('تفاعل')} · ${new Intl.DateTimeFormat(locale, { dateStyle:'medium' }).format(new Date(`${point.day.date}T12:00:00Z`))}`;
+                        circle.appendChild(title); svg.appendChild(circle);
+                        const label = document.createElement('span');
+                        label.textContent = new Intl.DateTimeFormat(locale, { weekday:'short', timeZone:'UTC' }).format(new Date(`${point.day.date}T12:00:00Z`));
+                        label.title = `${number(point.count)} ${dashboardText('تفاعل')}`;
+                        labels.appendChild(label);
+                    });
+                }
+                const trend = document.getElementById('server-activity-trend');
+                trend.dataset.trend = direction;
+                const change = yesterdayCount ? Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100) : todayCount ? 100 : 0;
+                const trendText = idleToday ? dashboardText('خمول السيرفر · المؤشر يهبط') : direction === 'up' ? dashboardText('النشاط يرتفع عن أمس') : direction === 'down' ? dashboardText('النشاط ينخفض عن أمس') : dashboardText('النشاط ثابت عن أمس');
+                trend.textContent = `${direction === 'up' ? '↗' : direction === 'down' ? '↘' : '→'} ${trendText}${direction === 'flat' || idleToday ? '' : ` · ${change > 0 ? '+' : ''}${number(change)}%`}`;
+                status.textContent = `${data.enabled === false ? `${dashboardText('الإحصاءات متوقفة. فعّلها من فئة نشاط السيرفر.')} · ` : ''}${dashboardText('آخر 7 أيام')} · ${number(data.totalInteractions)} ${dashboardText('تفاعل')}`;
+            } catch (error) {
+                if (selectedGuildId !== guildId) return;
+                status.textContent = error.message;
+            }
+        }
+        document.getElementById('refresh-server-activity').addEventListener('click', () => refreshServerActivity());
+        setInterval(() => {
+            if (selectedGuildId && !document.getElementById('server-settings-panel').hidden) refreshServerActivity(selectedGuildId);
+        }, 30000);
         function runServerDiagnostics() {
             const results = document.getElementById('diagnostics-results');
             const summary = document.getElementById('diagnostics-summary');
@@ -1207,6 +1483,7 @@
                 ['welcomeEnabled','welcomeChannelId','قناة الترحيب'], ['farewellEnabled','farewellChannelId','قناة المغادرة'],
                 ['antiRaidEnabled','antiRaidAlertChannelId','قناة تنبيهات Anti-Raid'], ['antiNukeEnabled','antiNukeAlertChannelId','قناة تنبيهات Anti-Nuke'],
                 ['verificationEnabled','verificationChannelId','قناة لوحة التحقق'],
+                ['phishingGuardEnabled','phishingGuardChannelId','قناة YS Phishing Guard'],
                 ['ticketEnabled','ticketPanelChannelId','قناة التذاكر'], ['suggestionEnabled','suggestionChannelId','قناة الاقتراحات'],
                 ['scheduledAnnouncementEnabled','scheduledAnnouncementChannelId','قناة الإعلان المجدول'],
                 ['azkarEnabled','azkarChannelId','قناة الأذكار'], ['quranReminderEnabled','quranChannelId','قناة القرآن']
@@ -1251,6 +1528,12 @@
             if (enabled('antiNukeEnabled') && advanced.antiNukeAction === 'ban') permissions.add('حظر الأعضاء');
             if (enabled('antiNukeEnabled') && advanced.antiNukeAction === 'kick' || enabled('antiAltEnabled') && advanced.antiAltAction === 'kick') permissions.add('طرد الأعضاء');
             if (enabled('antiNukeEnabled') && advanced.antiNukeAction === 'timeout' || enabled('antiSpamTimeoutEnabled') || enabled('antiMentionRaidTimeoutEnabled')) permissions.add('إسكات الأعضاء');
+            if (enabled('phishingGuardEnabled')) {
+                permissions.add('إدارة الرسائل');
+                if (advanced.phishingGuardAction === 'ban') permissions.add('حظر الأعضاء');
+                if (advanced.phishingGuardAction === 'kick') permissions.add('طرد الأعضاء');
+                if (advanced.phishingGuardAction === 'timeout24h') permissions.add('إسكات الأعضاء');
+            }
             if (permissions.size) add('warning', dashboardText('صلاحيات يجب التأكد منها'), `تأكد يدويًا أن YS-Bot يملك: ${[...permissions].map(dashboardText).join('، ')}. كذلك تأكد أن رتبة البوت أعلى من الرتب التي يحتاج إدارتها.`);
             add('warning', dashboardText('البوت في السيرفر'), dashboardText('أضف البوت للسيرفر وتأكد أن رتبته أعلى من الرتب التي يحتاج إدارتها.'));
             if (enabled('welcomeEnabled') || enabled('farewellEnabled') || enabled('autoRoleEnabled') || enabled('verificationEnabled')) add('warning', 'Server Members Intent', 'فعّل Server Members Intent في Discord Developer Portal؛ الترحيب والمغادرة والتحقق والرتب التلقائية تعتمد عليه.');
@@ -1372,6 +1655,9 @@
                 if (search) search.value = '';
                 activeDashboardGroupIndex = groupIndex;
                 filterAdvancedSettings();
+                if (window.matchMedia('(max-width: 780px)').matches) {
+                    document.querySelectorAll('.advanced-group').forEach((group) => { group.open = group === target; });
+                }
                     const activeCategory = menuCategoryForGroup(target.dataset.groupTitle || '');
                     dashboardNav.querySelectorAll('.dashboard-menu-category').forEach((category) => { category.open = category.dataset.tone === activeCategory; });
                 dashboardNav.querySelectorAll('[aria-current="location"]').forEach((item) => item.removeAttribute('aria-current'));
@@ -1383,10 +1669,11 @@
         });
         function menuCategoryForGroup(title) {
             if (/الحماية|السبام|الروابط|الفلاتر|الغارات|التخريب|Anti-|النشاط المشبوه|الصلاحيات الخطرة/.test(title)) return 'protection';
-            if (/الألعاب|لعبة العد/.test(title)) return 'games';
-            if (/الترحيب|التحقق والرتب|الرتب الاختيارية|حالة الغياب|أعياد الميلاد|التذكيرات الشخصية|الاعترافات/.test(title)) return 'members';
-            if (/الإشراف|سجل الأحداث|الأوامر والصلاحيات|إدارة الأعضاء|تخصيص الرتب|تنظيم القنوات|الرسائل الإدارية|نسخ واسترجاع/.test(title)) return 'moderation';
-            return 'community';
+            if (/الألعاب|لعبة العد|التصويت|المستويات|الدعوات والمكافآت|نشاط السيرفر|لوحة النجوم/.test(title)) return 'games';
+            if (/الترحيب|التحقق والرتب|الرتب الاختيارية|حالة الغياب|أعياد الميلاد|التذكيرات الشخصية|الاعترافات|معلومات الأعضاء/.test(title)) return 'members';
+            if (/الإشراف|سجل الأحداث|الأوامر والصلاحيات|إدارة الأعضاء|تخصيص الرتب|تنظيم القنوات|الرسائل الإدارية|البلاغات|الرتب المؤقتة|نقل عضو|تعديل موضوع|تغيير لون/.test(title)) return 'moderation';
+            if (/التذاكر|الاقتراحات|الردود التلقائية|الإعلانات المجدولة|الأذكار|القرآن|الوسائط|التنبيهات|التفاعل التلقائي/.test(title)) return 'community';
+            return 'tools';
         }
         const dashboardGuides = {
             protection: {
@@ -1413,6 +1700,11 @@
                 title: 'فعّل الأدوات التي يحتاجها سيرفرك',
                 steps: ['حدد قناة كل ميزة', 'خصص الرسالة والأزرار', 'احفظ ثم اختبرها داخل Discord'],
                 art: '<svg viewBox="0 0 112 96" aria-hidden="true"><circle cx="56" cy="48" r="39" fill="#10283b" stroke="#294c61"/><circle cx="34" cy="49" r="7" fill="#163b4b" stroke="#70e3cf" stroke-width="3"/><circle cx="76" cy="31" r="7" fill="#163b4b" stroke="#83b9ff" stroke-width="3"/><circle cx="77" cy="68" r="7" fill="#163b4b" stroke="#83b9ff" stroke-width="3"/><path d="m41 46 28-12M41 53l29 12" stroke="#d0eee9" stroke-width="3" stroke-linecap="round"/><circle cx="55" cy="49" r="4" fill="#65e2cb"/></svg>'
+            },
+            tools: {
+                title: 'استخدم أدوات السيرفر بوضوح',
+                steps: ['راجع معلومات السيرفر', 'خذ نسخة قبل التغييرات الكبيرة', 'احفظ ثم اختبر من Discord'],
+                art: '<svg viewBox="0 0 112 96" aria-hidden="true"><circle cx="56" cy="48" r="39" fill="#10283b" stroke="#294c61"/><rect x="34" y="24" width="44" height="48" rx="8" fill="#142f43" stroke="#9ab7ff" stroke-width="3"/><path d="M44 38h24M44 48h17M44 58h24" stroke="#c8d8ff" stroke-width="3" stroke-linecap="round"/><circle cx="72" cy="48" r="3" fill="#65e2cb"/></svg>'
             }
         };
         function createSettingsGuide(group) {
@@ -1547,7 +1839,7 @@
                 container.appendChild(button);
             });
             if (document.querySelector('.server-backup-tool')) {
-                const container = categories.community || categories.moderation;
+                const container = categories.tools || categories.moderation;
                 const backupButton = document.createElement('button');
                 backupButton.type = 'button'; backupButton.className = 'dashboard-menu-group'; backupButton.dataset.dashboardSpecial = 'backups';
                 const icon = document.createElement('span'); icon.className = 'dashboard-nav-icon'; icon.setAttribute('aria-hidden', 'true'); icon.innerHTML = dashboardCategoryIcon('نسخ واسترجاع هيكل السيرفر');
@@ -1557,6 +1849,10 @@
             dashboardNav.querySelectorAll('.dashboard-menu-category').forEach((category) => {
                 const container = category.querySelector('[data-menu-category]');
                 category.hidden = !container?.children.length;
+                let count = category.querySelector('.dashboard-category-count');
+                if (!count) { count = document.createElement('span'); count.className = 'dashboard-category-count'; category.querySelector('summary')?.appendChild(count); }
+                count.textContent = String(container?.children.length || 0);
+                count.setAttribute('aria-label', `${container?.children.length || 0} إعدادات`);
                 category.open = category.dataset.tone === menuCategoryForGroup(document.querySelectorAll('.advanced-group')[activeDashboardGroupIndex]?.dataset.groupTitle || '');
             });
         }
@@ -1579,6 +1875,7 @@
         }
         function renderAdvancedSettings(values = {}) {
             const root = document.getElementById('advanced-settings-groups');
+            serverActivityPanelNode ||= document.getElementById('server-activity-panel');
             root.replaceChildren();
             advancedSettingGroups.forEach((group) => {
                 const section = document.createElement('details');
@@ -1595,7 +1892,7 @@
                     heading.appendChild(newGroupBadge);
                 }
                 if (group.title === 'إضافات الخطط المدفوعة') {
-                    section.open = true;
+                    section.open = !window.matchMedia('(max-width: 780px)').matches;
                     const tiers = document.createElement('small');
                     tiers.className = 'plan-tier-tag';
                     tiers.textContent = 'Basic · VIP';
@@ -1662,7 +1959,7 @@
                         extraChoiceOptions[key].forEach(([value, text]) => {
                             const option = document.createElement('option');
                             option.value = value;
-                            option.textContent = dashboardLanguage === 'en' ? ({'حذف':'Delete','تحذير':'Warn','أزرق':'Blue','رمادي':'Gray','أخضر':'Green','أحمر':'Red','فيروزي':'Teal','بنفسجي':'Purple','ذهبي':'Gold','تنبيه المشرفين':'Alert moderators','قفل مؤقت':'Temporary lockdown','العربية':'Arabic','أزرق':'Blue'}[text] || text) : text;
+                            option.textContent = dashboardLanguage === 'en' ? ({'حذف':'Delete','تحذير':'Warn','تايم أوت 24 ساعة':'Timeout for 24 hours','طرد':'Kick','باند':'Ban','أزرق':'Blue','رمادي':'Gray','أخضر':'Green','أحمر':'Red','فيروزي':'Teal','بنفسجي':'Purple','ذهبي':'Gold','تنبيه المشرفين':'Alert moderators','قفل مؤقت':'Temporary lockdown','العربية':'Arabic'}[text] || text) : text;
                             control.appendChild(option);
                         });
                         control.value = values[key] || extraChoiceOptions[key][0][0];
@@ -1697,6 +1994,7 @@
                     if (verificationPanelButton) grid.appendChild(verificationPanelButton);
                 });
                 section.appendChild(grid);
+                if (group.key === 'serverActivity' && serverActivityPanelNode) section.appendChild(serverActivityPanelNode);
                 if (group.key === 'embedBuilder') {
                     const savedEmbeds = (() => { try { const parsed = JSON.parse(values.customEmbedsJson || '[]'); return Array.isArray(parsed) ? parsed.slice(0, 10) : []; } catch { return []; } })();
                     const legacyHasContent = Boolean(values.customEmbedTitle?.trim() || values.customEmbedDescription?.trim());
@@ -1778,6 +2076,13 @@
             const fragment = new URLSearchParams(window.location.hash.slice(1));
             let accessToken = fragment.get('access_token');
 
+            const allocationState = fragment.get('state') || '';
+            if (accessToken && /^ysallocation_[A-Za-z0-9_-]{30}$/.test(allocationState)) {
+                const allocationToken = allocationState.slice('ysallocation_'.length);
+                window.location.replace(`/allocation?token=${encodeURIComponent(allocationToken)}#access_token=${encodeURIComponent(accessToken)}`);
+                return;
+            }
+
             if (accessToken) {
                 localStorage.setItem('discord_token', accessToken);
                 window.location.hash = '';
@@ -1801,8 +2106,14 @@
                 const userRes = await fetch('https://discord.com/api/users/@me', {
                     headers: { authorization: `Bearer ${accessToken}` }
                 });
-                if (!userRes.ok) throw new Error('Unauthorized');
+                if (userRes.status === 401) {
+                    const authError = new Error('Discord access token expired');
+                    authError.discordAuthExpired = true;
+                    throw authError;
+                }
+                if (!userRes.ok) throw new Error('تعذر تحميل ملف Discord مؤقتًا');
                 const user = await userRes.json();
+                localStorage.setItem('discord_user', JSON.stringify(user));
                 try {
                     const preferenceRes = await fetch('/api/user-preferences', { headers: { authorization: `Bearer ${accessToken}` } });
                     if (!preferenceRes.ok) throw new Error('تعذر تحميل إعدادك الشخصي');
@@ -1829,6 +2140,12 @@
                 const guildsRes = await fetch('https://discord.com/api/users/@me/guilds', {
                     headers: { authorization: `Bearer ${accessToken}` }
                 });
+                if (guildsRes.status === 401) {
+                    const authError = new Error('Discord access token expired');
+                    authError.discordAuthExpired = true;
+                    throw authError;
+                }
+                if (!guildsRes.ok) throw new Error('تعذر تحميل قائمة السيرفرات مؤقتًا');
                 const guilds = await guildsRes.json();
                 const adminGuilds = guilds.filter((guild) => (guild.permissions & 0x8) === 0x8 || guild.owner);
 
@@ -1888,8 +2205,22 @@
 
             } catch (error) {
                 console.error(error);
-                localStorage.removeItem('discord_token');
-                window.location.href = '/';
+                if (error.discordAuthExpired) {
+                    localStorage.removeItem('discord_token');
+                    localStorage.removeItem('discord_user');
+                    window.location.replace('/');
+                    return;
+                }
+                const loading = document.getElementById('loading');
+                loading.replaceChildren();
+                const message = document.createElement('p');
+                message.textContent = dashboardText('تعذر تحميل بيانات Discord الآن. تسجيل دخولك محفوظ؛ أعد المحاولة بعد قليل.');
+                const retry = document.createElement('button');
+                retry.type = 'button';
+                retry.className = 'dashboard-back';
+                retry.textContent = dashboardText('إعادة المحاولة');
+                retry.addEventListener('click', () => window.location.reload());
+                loading.append(message, retry);
             }
         }
 
@@ -1957,6 +2288,7 @@
                 document.getElementById('summary-bot-card').dataset.state = 'ready';
                 document.getElementById('summary-bot-status').textContent = dashboardText('إعدادات السيرفر محمّلة');
                 updateProtectionSummary();
+                refreshServerActivity(guild.id);
                 status.textContent = dashboardLanguage === 'en' ? 'Saved settings loaded.' : 'تم تحميل الإعدادات المحفوظة.';
                 status.style.color = '#71e0cc';
                 loadServerBackups(guild.id).catch((error) => { document.getElementById('server-backup-error').textContent = error.message; });
@@ -2163,6 +2495,14 @@
             const saveButton = document.getElementById('save-guild-settings');
             const commandPrefix = document.getElementById('setting-command-prefix').value.trim();
             if (!selectedGuildId) return;
+            const phishingSettings = readAdvancedSettings();
+            let previousAdvanced = {};
+            try { previousAdvanced = savedGuildSettingsSnapshot ? JSON.parse(savedGuildSettingsSnapshot).advanced || {} : {}; } catch {}
+            if (phishingSettings.phishingGuardEnabled && (!previousAdvanced.phishingGuardEnabled || previousAdvanced.phishingGuardAction !== phishingSettings.phishingGuardAction || previousAdvanced.phishingGuardChannelId !== phishingSettings.phishingGuardChannelId)) {
+                const actionName = phishingSettings.phishingGuardAction === 'kick' ? 'طرد' : phishingSettings.phishingGuardAction === 'ban' ? 'باند' : 'تايم أوت 24 ساعة';
+                const warning = `تأكيد تشغيل YS Phishing Guard؟\n\nسيُعاقب كل عضو غير إداري يرسل أي رسالة في الروم ${phishingSettings.phishingGuardChannelId || '(غير محدد)'} بعقوبة: ${actionName}. النظام لا يتحقق من كون الرسالة احتيالية. تأكد أن الروم مخصص لهذا الغرض فقط.`;
+                if (!window.confirm(warning)) return;
+            }
             if (!/^[!?#.$%&*+-]{1,3}$/.test(commandPrefix)) {
                 status.textContent = 'اكتب بادئة من 1 إلى 3 رموز مثل ! أو ?.';
                 status.style.color = '#fca5a5';

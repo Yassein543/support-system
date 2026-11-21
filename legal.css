@@ -1,0 +1,24 @@
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#080d1a;color:#eef2ff}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#1b3159 0,transparent 52%),#080d1a;line-height:1.85}
+.topbar{max-width:1060px;margin:auto;padding:22px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{color:#fff;font-size:1.15rem;font-weight:900;text-decoration:none;letter-spacing:.03em}
+.top-links{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.top-links a{padding:7px 13px;border:1px solid #293b5d;border-radius:999px;background:#111c31;color:#dbeafe;text-decoration:none;font-size:.86rem}
+.top-links a:hover{border-color:#66e4d1;color:#66e4d1}
+main{width:min(940px,calc(100% - 32px));margin:24px auto 58px;padding:clamp(24px,5vw,54px);border:1px solid #243451;border-radius:24px;background:rgba(13,21,38,.94);box-shadow:0 24px 80px #0005}
+.eyebrow{margin:0 0 8px;color:#70d5c3;font-size:.88rem;font-weight:800}
+h1{margin:0;color:#fff;font-size:clamp(2rem,6vw,3rem);line-height:1.25}
+.updated{margin:10px 0 28px;color:#aab8d0;font-size:.9rem}
+.intro{color:#d7e2f3;font-size:1.06rem}
+h2{margin:30px 0 8px;color:#a7f3e7;font-size:1.18rem}
+p,li{color:#cfdaeb}ul,ol{padding-inline-start:1.4rem}li{margin:8px 0}
+a{color:#80d9cd}
+.callout{margin-top:28px;padding:15px 18px;border-inline-start:3px solid #70d5c3;border-radius:12px;background:#13253a;color:#dbeafe}
+.legal-contacts{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.legal-contacts a{padding:9px 13px;border:1px solid #2b4162;border-radius:11px;background:#15243a;text-decoration:none}
+.legal-nav{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:940px;margin:0 auto 28px;padding:0 16px}
+.legal-nav a{padding:8px 12px;border:1px solid rgba(103,218,205,.16);border-radius:999px;background:#0e1a29;color:#9eb4c0;font-size:.82rem;text-decoration:none}
+.legal-nav a:hover{color:#6ce0ce;border-color:#398f86}
+.page-footer{max-width:940px;margin:0 auto;padding:0 20px 32px;text-align:center;color:#758895;font-size:.78rem}
+@media(max-width:560px){.topbar{padding:16px}.top-links{gap:6px}.top-links a{padding:6px 10px;font-size:.78rem}main{margin-top:8px;border-radius:18px}.legal-nav{gap:7px}}

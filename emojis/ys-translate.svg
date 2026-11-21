@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="ترجمة">
+  <defs>
+    <linearGradient id="ring" x1="20" y1="15" x2="108" y2="113" gradientUnits="userSpaceOnUse"><stop stop-color="#70f1da"/><stop offset="1" stop-color="#557cff"/></linearGradient>
+    <linearGradient id="bubble" x1="24" y1="30" x2="102" y2="102" gradientUnits="userSpaceOnUse"><stop stop-color="#6af0d7"/><stop offset="1" stop-color="#6da4ff"/></linearGradient>
+    <radialGradient id="glow" cx=".3" cy=".24" r=".8"><stop stop-color="#1eb9a7"/><stop offset="1" stop-color="#4774ed"/></radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="#081522" stroke="url(#ring)" stroke-width="3.5"/>
+  <circle cx="64" cy="64" r="46" fill="url(#glow)" opacity=".13"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 32h39a10 10 0 0 1 10 10v23a10 10 0 0 1-10 10H47L34 86V75h-6a10 10 0 0 1-10-10V42a10 10 0 0 1 10-10Z" fill="#0d2031" stroke="#e8fffb" stroke-width="4"/>
+    <path d="M61 54h39a10 10 0 0 1 10 10v22a10 10 0 0 1-10 10h-6v10L81 96H61a10 10 0 0 1-10-10V64a10 10 0 0 1 10-10Z" fill="#10283b" stroke="url(#bubble)" stroke-width="4"/>
+    <path d="m34 62 8-22 8 22m-13-8h10" fill="none" stroke="#6af0d7" stroke-width="4"/>
+    <path d="M72 66h17m-8-5v22m-8-11h16m-16 8 16-16" fill="none" stroke="#e8fffb" stroke-width="3.5"/>
+    <circle cx="104" cy="28" r="4" fill="#6af0d7" stroke="none"/>
+  </g>
+</svg>

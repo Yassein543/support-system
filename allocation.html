@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#091522"><title>تخصيص البوت | YS-Bot</title>
+  <style>
+    :root{color-scheme:dark;--bg:#08121e;--panel:rgba(17,35,51,.82);--line:rgba(106,226,210,.2);--mint:#66e4d1;--muted:#9caebe;--text:#edf7fb}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 15% 10%,rgba(22,132,128,.22),transparent 38%),radial-gradient(ellipse at 85% 90%,rgba(75,105,213,.16),transparent 35%),var(--bg);color:var(--text);font-family:system-ui,"Segoe UI",sans-serif}
+    main{width:min(100%,560px);padding:clamp(24px,6vw,42px);border:1px solid var(--line);border-radius:26px;background:var(--panel);box-shadow:0 28px 90px #0007;backdrop-filter:blur(18px)}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}.brand img{width:46px;height:46px}.brand b{letter-spacing:.12em;color:var(--mint);font-size:13px}.eyebrow{color:var(--mint);font-size:12px;font-weight:700;letter-spacing:.1em}h1{font-size:clamp(25px,6vw,34px);margin:8px 0 10px}p{color:var(--muted);line-height:1.8;margin:0 0 22px}.field{display:grid;gap:9px;margin:22px 0}.field label{font-size:14px;font-weight:700}.field input{width:100%;min-height:52px;padding:12px 15px;border:1px solid #294357;border-radius:13px;background:#091725;color:var(--text);font:inherit;outline:none}.field input:focus{border-color:var(--mint);box-shadow:0 0 0 3px #66e4d122}.hint{font-size:12px;color:var(--muted);margin:0}.note{padding:14px 16px;border:1px solid #78622d;border-radius:14px;background:#382f1a66;color:#ffdf92;font-size:13px;line-height:1.8;margin:20px 0}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}.button{min-height:50px;padding:12px 20px;border:1px solid transparent;border-radius:13px;background:linear-gradient(120deg,#17b59e,#168d88);color:white;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}.button.secondary{border-color:#294357;background:#142535}.button:disabled{opacity:.6;cursor:wait}.status{min-height:25px;margin-top:16px;color:var(--mint);font-size:14px}.status.error{color:#ff9b9b}.hidden{display:none!important}
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand"><img src="/ys-bot-avatar.svg" alt=""><b>YS-BOT · SERVER PROFILE</b></div>
+  <div class="eyebrow">تخصيص مرتبط بسيرفر واحد</div>
+  <h1>خصّص مظهر البوت في سيرفرك</h1>
+  <p>هذا الرابط صالح لمدة 10 دقائق، ومخصص لحساب Discord الذي أنشأه. التغيير يخص السيرفر الذي أُنشئ منه الأمر فقط.</p>
+  <section id="login-panel" class="hidden">
+    <div class="note">سجّل الدخول بحساب Discord نفسه الذي استخدم <b>/allocation</b> للمتابعة.</div>
+    <a class="button" id="login-link" href="#">تسجيل الدخول عبر Discord</a>
+  </section>
+  <form id="allocation-form" class="hidden">
+    <div class="field"><label for="bot-name">الاسم الظاهر للبوت داخل السيرفر</label><input id="bot-name" name="nickname" maxlength="32" minlength="1" placeholder="مثال: YS-Bot · الحماية الذكية" required autocomplete="off"><small class="hint">من حرف إلى 32 حرفًا. سيبقى اسم حساب البوت العام كما هو.</small></div>
+    <div class="field"><label for="bot-avatar">صورة البوت الخاصة بهذا السيرفر (اختياري)</label><input id="bot-avatar" type="file" accept="image/png,image/jpeg,image/gif,image/webp"><small class="hint">PNG أو JPG أو GIF أو WebP، بحد أقصى 2 ميغابايت. اتركها فارغة للاحتفاظ بالصورة الحالية.</small><img id="avatar-preview" class="hidden" alt="معاينة صورة البوت" style="width:88px;height:88px;object-fit:cover;border-radius:22px;border:1px solid var(--line)"></div>
+    <div class="note">تُطبّق الصورة واللقب على ملف البوت داخل السيرفر المحدد فقط، ولا تتغير هوية البوت العامة في بقية السيرفرات.</div>
+    <div class="actions"><button class="button" id="apply-button" type="submit">حفظ التخصيص</button><a class="button secondary" href="https://ys-bot.vercel.app/">إلغاء</a></div>
+  </form>
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+</main>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token') || '';
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  const accessToken = fragment.get('access_token') || '';
+  const status = document.getElementById('status');
+  const loginPanel = document.getElementById('login-panel');
+  const form = document.getElementById('allocation-form');
+  let avatarDataUrl = '';
+  const error = (message) => { status.textContent = message; status.classList.add('error'); };
+  if (!/^[A-Za-z0-9_-]{30}$/.test(token)) { error('رابط التخصيص غير صالح. أنشئ رابطًا جديدًا باستخدام /allocation.'); return; }
+  if (!accessToken) {
+    loginPanel.classList.remove('hidden');
+    const redirect = `${location.origin}/dashboard.html`;
+    document.getElementById('login-link').href = `https://discord.com/oauth2/authorize?client_id=1546870264749494272&redirect_uri=${encodeURIComponent(redirect)}&response_type=token&scope=identify%20guilds&state=ysallocation_${encodeURIComponent(token)}`;
+    return;
+  }
+  history.replaceState(null, '', `${location.pathname}${location.search}`);
+  form.classList.remove('hidden');
+  document.getElementById('bot-avatar').addEventListener('change', () => {
+    const file = document.getElementById('bot-avatar').files?.[0];
+    const preview = document.getElementById('avatar-preview');
+    avatarDataUrl = '';
+    if (!file) { preview.classList.add('hidden'); preview.removeAttribute('src'); return; }
+    if (!['image/png','image/jpeg','image/gif','image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      document.getElementById('bot-avatar').value = '';
+      error('اختر PNG أو JPG أو GIF أو WebP بحجم لا يتجاوز 2 ميغابايت.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => { avatarDataUrl = String(reader.result || ''); preview.src = avatarDataUrl; preview.classList.remove('hidden'); status.textContent = ''; };
+    reader.onerror = () => error('تعذر قراءة الصورة.');
+    reader.readAsDataURL(file);
+  });
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('apply-button');
+    button.disabled = true; status.classList.remove('error'); status.textContent = 'جارٍ حفظ اللقب في السيرفر…';
+    try {
+      const response = await fetch('/api/allocation/apply', { method:'POST', headers:{'content-type':'application/json',authorization:`Bearer ${accessToken}`}, body:JSON.stringify({token,nickname:document.getElementById('bot-name').value,avatar:avatarDataUrl}) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'تعذر تطبيق التغيير.');
+      status.textContent = `${result.message} الرابط استُخدم وانتهت صلاحيته.`;
+      form.classList.add('hidden');
+    } catch (err) { error(err.message || 'تعذر الاتصال بالخادم.'); button.disabled = false; }
+  });
+})();
+</script>
+</body>
+</html>

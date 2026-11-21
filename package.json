@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "start:bot": "node bot.js"
+    "start:bot": "node bot.js",
+    "start:support": "node support-bot.js"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.11",
