@@ -1,10 +1,10 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const { Client, GatewayIntentBits, AuditLogEvent, EmbedBuilder, ContainerBuilder, TextDisplayBuilder, MessageFlags, SlashCommandBuilder, REST, Routes, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, AttachmentBuilder, Partials, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const fs = require('fs');
 const { exec } = require('child_process');
-const path = require('path');
 const { SUPPORTED_LANGUAGES, PROFILE_CARD_THEMES, getBotLanguage: getBotLanguageFromDb, getProfileCardTheme: getProfileCardThemeFromDb, getProfileCardImage: getProfileCardImageFromDb } = require('./services/user-preferences');
 const { recordBotCommandUser: recordBotCommandUserInDb, getBotUserStats: getBotUserStatsFromDb, isDiscordUserBanned: isDiscordUserBannedInDb } = require('./services/ip-ban-service');
 const { DEFAULT_SETTINGS, getGuildSettings } = require('./services/guild-settings');
@@ -946,6 +946,7 @@ function buildProtectionStatusEmbed(guildSettings, language = 'ar') {
 // تسجيل أوامر السلاش أوتوماتيكياً فور تشغيل البوت
 client.on('ready', async () => {
     console.log(`🤖 YS-Bot جاهز ويعمل باسم: ${client.user.tag}`);
+    console.log(`[YS-Bot] Connected to ${client.guilds.cache.size} servers; dashboard settings: ${process.env.BOT_API_SECRET ? 'website bridge' : process.env.DATABASE_URL ? 'direct database (website bridge secret missing)' : 'unavailable (missing BOT_API_SECRET and DATABASE_URL)'}.`);
     for (const guild of client.guilds.cache.values()) {
         const state = guildState(guild.id);
         if (!state.temporarySuspiciousLockdown) continue;
@@ -1154,8 +1155,12 @@ async function loadGuildSettings(guildId) {
         return settings;
     } catch (error) {
         if (!guildSettingsWarningShown) {
-            console.error('Server settings unavailable; using safe defaults:', error.message);
+            console.error('Server settings bridge unavailable:', error.message);
             guildSettingsWarningShown = true;
+        }
+        if (cached?.settings) {
+            cached.expiresAt = Date.now() + 5000;
+            return cached.settings;
         }
         const settings = { ...DEFAULT_SETTINGS };
         guildSettingsCache.set(guildId, { settings, expiresAt: Date.now() + 5000 });
