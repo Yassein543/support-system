@@ -4,4 +4,5 @@
 .workspaces/
 node_modules/
 dist/
+dist-v102/
 npm-debug.log*
