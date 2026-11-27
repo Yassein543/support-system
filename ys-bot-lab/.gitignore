@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+.workspaces/
+node_modules/
+npm-debug.log*

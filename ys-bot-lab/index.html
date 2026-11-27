@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080d0b">
+  <title>YS Bot Lab</title>
+  <style>
+    :root{color-scheme:dark;--bg:#080d0b;--panel:#0d1512;--panel2:#111b17;--line:#20382d;--muted:#8da397;--text:#ecf7ef;--green:#39dc88;--green2:#18a86a;--red:#ff7474;--amber:#ffc66e;--mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;--sans:system-ui,-apple-system,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -15%,#163325 0,transparent 42%),var(--bg);color:var(--text);font:14px var(--sans);min-height:100vh}button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}.app{min-height:100vh;display:grid;grid-template-rows:58px 1fr}.topbar{height:58px;border-bottom:1px solid var(--line);background:#09100deF;display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:12px;position:sticky;top:0;z-index:8;backdrop-filter:blur(12px)}.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:.02em}.brand-mark{width:32px;height:32px;border:1px solid #238758;border-radius:9px;display:grid;place-items:center;color:var(--green);font:700 16px var(--mono);box-shadow:0 0 18px #36dc8833}.brand small{display:block;color:var(--muted);font:10px var(--mono);margin-top:2px;letter-spacing:.12em}.top-actions{display:flex;align-items:center;gap:9px}.chip,.icon-btn,.btn{border:1px solid var(--line);background:#101a15;border-radius:9px;padding:8px 11px;color:var(--muted)}.chip{font:11px var(--mono);display:flex;align-items:center;gap:7px}.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}.icon-btn{width:36px;height:36px;padding:0;font-size:17px}.btn{color:var(--text);font-weight:700;transition:.15s}.btn:hover,.icon-btn:hover{border-color:#3b9c67;color:var(--green)}.btn.primary{background:linear-gradient(135deg,#24bd74,#168456);color:#04130b;border:0}.btn.ghost{background:transparent}.btn.danger{color:#ffacac;border-color:#693c3c}.layout{display:grid;grid-template-columns:275px minmax(0,1fr);min-height:calc(100vh - 58px);max-width:1600px;width:100%;margin:auto;padding:15px;gap:14px}.sidebar,.main{border:1px solid var(--line);border-radius:13px;background:linear-gradient(160deg,#0e1713ed,#0b120fef);min-width:0}.sidebar{padding:14px;display:flex;flex-direction:column;gap:12px}.side-head{display:flex;justify-content:space-between;align-items:center}.eyebrow{font:10px var(--mono);color:var(--green);letter-spacing:.12em;text-transform:uppercase}.project-select{width:100%;background:#0a110e;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--text)}.section-label{font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;padding:4px 2px}.file-tree{overflow:auto;min-height:140px;max-height:calc(100vh - 305px);font:12px var(--mono);direction:ltr;text-align:left}.tree-row{border:0;background:transparent;width:100%;text-align:left;padding:6px 7px;color:#b8c8bd;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tree-row:hover{background:#12251a;color:var(--green)}.tree-folder{color:#e6c779}.tree-indent{padding-left:15px}.side-bottom{margin-top:auto;border-top:1px solid var(--line);padding-top:12px;display:grid;gap:9px}.small-note{font-size:11px;line-height:1.65;color:var(--muted)}.main{display:grid;grid-template-rows:auto 1fr auto;min-height:650px;overflow:hidden}.main-head{border-bottom:1px solid var(--line);padding:14px 17px;display:flex;align-items:center;justify-content:space-between;gap:12px}.main-title{font-weight:800}.main-sub{color:var(--muted);font-size:11px;margin-top:4px}.tabs{display:flex;gap:5px}.tab{background:none;border:1px solid transparent;color:var(--muted);padding:7px 10px;border-radius:7px}.tab.active{color:var(--green);border-color:#254f38;background:#0f2017}.work-area{display:grid;grid-template-columns:minmax(0,1fr) 290px;min-height:0}.chat-pane{display:flex;flex-direction:column;min-width:0;border-inline-end:1px solid var(--line)}.messages{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:14px;min-height:400px}.welcome{max-width:660px;margin:9vh auto 0;text-align:center}.terminal-icon{font:42px var(--mono);color:var(--green);text-shadow:0 0 28px #39dc8877}.welcome h1{font-size:clamp(24px,4vw,38px);margin:12px 0 8px}.welcome p{color:var(--muted);line-height:1.8;max-width:550px}.suggestions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:20px}.suggestions button{background:#101a15;border:1px solid var(--line);border-radius:8px;color:#bfd3c5;padding:9px 11px;font-size:12px}.suggestions button:hover{color:var(--green);border-color:#36885b}.message{max-width:88%;border:1px solid var(--line);background:#0e1713;border-radius:11px;padding:12px 14px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}.message.user{align-self:flex-end;background:#102219;border-color:#24563a}.message.assistant{align-self:flex-start}.message .who{font:10px var(--mono);text-transform:uppercase;color:var(--green);margin-bottom:5px}.message.user .who{color:#8ddbb0}.notice{border:1px solid #584728;background:#241d0e;border-radius:9px;padding:10px 12px;color:#ffe0a8;font-size:12px;line-height:1.7}.secret-box,.command-box{border:1px solid #31563d;background:#0c1b12;border-radius:10px;padding:12px;margin-top:8px}.secret-box label{display:block;color:#d6e9dc;font-size:12px;margin-bottom:7px}.secret-row{display:flex;gap:7px}.secret-row input{flex:1;min-width:0}.field{width:100%;background:#080e0b;border:1px solid #294133;border-radius:7px;padding:9px 10px;color:var(--text);outline:none}.field:focus{border-color:var(--green2);box-shadow:0 0 0 2px #39dc8820}.secret-row button,.command-actions button{white-space:nowrap}.command-line{direction:ltr;text-align:left;font:12px var(--mono);background:#070b09;border:1px solid #24382d;border-radius:7px;padding:9px;overflow:auto;color:#c8edce}.command-actions{display:flex;gap:7px;margin-top:9px}.composer{padding:14px 16px;border-top:1px solid var(--line);background:#0b120f}.composer-wrap{border:1px solid #294133;border-radius:11px;background:#080e0b;padding:9px;display:flex;gap:9px;align-items:flex-end}.composer textarea{flex:1;resize:vertical;min-height:50px;max-height:180px;background:transparent;border:0;outline:0;color:var(--text);padding:8px;font:14px var(--sans);line-height:1.6}.composer-foot{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:8px;color:var(--muted);font-size:10px}.editor-pane{display:none;flex-direction:column;min-width:0;padding:13px}.editor-pane.visible{display:flex}.editor-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.editor-path{font:12px var(--mono);color:var(--green);direction:ltr;overflow:hidden;text-overflow:ellipsis}.editor{flex:1;min-height:390px;resize:none;direction:ltr;text-align:left;font:12px/1.65 var(--mono);tab-size:2;background:#070b09;border:1px solid var(--line);border-radius:8px;color:#d8e8dc;padding:12px;outline:0}.terminal{border-inline-start:1px solid var(--line);display:flex;flex-direction:column;min-width:0;background:#090f0c}.terminal-head{padding:12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.terminal-output{flex:1;min-height:0;max-height:calc(100vh - 210px);overflow:auto;padding:12px;direction:ltr;text-align:left;font:11px/1.7 var(--mono);color:#b8caba;white-space:pre-wrap;overflow-wrap:anywhere}.terminal-input{padding:10px;border-top:1px solid var(--line);display:flex;gap:7px;direction:ltr}.terminal-input input{font:12px var(--mono)}.terminal-output .ok{color:#61e692}.terminal-output .bad{color:#ff9696}.modal-backdrop{display:none;position:fixed;inset:0;background:#000b;z-index:20;place-items:center;padding:16px}.modal-backdrop.open{display:grid}.modal{width:min(520px,100%);border:1px solid #31523e;background:#0d1512;border-radius:14px;padding:19px;box-shadow:0 25px 90px #000b}.modal h2{margin:0 0 5px}.modal p{color:var(--muted);font-size:12px;line-height:1.7}.modal label{display:block;color:#bdd1c3;font-size:12px;margin:13px 0 5px}.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:17px}.mobile-nav{display:none}
+    .work-area.editor-mode .chat-pane{display:none}
+    @media(max-width:950px){.layout{grid-template-columns:230px minmax(0,1fr);padding:9px;gap:9px}.work-area{grid-template-columns:minmax(0,1fr) 240px}.main{min-height:calc(100vh - 76px)}}
+    @media(max-width:720px){.app{grid-template-rows:54px 1fr}.topbar{height:54px;padding:0 10px}.topbar .chip{display:none}.layout{display:block;padding:0;min-height:calc(100dvh - 54px)}.sidebar{display:none}.sidebar.mobile-visible{display:flex;position:fixed;inset:54px 0 62px;z-index:12;border-radius:0;overflow:auto;background:#09100df7}.sidebar.mobile-visible #mobile-file-close{display:inline-grid!important}.main{border:0;border-radius:0;min-height:calc(100dvh - 54px);grid-template-rows:auto 1fr auto}.main-head{padding:9px 11px}.main-sub{display:none}.main-title{font-size:13px}.tabs{display:none}.work-area{display:flex;flex-direction:column;min-height:0}.chat-pane{display:flex;flex:1;min-height:0;border:0}.messages{padding:14px 12px;min-height:260px}.welcome{margin:8vh auto 0}.welcome p{font-size:13px}.message{max-width:95%;font-size:13px}.terminal{display:none;max-height:35dvh;border:0;border-top:1px solid var(--line)}.terminal.mobile-open{display:flex}.terminal-output{max-height:25dvh}.editor-pane{display:none!important;position:fixed;inset:54px 0 64px;background:#09100d;z-index:5;padding:12px}.editor-pane.visible{display:flex!important}.editor{min-height:0}.composer{padding:9px 10px 10px}.composer-wrap{align-items:center}.composer textarea{min-height:44px}.mobile-nav{display:flex;position:sticky;bottom:0;background:#08100c;border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom));justify-content:space-around;z-index:7}.mobile-nav button{border:0;background:none;color:var(--muted);display:grid;justify-items:center;gap:2px;font-size:10px;padding:4px 12px}.mobile-nav button span{font-size:17px}.mobile-nav button.active{color:var(--green)}.composer{padding-bottom:10px}.app{min-height:100dvh}.main{min-height:calc(100dvh - 108px)} }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">YS</div><div>YS BOT LAB<small>AI CODING WORKSPACE</small></div></div>
+    <div class="top-actions"><div class="chip"><i class="dot"></i><span id="runtime-label">LOCAL WORKSPACE</span></div><button id="language-btn" class="icon-btn" aria-label="Change language">ع</button><button id="settings-open" class="icon-btn" aria-label="Settings">⚙</button></div>
+  </header>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-head"><span class="eyebrow" id="projects-label">PROJECTS</span><div><button class="btn primary" id="new-project">+ New</button><button id="mobile-file-close" class="icon-btn" style="display:none" aria-label="Close files">×</button></div></div>
+      <select id="project-select" class="project-select" aria-label="Project"></select>
+      <div class="section-label"><span>FILES</span><button id="new-folder" class="icon-btn" style="width:27px;height:27px">＋</button></div>
+      <div id="file-tree" class="file-tree"></div>
+      <div class="side-bottom"><button id="refresh-files" class="btn ghost">↻ Refresh files</button><div class="small-note">Your project files stay on this device. Secret files are hidden from the AI and file browser.</div></div>
+    </aside>
+    <main class="main">
+      <div class="main-head"><div><div class="main-title" id="current-project-title">YS Bot Lab</div><div class="main-sub">AI can build the project; every terminal command waits for your approval.</div></div><div class="tabs"><button class="tab active" data-view="chat">AI Chat</button><button class="tab" data-view="editor">Code Editor</button></div></div>
+      <div class="work-area">
+        <section class="chat-pane" id="chat-pane">
+          <div class="messages" id="messages">
+          <div class="welcome" id="welcome"><div class="terminal-icon">&gt;_</div><h1 id="welcome-title">Build something with AI.</h1><p id="welcome-copy">Describe your project in Arabic or English. I can create folders and files, update code, and request missing configuration secrets in a local masked field.</p><div class="suggestions"><button data-suggestion="discord" data-prompt="أنشئ لي بوت Discord بسيط فيه أمر /ping ويعرض تأكيد الاتصال.">Create a Discord bot</button><button data-suggestion="website" data-prompt="سوّي صفحة ويب عربية متجاوبة فيها صفحة رئيسية وملف CSS منفصل.">Build an Arabic website</button><button data-suggestion="project" data-prompt="أنشئ مشروع Node.js مرتب مع package.json وملف README.">Scaffold a project</button></div></div>
+          </div>
+          <div class="composer">
+            <div class="composer-wrap"><textarea id="prompt" placeholder="Describe what you want to build…" rows="2"></textarea><button id="send" class="btn primary">Send ↑</button></div>
+            <div class="composer-foot"><span>AI edits stay inside the selected project. Commands need approval.</span><span id="ai-state">Ready</span></div>
+          </div>
+        </section>
+        <section id="editor-pane" class="editor-pane">
+          <div class="editor-tools"><span id="editor-path" class="editor-path">Select a file</span><div><button id="save-file" class="btn primary">Save file</button><button id="close-editor" class="btn ghost">×</button></div></div>
+          <textarea id="editor" class="editor" spellcheck="false" placeholder="Open a file from the project tree"></textarea>
+        </section>
+        <aside class="terminal" id="terminal">
+          <div class="terminal-head"><span><span class="eyebrow">TERMINAL</span><div class="main-sub">Project-scoped · approval required</div></span><button id="clear-terminal" class="btn ghost">Clear</button></div>
+          <div id="terminal-output" class="terminal-output">YS Bot Lab local runner
+Commands requested by AI appear here after you approve them.
+</div>
+          <form id="terminal-form" class="terminal-input"><span style="color:var(--green)">$</span><input id="terminal-command" class="field" autocomplete="off" placeholder="npm install" aria-label="Command"><button class="btn" type="submit">Run</button></form>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <nav class="mobile-nav"><button class="active" data-mobile="chat"><span>⌘</span>AI</button><button data-mobile="files"><span>▤</span>Files</button><button data-mobile="terminal"><span>&gt;_</span>Terminal</button><button data-mobile="settings"><span>⚙</span>Settings</button></nav>
+</div>
+<div id="settings-modal" class="modal-backdrop"><section class="modal"><h2 id="settings-title">AI connection</h2><p id="settings-description">Use an OpenAI-compatible provider or a local model endpoint. The key is stored locally.</p><label id="base-label" for="base-url">API base URL</label><input id="base-url" class="field" placeholder="https://api.openai.com/v1" dir="ltr"><label id="model-label" for="model-name">Model name</label><input id="model-name" class="field" placeholder="Enter the model name" dir="ltr"><label id="key-label" for="api-key"><span id="api-key-label">API key</span> <span id="key-state" class="eyebrow"></span></label><input id="api-key" class="field" type="password" autocomplete="new-password" placeholder="Leave empty to keep the saved key" dir="ltr"><div class="modal-footer"><button id="settings-cancel" class="btn ghost">Cancel</button><button id="settings-save" class="btn primary">Save locally</button></div></section></div>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  let csrf = '';
+  let workspace = '';
+  let history = [];
+  let currentFile = '';
+  let language = ['ar','en'].includes(localStorage.getItem('ys-lab-language')) ? localStorage.getItem('ys-lab-language') : 'en';
+  const labels = {
+    en: {new:'New',projects:'PROJECTS',files:'FILES',refresh:'↻ Refresh files',save:'Save file',close:'Close',send:'Send ↑',ready:'Ready',thinking:'Working…',typing:'YS AI is working…',local:'LOCAL WORKSPACE',ai:'AI Chat',editor:'Code Editor',prompt:'Describe what you want to build…',saved:'Saved',secret:'Save secret locally',secretSaved:'saved locally',command:'Review command before it runs',approve:'Approve & run',reject:'Cancel',run:'Run',folder:'New folder name',project:'New project name',welcomeTitle:'Build something with AI.',welcomeCopy:'Describe your project in Arabic or English. I can create folders and files, update code, and request missing configuration secrets in a local masked field.',suggestDiscord:'Create a Discord bot',suggestWebsite:'Build an Arabic website',suggestProject:'Scaffold a project',secretHint:'The value is saved to this project’s hidden .env and is not sent to AI.',settingsTitle:'AI connection',settingsDescription:'Use an OpenAI-compatible provider or local model endpoint. The key stays in this app’s local .env.',baseUrl:'API base URL',model:'Model name',apiKey:'API key',keySaved:'KEY SAVED',noKey:'NO KEY',keepKey:'Leave empty to keep the saved key',saveLocal:'Save locally',cancel:'Cancel',commandReason:'You entered this command',chatNav:'AI',filesNav:'Files',terminalNav:'Terminal',settingsNav:'Settings',closeFiles:'Close files',fileHint:'Your project files stay on this device. Secret files are hidden from the AI and file browser.',headHint:'AI can build your project; every terminal command waits for your approval.',composerHint:'AI edits stay inside the selected project. Commands need approval.',terminalHint:'Project-scoped · approval required',clear:'Clear',commandInput:'Enter a command',runButton:'Run',selectFile:'Select a file',openFileHint:'Open a file from the project tree'},
+    ar: {new:'جديد',projects:'المشاريع',files:'الملفات',refresh:'↻ تحديث الملفات',save:'حفظ الملف',close:'إغلاق',send:'إرسال ↑',ready:'جاهز',thinking:'جاري العمل…',typing:'YS AI يعمل الآن…',local:'مساحة محلية',ai:'محادثة AI',editor:'محرر الكود',prompt:'اشرح شو بدك تبني…',saved:'انحفظ',secret:'احفظ السر محليًا',secretSaved:'انحفظ محليًا',command:'راجع الأمر قبل تشغيله',approve:'وافق وشغّل',reject:'إلغاء',run:'تشغيل',folder:'اسم المجلد الجديد',project:'اسم المشروع الجديد',welcomeTitle:'ابنِ مشروعك بمساعدة AI.',welcomeCopy:'اشرح مشروعك بالعربي أو الإنجليزي. الأداة تنشئ مجلدات وملفات، تعدّل الكود، وتطلب المفاتيح الناقصة بحقل مخفي ومحلي.',suggestDiscord:'أنشئ بوت Discord',suggestWebsite:'أنشئ موقعًا عربيًا',suggestProject:'جهّز مشروعًا جديدًا',secretHint:'تنحفظ القيمة بملف .env مخفي في المشروع وما بتنرسل للـAI.',settingsTitle:'ربط الذكاء الاصطناعي',settingsDescription:'استخدم مزودًا متوافقًا أو نموذجًا محليًا. المفتاح ينحفظ بملف .env على جهازك.',baseUrl:'رابط API الأساسي',model:'اسم النموذج',apiKey:'مفتاح API',keySaved:'المفتاح محفوظ',noKey:'ما في مفتاح',keepKey:'اتركه فاضي للاحتفاظ بالمفتاح الحالي',saveLocal:'حفظ محليًا',cancel:'إلغاء',commandReason:'أنت طلبت هذا الأمر',chatNav:'محادثة',filesNav:'الملفات',terminalNav:'الطرفية',settingsNav:'الإعدادات',closeFiles:'إغلاق الملفات',fileHint:'ملفات مشروعك محفوظة على هذا الجهاز. ملفات الأسرار مخفية عن الذكاء الاصطناعي وشجرة الملفات.',headHint:'الذكاء الاصطناعي يبني مشروعك، وكل أمر تشغيل يحتاج موافقتك.',composerHint:'تعديلات AI تبقى داخل المشروع المحدد. تشغيل الأوامر يحتاج موافقتك.',terminalHint:'داخل المشروع · التشغيل بموافقتك',clear:'مسح',commandInput:'اكتب أمرًا',runButton:'تشغيل',selectFile:'اختر ملفًا',openFileHint:'افتح ملفًا من قائمة المشروع'}
+  };
+  const t = (key) => labels[language][key] || key;
+  const esc = (value) => String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function api(url, options = {}) {
+    const headers = { ...(options.headers || {}) };
+    if (options.body) headers['content-type'] = 'application/json';
+    if (options.method && options.method !== 'GET') headers['x-ys-lab-session'] = csrf;
+    const response = await fetch(url, { ...options, headers });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+    return data;
+  }
+  function addMessage(role, content) {
+    $('#welcome')?.remove();
+    const bubble = document.createElement('div'); bubble.className = `message ${role}`;
+    const who = document.createElement('div'); who.className = 'who'; who.textContent = role === 'user' ? 'YOU' : 'YS AI';
+    const text = document.createElement('div'); text.textContent = content;
+    bubble.append(who, text); $('#messages').appendChild(bubble); $('#messages').scrollTop = $('#messages').scrollHeight;
+  }
+  function printTerminal(text, kind = '') {
+    const output = $('#terminal-output'); const line = document.createElement('div'); line.className = kind; line.textContent = text; output.appendChild(line); output.scrollTop = output.scrollHeight;
+  }
+  function renderTree(entries, target, level = 0) {
+    for (const entry of entries || []) {
+      const row = document.createElement('button'); row.className = `tree-row ${entry.kind === 'folder' ? 'tree-folder' : ''}`; row.style.paddingInlineStart = `${7 + level * 13}px`; row.textContent = `${entry.kind === 'folder' ? '▾ ' : '  '} ${entry.name}`; row.title = entry.path;
+      if (entry.kind === 'file') row.addEventListener('click', () => openFile(entry.path));
+      else row.addEventListener('click', () => { row.dataset.closed = row.dataset.closed === 'true' ? 'false' : 'true'; const children = row.nextElementSibling; if (children) children.hidden = row.dataset.closed === 'true'; });
+      target.appendChild(row);
+      if (entry.kind === 'folder' && entry.children?.length) { const nested = document.createElement('div'); nested.className = 'tree-indent'; renderTree(entry.children, nested, level + 1); target.appendChild(nested); }
+    }
+  }
+  async function refreshFiles() {
+    if (!workspace) return;
+    const data = await api(`/api/workspace/files?workspace=${encodeURIComponent(workspace)}`);
+    const tree = $('#file-tree'); tree.replaceChildren(); renderTree(data.files, tree);
+  }
+  async function openFile(filePath) {
+    const result = await api(`/api/workspace/file?workspace=${encodeURIComponent(workspace)}&path=${encodeURIComponent(filePath)}`);
+    currentFile = filePath; $('#editor-path').textContent = filePath; $('#editor').value = result.content; $('#editor-pane').classList.add('visible'); $('.work-area').classList.add('editor-mode');
+    document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.view === 'editor'));
+  }
+  function setWorkspaces(items, selected) {
+    const select = $('#project-select'); select.replaceChildren();
+    for (const item of items) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.name; select.appendChild(option); }
+    workspace = selected || items[0]?.id || '';
+    if (workspace) select.value = workspace;
+    $('#current-project-title').textContent = workspace || 'YS Bot Lab';
+  }
+  async function boot() {
+    const data = await api('/api/bootstrap'); csrf = data.csrf;
+    if (!data.workspaces.length) { const created = await api('/api/workspaces', { method:'POST', body:JSON.stringify({name:'my-first-bot'}) }); data.workspaces = [{id:created.id,name:created.id}]; }
+    setWorkspaces(data.workspaces);
+    $('#base-url').value = data.settings.baseUrl; $('#model-name').value = data.settings.model; $('#key-state').dataset.hasKey = String(data.settings.hasKey);
+    await refreshFiles(); applyLanguage();
+  }
+  function applyLanguage() {
+    document.documentElement.lang = language; document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    $('#runtime-label').textContent = t('local'); $('#projects-label').textContent = t('projects'); $('#new-project').textContent = `+ ${t('new')}`; $('.section-label span').textContent = t('files'); $('#refresh-files').textContent = t('refresh'); $('#save-file').textContent = t('save'); $('#close-editor').setAttribute('aria-label',t('close')); $('#send').textContent = t('send'); $('#prompt').placeholder = t('prompt'); $('#ai-state').textContent = t('ready'); $('#welcome-title').textContent=t('welcomeTitle');$('#welcome-copy').textContent=t('welcomeCopy');
+    document.querySelector('[data-view="chat"]').textContent = t('ai'); document.querySelector('[data-view="editor"]').textContent = t('editor');
+    $('#settings-title').textContent=t('settingsTitle');$('#settings-description').textContent=t('settingsDescription');$('#base-label').textContent=t('baseUrl');$('#model-label').textContent=t('model');$('#api-key-label').textContent=t('apiKey');$('#key-state').textContent=$('#key-state').dataset.hasKey==='true'?t('keySaved'):t('noKey');$('#api-key').placeholder=t('keepKey');$('#settings-cancel').textContent=t('cancel');$('#settings-save').textContent=t('saveLocal');$('#mobile-file-close').setAttribute('aria-label',t('closeFiles'));$('.side-bottom .small-note').textContent=t('fileHint');$('.main-sub').textContent=t('headHint');$('.composer-foot span:first-child').textContent=t('composerHint');$('#terminal .main-sub').textContent=t('terminalHint');$('#clear-terminal').textContent=t('clear');$('#terminal-command').placeholder=t('commandInput');$('#terminal-command').setAttribute('aria-label',t('commandInput'));$('#terminal-form button').textContent=t('runButton');$('#editor-path').textContent=currentFile||t('selectFile');$('#editor').placeholder=t('openFileHint');
+    document.querySelector('[data-suggestion="discord"]').textContent=t('suggestDiscord');document.querySelector('[data-suggestion="website"]').textContent=t('suggestWebsite');document.querySelector('[data-suggestion="project"]').textContent=t('suggestProject');
+    document.querySelectorAll('[data-mobile]').forEach((button)=>{const label=button.lastChild;if(label?.nodeType===Node.TEXT_NODE)label.textContent=t(`${button.dataset.mobile}Nav`);});
+    localStorage.setItem('ys-lab-language', language); $('#language-btn').textContent = language === 'ar' ? 'EN' : 'ع';
+  }
+  async function sendPrompt(prompt = $('#prompt').value.trim()) {
+    if (!prompt || !workspace) return;
+    $('#prompt').value = ''; addMessage('user', prompt); history.push({role:'user',content:prompt});
+    $('#send').disabled = true; $('#ai-state').textContent = t('thinking');
+    const placeholder = document.createElement('div'); placeholder.className='message assistant'; placeholder.id='typing'; placeholder.textContent=t('typing'); $('#messages').appendChild(placeholder);
+    try {
+      const result = await api('/api/agent/chat',{method:'POST',body:JSON.stringify({workspace,prompt,history:history.slice(0,-1)})});
+      $('#typing')?.remove(); addMessage('assistant',result.answer); history.push({role:'assistant',content:result.answer});
+      for (const request of result.secretRequests || []) showSecretRequest(request);
+      for (const command of result.commands || []) showCommandRequest(command);
+      if (result.filesChanged) await refreshFiles();
+    } catch(error) { $('#typing')?.remove(); addMessage('assistant',`⚠ ${error.message}`); }
+    finally { $('#send').disabled = false; $('#ai-state').textContent = t('ready'); $('#prompt').focus(); }
+  }
+  function showSecretRequest(request) {
+    const box = document.createElement('div'); box.className='secret-box'; box.innerHTML=`<label>${esc(request.name)} — ${esc(request.reason)}<br><span class="small-note">${esc(t('secretHint'))}</span></label><div class="secret-row"><input class="field" type="password" autocomplete="new-password" placeholder="${esc(request.name)}"><button class="btn primary">${esc(t('secret'))}</button></div>`;
+    box.querySelector('button').addEventListener('click',async()=>{const value=box.querySelector('input').value;if(!value)return;try{await api('/api/workspace/secret',{method:'POST',body:JSON.stringify({workspace,name:request.name,value})});box.replaceChildren(Object.assign(document.createElement('span'),{textContent:`${request.name} — ${t('secretSaved')}`}));}catch(error){alert(error.message);}});$('#messages').appendChild(box);
+  }
+  function showCommandRequest(command) {
+    const box=document.createElement('div');box.className='command-box';box.innerHTML=`<div>${esc(t('command'))}${command.reason?`: ${esc(command.reason)}`:''}</div><div class="command-line">${esc(command.command)}<br>${command.cwd?`cd ${esc(command.cwd)}`:''}</div><div class="command-actions"><button class="btn primary">${esc(t('approve'))}</button><button class="btn danger">${esc(t('reject'))}</button></div>`;
+    const [approve,reject]=box.querySelectorAll('button');approve.addEventListener('click',async()=>{approve.disabled=true;try{const result=await api('/api/agent/approve-command',{method:'POST',body:JSON.stringify({id:command.id,workspace})});printTerminal(`$ ${command.command}\n${result.output}\n[exit ${result.code}]`,result.code===0?'ok':'bad');box.remove();}catch(error){printTerminal(error.message,'bad');approve.disabled=false;}});reject.addEventListener('click',async()=>{await api('/api/agent/reject-command',{method:'POST',body:JSON.stringify({id:command.id})});box.remove();});$('#messages').appendChild(box);$('#messages').scrollTop=$('#messages').scrollHeight;
+  }
+  $('#send').addEventListener('click',()=>sendPrompt());$('#prompt').addEventListener('keydown',(event)=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPrompt();}});
+  $('#messages').addEventListener('click',(event)=>{const button=event.target.closest('[data-prompt]');if(button)sendPrompt(button.dataset.prompt);});
+  $('#project-select').addEventListener('change',async(event)=>{workspace=event.target.value;$('#current-project-title').textContent=workspace;history=[];$('#messages').replaceChildren();await refreshFiles();});
+  $('#new-project').addEventListener('click',async()=>{const name=prompt(t('project'));if(!name)return;try{const created=await api('/api/workspaces',{method:'POST',body:JSON.stringify({name})});const data=await api('/api/bootstrap');setWorkspaces(data.workspaces,created.id);await refreshFiles();history=[];$('#messages').replaceChildren();}catch(error){alert(error.message);}});
+  $('#new-folder').addEventListener('click',async()=>{const name=prompt(t('folder'));if(!name)return;try{await api('/api/workspace/folder',{method:'POST',body:JSON.stringify({workspace,path:name})});await refreshFiles();}catch(error){alert(error.message);}});
+  $('#refresh-files').addEventListener('click',()=>refreshFiles().catch(error=>alert(error.message)));
+  $('#save-file').addEventListener('click',async()=>{if(!currentFile)return;try{await api('/api/workspace/file',{method:'POST',body:JSON.stringify({workspace,path:currentFile,content:$('#editor').value})});$('#ai-state').textContent=t('saved');setTimeout(()=>$('#ai-state').textContent=t('ready'),1400);}catch(error){alert(error.message);}});
+  $('#close-editor').addEventListener('click',()=>{ $('#editor-pane').classList.remove('visible'); $('.work-area').classList.remove('editor-mode'); document.querySelectorAll('.tab').forEach((tab)=>tab.classList.toggle('active',tab.dataset.view==='chat')); });
+  document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(item=>item.classList.toggle('active',item===tab));if(tab.dataset.view==='editor'){ $('#editor-pane').classList.add('visible'); $('.work-area').classList.add('editor-mode'); }else{ $('#editor-pane').classList.remove('visible'); $('.work-area').classList.remove('editor-mode'); }}));
+  $('#settings-open').addEventListener('click',()=>$('#settings-modal').classList.add('open'));$('#settings-cancel').addEventListener('click',()=>$('#settings-modal').classList.remove('open'));
+  $('#settings-save').addEventListener('click',async()=>{try{const result=await api('/api/settings',{method:'POST',body:JSON.stringify({baseUrl:$('#base-url').value,model:$('#model-name').value,apiKey:$('#api-key').value})});$('#api-key').value='';$('#key-state').dataset.hasKey=String(result.hasKey);applyLanguage();$('#settings-modal').classList.remove('open');}catch(error){alert(error.message);}});
+  $('#terminal-form').addEventListener('submit',async(event)=>{event.preventDefault();const command=$('#terminal-command').value.trim();if(!command)return;$('#terminal-command').value='';try{const request=await api('/api/agent/request-command',{method:'POST',body:JSON.stringify({workspace,command,cwd:'',reason:t('commandReason')})});showCommandRequest({...request,reason:t('commandReason')});}catch(error){printTerminal(error.message,'bad');}});
+  $('#clear-terminal').addEventListener('click',()=>$('#terminal-output').replaceChildren());
+  $('#language-btn').addEventListener('click',()=>{language=language==='ar'?'en':'ar';applyLanguage();});
+  document.querySelectorAll('[data-mobile]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-mobile]').forEach(item=>item.classList.toggle('active',item===button));if(button.dataset.mobile==='settings')$('#settings-modal').classList.add('open');if(button.dataset.mobile==='terminal')$('#terminal').classList.toggle('mobile-open');if(button.dataset.mobile==='files')$('.sidebar').classList.toggle('mobile-visible');if(button.dataset.mobile==='chat'){$('.sidebar').classList.remove('mobile-visible');$('#terminal').classList.remove('mobile-open');$('#editor-pane').classList.remove('visible');$('.work-area').classList.remove('editor-mode');document.querySelectorAll('.tab').forEach((tab)=>tab.classList.toggle('active',tab.dataset.view==='chat'));}}));
+  $('#mobile-file-close').addEventListener('click',()=>$('.sidebar').classList.remove('mobile-visible'));
+  boot().catch(error=>{addMessage('assistant',`Could not start local workspace: ${error.message}`);});
+})();
+</script>
+</body>
+</html>

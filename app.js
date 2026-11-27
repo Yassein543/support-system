@@ -98,6 +98,15 @@ app.get('/allocation', (req, res) => {
     res.sendFile(path.join(__dirname, 'allocation.html'));
 });
 
+app.get(['/ys-bot-lab', '/lab'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'ys-bot-lab.html'));
+});
+
+app.get('/downloads/ys-bot-lab.zip', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.download(path.join(__dirname, 'downloads', 'ys-bot-lab.zip'), 'ys-bot-lab.zip');
+});
+
 // إعداد الجلسات بأمان للبيئة السحابية
 const sessionSecret = process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? '' : `development-${crypto.randomBytes(32).toString('hex')}`);
 if (!sessionSecret) throw new Error('SESSION_SECRET must be configured in production.');
