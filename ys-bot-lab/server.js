@@ -11,6 +11,7 @@ const DATA_HOME = process.env.YS_BOT_LAB_HOME || ROOT;
 const WORKSPACES = path.join(DATA_HOME, '.workspaces');
 const SETTINGS_FILE = path.join(DATA_HOME, 'settings.json');
 const ENV_FILE = path.join(DATA_HOME, '.env');
+const EXTERNAL_WORKSPACES_FILE = path.join(DATA_HOME, 'external-workspaces.json');
 const PORT = Math.max(1024, Math.min(65535, Number(process.env.PORT) || 3210));
 const SESSION_KEY = crypto.randomBytes(32).toString('hex');
 const pendingCommands = new Map();
@@ -69,10 +70,26 @@ function validWorkspaceId(value) {
 
 function getWorkspace(id) {
     if (!validWorkspaceId(id)) throw new Error('اسم المشروع غير صالح.');
+    const external = loadExternalWorkspaces()[id];
+    if (external) {
+        const stat = fs.lstatSync(external.path);
+        if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('مجلد المشروع الخارجي لم يعد متاحًا.');
+        return external.path;
+    }
     const target = path.join(WORKSPACES, id);
     const stat = fs.lstatSync(target);
     if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('مساحة المشروع غير صالحة.');
     return target;
+}
+
+function loadExternalWorkspaces() {
+    try {
+        const value = JSON.parse(fs.readFileSync(EXTERNAL_WORKSPACES_FILE, 'utf8'));
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+        return Object.fromEntries(Object.entries(value).filter(([id, entry]) =>
+            validWorkspaceId(id) && entry && typeof entry.name === 'string' && typeof entry.path === 'string' && path.isAbsolute(entry.path)
+        ));
+    } catch { return {}; }
 }
 
 function safePath(workspace, relative = '') {
@@ -111,9 +128,17 @@ function listFiles(directory, prefix = '', depth = 0) {
 }
 
 function listWorkspaces() {
-    return fs.readdirSync(WORKSPACES, { withFileTypes: true })
+    const local = fs.readdirSync(WORKSPACES, { withFileTypes: true })
         .filter((entry) => entry.isDirectory() && !entry.isSymbolicLink() && validWorkspaceId(entry.name))
-        .map((entry) => ({ id: entry.name, name: entry.name.replace(/-/g, ' ') }))
+        .map((entry) => ({ id: entry.name, name: entry.name.replace(/-/g, ' '), kind: 'local' }));
+    const external = Object.entries(loadExternalWorkspaces()).flatMap(([id, entry]) => {
+        try {
+            const stat = fs.lstatSync(entry.path);
+            if (!stat.isDirectory() || stat.isSymbolicLink()) return [];
+            return [{ id, name: entry.name, kind: 'external' }];
+        } catch { return []; }
+    });
+    return [...local, ...external]
         .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -326,10 +351,33 @@ async function route(request, response) {
     if (request.method === 'POST' && url.pathname === '/api/workspaces') {
         const raw = String(body.name || 'my-project').normalize('NFKC').toLowerCase().trim().replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 40) || `project-${Date.now().toString(36)}`;
         let id = raw;
-        for (let suffix = 2; fs.existsSync(path.join(WORKSPACES, id)); suffix += 1) id = `${raw.slice(0, 36)}-${suffix}`;
+        const externalIds = loadExternalWorkspaces();
+        for (let suffix = 2; fs.existsSync(path.join(WORKSPACES, id)) || externalIds[id]; suffix += 1) id = `${raw.slice(0, 36)}-${suffix}`;
         fs.mkdirSync(path.join(WORKSPACES, id), { recursive: true });
         fs.writeFileSync(path.join(WORKSPACES, id, '.gitignore'), '.env\n.env.*\nnode_modules/\n', 'utf8');
-        return sendJson(response, 201, { id });
+        return sendJson(response, 201, { id, name: id.replace(/-/g, ' '), kind: 'local' });
+    }
+    if (request.method === 'POST' && url.pathname === '/api/workspaces/open') {
+        try {
+            const selectedPath = String(body.path || '').trim();
+            if (!selectedPath || !path.isAbsolute(selectedPath)) throw new Error('اختر مجلد مشروع صالحًا.');
+            const realPath = fs.realpathSync(selectedPath);
+            const stat = fs.lstatSync(realPath);
+            if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('المسار المختار ليس مجلدًا صالحًا.');
+            const normalizedPath = process.platform === 'win32' ? realPath.toLowerCase() : realPath;
+            const external = loadExternalWorkspaces();
+            const duplicate = Object.entries(external).find(([, entry]) => (process.platform === 'win32' ? entry.path.toLowerCase() : entry.path) === normalizedPath);
+            if (duplicate) return sendJson(response, 200, { id: duplicate[0], name: duplicate[1].name, kind: 'external' });
+            const name = path.basename(realPath) || realPath;
+            const raw = name.normalize('NFKC').toLowerCase().trim().replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 40) || `project-${Date.now().toString(36)}`;
+            let id = raw;
+            for (let suffix = 2; fs.existsSync(path.join(WORKSPACES, id)) || external[id]; suffix += 1) id = `${raw.slice(0, 36)}-${suffix}`;
+            external[id] = { name, path: realPath };
+            fs.writeFileSync(EXTERNAL_WORKSPACES_FILE, JSON.stringify(external, null, 2), { mode: 0o600 });
+            return sendJson(response, 201, { id, name, kind: 'external' });
+        } catch (error) {
+            return sendJson(response, 400, { error: error.message || 'تعذر فتح مجلد المشروع.' });
+        }
     }
     if (request.method === 'POST' && url.pathname === '/api/settings') {
         const currentEnv = readLocalEnv();

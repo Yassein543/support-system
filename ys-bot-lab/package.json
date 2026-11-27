@@ -1,7 +1,7 @@
 {
   "name": "ys-bot-lab",
   "productName": "YS Bot Lab",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "author": "YS-Bot",
   "description": "Local AI coding workspace for Discord bots and general projects",
@@ -24,6 +24,7 @@
     "asar": true,
     "files": [
       "desktop/main.js",
+      "desktop/preload.js",
       "server.js",
       "index.html",
       "package.json"

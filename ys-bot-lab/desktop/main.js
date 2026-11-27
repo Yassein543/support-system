@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, dialog, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const net = require('node:net');
 const path = require('node:path');
 
@@ -64,10 +64,20 @@ else {
             title: 'YS Bot Lab',
             backgroundColor: '#080d0b',
             webPreferences: {
+                preload: path.join(__dirname, 'preload.js'),
                 contextIsolation: true,
                 nodeIntegration: false,
                 sandbox: true
             }
+        });
+
+        ipcMain.handle('ys-lab:choose-project-folder', async () => {
+            const result = await dialog.showOpenDialog(mainWindow, {
+                title: 'Open an existing project folder',
+                properties: ['openDirectory', 'createDirectory']
+            });
+            if (result.canceled || !result.filePaths[0]) return null;
+            return result.filePaths[0];
         });
 
         mainWindow.once('ready-to-show', () => mainWindow.show());
