@@ -13,8 +13,7 @@
           "emojis/*.svg",
           "button-effects.js",
           "consent.js",
-          "services/**",
-          "downloads/*.zip"
+          "services/**"
         ]
       }
     }

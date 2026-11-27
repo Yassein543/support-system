@@ -7,9 +7,10 @@ const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
 
 const ROOT = __dirname;
-const WORKSPACES = path.join(ROOT, '.workspaces');
-const SETTINGS_FILE = path.join(ROOT, 'settings.json');
-const ENV_FILE = path.join(ROOT, '.env');
+const DATA_HOME = process.env.YS_BOT_LAB_HOME || ROOT;
+const WORKSPACES = path.join(DATA_HOME, '.workspaces');
+const SETTINGS_FILE = path.join(DATA_HOME, 'settings.json');
+const ENV_FILE = path.join(DATA_HOME, '.env');
 const PORT = Math.max(1024, Math.min(65535, Number(process.env.PORT) || 3210));
 const SESSION_KEY = crypto.randomBytes(32).toString('hex');
 const pendingCommands = new Map();
