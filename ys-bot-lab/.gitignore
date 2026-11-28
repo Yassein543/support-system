@@ -6,4 +6,5 @@ node_modules/
 dist/
 dist-v102/
 dist-v103/
+dist-v104/
 npm-debug.log*

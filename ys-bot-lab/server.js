@@ -268,6 +268,7 @@ const INSPECT_REQUEST = /(?:استعرض|راجع|افحص|تفقد|اقرأ|ش�
 const READ_ONLY_REQUEST = /(?:لا\s*(?:تعدل|تغيّر|تنشئ|تكتب|تحذف|تسوي|تعمل)|بدون\s*(?:تعديل|تغيير)|للقراءة فقط|read[ -]?only|do not (?:modify|change|create|write|delete)|don't (?:modify|change|create|write|delete)|without (?:changing|modifying))/iu;
 const TEXT_SOURCE = /\.(?:txt|md|json|ya?ml|toml|ini|cfg|conf|html?|css|scss|sass|less|[cm]?js|jsx|tsx?|py|java|kt|go|rs|php|rb|sh|bat|ps1|svg|xml|sql|graphql|gql|vue|svelte)$/i;
 const HARMFUL_SECURITY_REQUEST = /(?:\b(?:steal|exfiltrat\w*|phish(?:ing)?|keylogg\w*|ransomware|malware|botnet|ddos|denial.of.service|credential.harvest\w*|bypass.{0,30}(?:login|auth|security|antivirus)|evade.{0,30}(?:antivirus|detection)|exploit.{0,40}(?:public|someone else|third.party)|hack.{0,30}(?:account|someone else|without permission)|brute.force.{0,30}(?:password|login))\b|(?:سرقة|اسرق|اسحب).{0,25}(?:كلمة مرور|كلمات المرور|رمز|توكن|حساب)|(?:تصيد|تجسس|كَي لوجر|كيلوجر|فدية|برمجية خبيثة|بوت نت|بوتنت|ديدوس|حجب الخدمة|تجاوز).{0,35}(?:حماية|تسجيل الدخول|مضاد الفيروسات|كلمة مرور|كشف|حساب)?|(?:اختراق|اخترق).{0,25}(?:حساب|حسابات|شخص|ناس|بدون إذن|بدون تصريح))/iu;
+const VIDEO_VAGUE_REQUEST = /^(?:سوي|اعمل|اصنع|ابدأ|يلا|تمام|okay|ok|go|do it|make it|create it|start)(?:\s+(?:لي\s+)?(?:فيديو|الفيديو|اعلان|إعلان|الإعلان|اعلانًا|فلم|movie|video|ad|promo))?[.!؟?…\s]*$/iu;
 
 function projectInspectionContext(workspace) {
     const root = listFiles(workspace);
@@ -322,12 +323,17 @@ async function callAi(body, workspace, events) {
     if (mode === 'security' && HARMFUL_SECURITY_REQUEST.test(prompt)) {
         return 'ما بقدر أساعد في سرقة الحسابات أو كلمات المرور، التصيّد، البرمجيات الخبيثة، تجاوز الحماية، أو استهداف أنظمة بدون إذن. أقدر أساعدك بدلًا من ذلك بمراجعة مشروعك، تقوية تسجيل الدخول، أو إصلاح ثغرة في نظام تملكه أو لديك تصريح لاختباره.';
     }
+    if (mode === 'video' && VIDEO_VAGUE_REQUEST.test(prompt)) {
+        return /[\u0600-\u06ff]/.test(prompt)
+            ? 'أكيد. حتى أجهز الفيديو المطلوب، اكتب لي: شو الموضوع أو المنتج؟ كم مدته وأي أسلوب تفضّل؟ وأضف صورك أو مقاطعك لمجلد المشروع من زر «فتح مجلد». بعدها أقدر أجهز ملفات المونتاج وأطلب موافقتك على تشغيل FFmpeg لإخراج الفيديو؛ لازم يكون FFmpeg مثبتًا.'
+            : 'Sure. Tell me what the video is about, its length and style, then add your images or clips to the project with “Open folder.” I can prepare the edit and ask before running FFmpeg to render it; FFmpeg must be installed.';
+    }
     const inspectProject = INSPECT_REQUEST.test(prompt);
     const readOnly = inspectProject && READ_ONLY_REQUEST.test(prompt);
     const inspection = inspectProject ? projectInspectionContext(workspace) : '';
     let modeInstructions = '';
     if (mode === 'video') {
-        modeInstructions = `\nوضع المونتاج والإعلانات: ساعد في كتابة نص إعلان، تقسيم المشاهد، الترجمة والتوقيت، وخطة مونتاج قابلة للتنفيذ. استخدم الأصول المحلية التالية إن وجدت:\n${projectMediaContext(workspace)}\nاعمل على فيديوهات وصور يملكها المستخدم أو لديه إذن باستخدامها. يمكنك إنشاء مشروع تحرير وملفات FFmpeg عند الحاجة؛ وضّح متطلبات FFmpeg، ولا تدّعِ أنك صدّرت الفيديو قبل تشغيله بنجاح. كل أمر تشغيل يمر بطلب موافقة المستخدم.`;
+        modeInstructions = `\nوضع المونتاج والإعلانات: استخدم الملفات المحلية التالية إن وجدت:\n${projectMediaContext(workspace)}\nإذا كان الطلب مختصرًا أو لم يذكر موضوع الفيديو ومدته وأسلوبه، اسأل المستخدم عنها بدل اختراع منتج أو نص إعلان. إذا لم توجد ملفات وسائط، اطلب من المستخدم إضافتها لمجلد المشروع عبر Open folder ثم أعد فحص الملفات. إذا طلب إخراج فيديو فعلي، جهّز سكربت/أمر FFmpeg مناسبًا للأصول الموجودة، اشرح أن FFmpeg يجب أن يكون مثبتًا، واطلب موافقة المستخدم على الأمر قبل تشغيله. لا تدّعِ تصدير فيديو قبل تشغيل الأمر والتحقق من ملف الناتج. استخدم فقط وسائط يملكها المستخدم أو لديه إذن باستخدامها.`;
     } else if (mode === 'security') {
         modeInstructions = '\nوضع الأمن السيبراني دفاعي ومصرّح به: ساعد في مراجعة مشاريع المستخدم التي يملكها، إصلاح الثغرات، تأمين الإعدادات، وفهم المفاهيم داخل مختبر تعليمي. لا تساعد على اختراق أنظمة أو حسابات الآخرين، سرقة كلمات المرور أو الرموز، التصيد، البرمجيات الخبيثة، التخفي أو تعطيل الخدمات. لا تنفّذ فحصًا شبكيًا ولا تطلب تشغيل أوامر في هذا الوضع؛ اقترح بديلًا دفاعيًا آمنًا عند الحاجة.';
     } else if (mode === 'search') {

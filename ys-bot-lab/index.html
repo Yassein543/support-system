@@ -12,7 +12,7 @@
     @media(max-width:950px){.layout{grid-template-columns:230px minmax(0,1fr);padding:9px;gap:9px}.work-area{grid-template-columns:minmax(0,1fr) 240px}.main{min-height:calc(100vh - 76px)}}
     @media(max-width:720px){.app{grid-template-rows:54px 1fr}.topbar{height:54px;padding:0 10px}.topbar .chip{display:none}.layout{display:block;padding:0;min-height:calc(100dvh - 54px)}.sidebar{display:none}.sidebar.mobile-visible{display:flex;position:fixed;inset:54px 0 62px;z-index:12;border-radius:0;overflow:auto;background:#09100df7}.sidebar.mobile-visible #mobile-file-close{display:inline-grid!important}.main{border:0;border-radius:0;min-height:calc(100dvh - 54px);grid-template-rows:auto 1fr auto}.main-head{padding:9px 11px}.main-sub{display:none}.main-title{font-size:13px}.tabs{display:none}.work-area{display:flex;flex-direction:column;min-height:0}.chat-pane{display:flex;flex:1;min-height:0;border:0}.messages{padding:14px 12px;min-height:260px}.welcome{margin:8vh auto 0}.welcome p{font-size:13px}.message{max-width:95%;font-size:13px}.terminal{display:none;max-height:35dvh;border:0;border-top:1px solid var(--line)}.terminal.mobile-open{display:flex}.terminal-output{max-height:25dvh}.editor-pane{display:none!important;position:fixed;inset:54px 0 64px;background:#09100d;z-index:5;padding:12px}.editor-pane.visible{display:flex!important}.editor{min-height:0}.composer{padding:9px 10px 10px}.composer-wrap{align-items:center}.composer textarea{min-height:44px}.mobile-nav{display:flex;position:sticky;bottom:0;background:#08100c;border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom));justify-content:space-around;z-index:7}.mobile-nav button{border:0;background:none;color:var(--muted);display:grid;justify-items:center;gap:2px;font-size:10px;padding:4px 12px}.mobile-nav button span{font-size:17px}.mobile-nav button.active{color:var(--green)}.composer{padding-bottom:10px}.app{min-height:100dvh}.main{min-height:calc(100dvh - 108px)} }
     .side-head{gap:6px}.side-head>div{display:flex;gap:6px}.side-head .btn{padding:7px 9px;font-size:12px}
-    .head-copy{min-width:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.mode-select{width:auto;min-width:150px;max-width:210px;padding:7px 8px;font-size:11px}
+    .head-copy{min-width:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.mode-select{width:auto;min-width:150px;max-width:210px;padding:7px 8px;font-size:11px}.message .formatted{white-space:normal}.message .formatted p{margin:0 0 10px}.message .formatted p:last-child{margin-bottom:0}.message .formatted h1,.message .formatted h2,.message .formatted h3{margin:7px 0;font-size:1.05em}.message .formatted ul,.message .formatted ol{margin:4px 0 10px;padding-inline-start:24px}.message .formatted li{margin:3px 0}.message .formatted code{direction:ltr;unicode-bidi:isolate;background:#07110b;border:1px solid #294133;border-radius:4px;padding:1px 4px;font: .9em var(--mono)}.message .formatted hr{border:0;border-top:1px solid var(--line);margin:10px 0}.message .formatted a{color:#79deb2;text-decoration:underline}
   </style>
 </head>
 <body>
@@ -85,8 +85,46 @@ Commands requested by AI appear here after you approve them.
     $('#welcome')?.remove();
     const bubble = document.createElement('div'); bubble.className = `message ${role}`;
     const who = document.createElement('div'); who.className = 'who'; who.textContent = role === 'user' ? 'YOU' : 'YS AI';
-    const text = document.createElement('div'); text.textContent = content;
+    const text = document.createElement('div');
+    if (role === 'assistant') { text.className = 'formatted'; renderMarkdown(text, content); }
+    else text.textContent = content;
     bubble.append(who, text); $('#messages').appendChild(bubble); $('#messages').scrollTop = $('#messages').scrollHeight;
+  }
+  function renderMarkdown(target, markdown) {
+    let list = null;
+    const flushList = () => { if (list) target.appendChild(list); list = null; };
+    const inline = (parent, value) => {
+      const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https:\/\/[^\s)]+\))/g;
+      let cursor = 0;
+      for (const match of value.matchAll(pattern)) {
+        parent.append(document.createTextNode(value.slice(cursor, match.index)));
+        const token = match[0]; let node;
+        if (token.startsWith('**')) { node = document.createElement('strong'); node.textContent = token.slice(2, -2); }
+        else if (token.startsWith('`')) { node = document.createElement('code'); node.textContent = token.slice(1, -1); }
+        else {
+          const label = token.match(/^\[([^\]]+)\]\((https:\/\/[^\s)]+)\)$/);
+          node = document.createElement('a'); node.textContent = label[1]; node.href = label[2]; node.target = '_blank'; node.rel = 'noopener noreferrer';
+        }
+        parent.appendChild(node); cursor = match.index + token.length;
+      }
+      parent.append(document.createTextNode(value.slice(cursor)));
+    };
+    for (const raw of String(markdown).split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line) { flushList(); continue; }
+      if (/^(?:---+|___+|\*\*\*+)$/.test(line)) { flushList(); target.appendChild(document.createElement('hr')); continue; }
+      const heading = line.match(/^(#{1,3})\s+(.+)$/);
+      if (heading) { flushList(); const h = document.createElement(`h${heading[1].length}`); inline(h, heading[2]); target.appendChild(h); continue; }
+      const unordered = line.match(/^[-*+]\s+(.+)$/);
+      const ordered = line.match(/^\d+[.)]\s+(.+)$/);
+      if (unordered || ordered) {
+        const type = unordered ? 'ul' : 'ol';
+        if (!list || list.tagName.toLowerCase() !== type) { flushList(); list = document.createElement(type); }
+        const item = document.createElement('li'); inline(item, (unordered || ordered)[1]); list.appendChild(item); continue;
+      }
+      flushList(); const paragraph = document.createElement('p'); inline(paragraph, line); target.appendChild(paragraph);
+    }
+    flushList();
   }
   function printTerminal(text, kind = '') {
     const output = $('#terminal-output'); const line = document.createElement('div'); line.className = kind; line.textContent = text; output.appendChild(line); output.scrollTop = output.scrollHeight;
