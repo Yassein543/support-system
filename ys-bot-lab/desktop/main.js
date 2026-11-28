@@ -11,6 +11,7 @@ else {
     let appOrigin = '';
     let updateCheckManual = false;
     let updateDialogOpen = false;
+    let installAfterUpdate = false;
 
     app.on('second-instance', () => {
         if (!mainWindow) return;
@@ -52,6 +53,17 @@ else {
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = false;
     autoUpdater.on('update-available', async (info) => {
+        const startDownload = updateCheckManual;
+        updateCheckManual = false;
+        if (startDownload) {
+            installAfterUpdate = true;
+            try { await autoUpdater.downloadUpdate(); }
+            catch (error) {
+                installAfterUpdate = false;
+                await dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Update download failed', message: error.message });
+            }
+            return;
+        }
         if (updateDialogOpen || !mainWindow) return;
         updateDialogOpen = true;
         const choice = await dialog.showMessageBox(mainWindow, {
@@ -60,10 +72,10 @@ else {
             buttons: ['Download update', 'Later'], defaultId: 0, cancelId: 1
         });
         updateDialogOpen = false;
-        updateCheckManual = false;
         if (choice.response === 0) {
+            installAfterUpdate = true;
             try { await autoUpdater.downloadUpdate(); }
-            catch (error) { await dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Update download failed', message: error.message }); }
+            catch (error) { installAfterUpdate = false; await dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Update download failed', message: error.message }); }
         }
     });
     autoUpdater.on('update-not-available', async () => {
@@ -73,6 +85,11 @@ else {
     });
     autoUpdater.on('update-downloaded', async (info) => {
         if (!mainWindow) return;
+        if (installAfterUpdate) {
+            installAfterUpdate = false;
+            autoUpdater.quitAndInstall(false, true);
+            return;
+        }
         const choice = await dialog.showMessageBox(mainWindow, {
             type: 'info', title: 'Update downloaded',
             message: `Version ${info.version} has been downloaded. Restart the app to finish updating.`,

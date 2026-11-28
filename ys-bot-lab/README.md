@@ -27,3 +27,5 @@ The Windows installer is not an Android app. The repository still contains a Ter
 The three-day launch offer is promotional copy only in this early release; no license server or automatic expiration is included.
 
 Version 1.0.7 adds everyday chat mode, new chat sessions, inline command output, live terminal polling with input and stop controls, safer external project matching, and non-destructive creation of new files. Commands still require explicit approval and run from the selected project folder.
+
+Version 1.0.8 improves file and folder creation in the tree, adds confirmed file and folder deletion, and makes the update button install available Setup updates in-app and restart automatically.

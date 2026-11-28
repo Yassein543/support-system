@@ -793,9 +793,23 @@ async function route(request, response) {
         try {
             const workspace = getWorkspace(String(body.workspace || ''));
             if (!body.path) throw new Error('اكتب اسم المجلد.');
-            fs.mkdirSync(safePath(workspace, body.path), { recursive: true });
+            const folder = safePath(workspace, body.path);
+            fs.mkdirSync(path.dirname(folder), { recursive: true });
+            fs.mkdirSync(folder);
             return sendJson(response, 201, { created: true });
-        } catch (error) { return sendJson(response, 400, { error: error.message }); }
+        } catch (error) { return sendJson(response, error.code === 'EEXIST' ? 409 : 400, { error: error.code === 'EEXIST' ? 'يوجد ملف أو مجلد بهذا الاسم بالفعل.' : error.message }); }
+    }
+    if (request.method === 'DELETE' && url.pathname === '/api/workspace/entry') {
+        try {
+            const workspace = getWorkspace(String(body.workspace || ''));
+            const relative = String(body.path || '').replace(/\\/g, '/').trim();
+            if (!relative || relative === '.') throw new Error('اختر ملفًا أو مجلدًا داخل المشروع.');
+            const target = safePath(workspace, relative);
+            const stat = fs.lstatSync(target);
+            if (stat.isSymbolicLink()) throw new Error('حذف الروابط الرمزية غير مسموح.');
+            fs.rmSync(target, { recursive: stat.isDirectory(), force: false });
+            return sendJson(response, 200, { deleted: true, path: relative });
+        } catch (error) { return sendJson(response, error.code === 'ENOENT' ? 404 : 400, { error: error.code === 'ENOENT' ? 'الملف أو المجلد غير موجود.' : error.message }); }
     }
     if (request.method === 'POST' && url.pathname === '/api/workspace/secret') {
         try {
