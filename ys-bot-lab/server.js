@@ -60,6 +60,7 @@ function loadSettings() {
         baseUrl: saved.baseUrl || env.AI_BASE_URL || 'https://api.openai.com/v1',
         model: saved.model || env.AI_MODEL || '',
         hasKey: Boolean(env.AI_API_KEY),
+        hasVideoKey: Boolean(env.GEMINI_VIDEO_API_KEY),
         provider: saved.provider || 'openai-compatible'
     };
 }
@@ -312,6 +313,56 @@ function projectMediaContext(workspace) {
     return assets.slice(0, 100).join('\n') || '(لا توجد ملفات فيديو أو صوت أو صور في مجلد المشروع الآن)';
 }
 
+function findVideoOutput(interaction) {
+    if (interaction.output_video) return interaction.output_video;
+    for (const step of interaction.steps || []) {
+        for (const item of step.content || []) if (item.type === 'video') return item;
+    }
+    return null;
+}
+
+async function createGeneratedVideo(body) {
+    const env = readLocalEnv();
+    const apiKey = String(env.GEMINI_VIDEO_API_KEY || '').trim();
+    if (!apiKey) throw new Error('أضف Gemini Video API Key من الإعدادات أولًا. التوليد يحتاج حساب Gemini API على الخطة المدفوعة.');
+    if (body.costConfirmed !== true) throw new Error('أكد التكلفة قبل إنشاء الفيديو.');
+    const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+    if (!prompt || prompt.length > 4000) throw new Error('اكتب وصف الفيديو من 1 إلى 4000 حرف.');
+    const duration = Number(body.duration);
+    if (!Number.isInteger(duration) || duration < 3 || duration > 15) throw new Error('مدة الفيديو يجب أن تكون بين 3 و15 ثانية.');
+    const resolution = ['360p', '720p', '1080p'].includes(body.resolution) ? body.resolution : '720p';
+    const ratio = ['16:9', '9:16'].includes(body.aspectRatio) ? body.aspectRatio : '16:9';
+    const headers = { 'content-type': 'application/json', 'x-goog-api-key': apiKey };
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+        method: 'POST', headers,
+        body: JSON.stringify({ model: 'gemini-omni-1.2-flash', input: prompt, response_format: { type: 'video', delivery: 'uri', duration: `${duration}s`, resolution, aspect_ratio: ratio } }),
+        signal: AbortSignal.timeout(300000)
+    });
+    const interaction = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(interaction.error?.message || `خدمة توليد الفيديو رجعت HTTP ${response.status}. تأكد من تفعيل Gemini API المدفوع ومفتاح الفيديو.`);
+    const video = findVideoOutput(interaction);
+    if (!video) throw new Error('المزوّد لم يرجع فيديو. لم يُحفظ ملف.');
+    if (video.data) return Buffer.from(video.data, 'base64');
+    const fileId = String(video.uri || '').match(/\/files\/([A-Za-z0-9_-]+)/)?.[1];
+    if (!fileId) throw new Error('استلمت حالة الفيديو بدون رابط تنزيل صالح.');
+    let state = '';
+    for (let attempt = 0; attempt < 36; attempt += 1) {
+        const check = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${encodeURIComponent(fileId)}`, { headers: { 'x-goog-api-key': apiKey }, signal: AbortSignal.timeout(20000) });
+        const info = await check.json().catch(() => ({}));
+        if (!check.ok) throw new Error(info.error?.message || `فشل فحص حالة الفيديو (HTTP ${check.status}).`);
+        state = info.state || '';
+        if (state === 'ACTIVE') break;
+        if (state === 'FAILED') throw new Error('مزود الفيديو أخفق في إنشاء المقطع.');
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+    if (state !== 'ACTIVE') throw new Error('تأخر تجهيز الفيديو أكثر من المسموح. جرّب لاحقًا من دون إعادة الإرسال فورًا.');
+    const download = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${encodeURIComponent(fileId)}:download?alt=media`, { headers: { 'x-goog-api-key': apiKey }, signal: AbortSignal.timeout(120000) });
+    if (!download.ok) throw new Error(`تعذر تنزيل الفيديو الناتج (HTTP ${download.status}).`);
+    const bytes = Buffer.from(await download.arrayBuffer());
+    if (!bytes.length || bytes.length > 150 * 1024 * 1024) throw new Error('حجم ملف الفيديو غير صالح أو تجاوز 150MB.');
+    return bytes;
+}
+
 async function callAi(body, workspace, events) {
     const env = readLocalEnv();
     const settings = loadSettings();
@@ -320,21 +371,15 @@ async function callAi(body, workspace, events) {
 
     const prompt = body.prompt.trim();
     const mode = ['code', 'video', 'search', 'security'].includes(body.mode) ? body.mode : 'code';
+    if (mode === 'video') throw new Error('وضع الفيديو يولّد MP4 مباشرة. استخدم /api/video/generate بدل إعداد سكربت FFmpeg.');
     if (mode === 'security' && HARMFUL_SECURITY_REQUEST.test(prompt)) {
         return 'ما بقدر أساعد في سرقة الحسابات أو كلمات المرور، التصيّد، البرمجيات الخبيثة، تجاوز الحماية، أو استهداف أنظمة بدون إذن. أقدر أساعدك بدلًا من ذلك بمراجعة مشروعك، تقوية تسجيل الدخول، أو إصلاح ثغرة في نظام تملكه أو لديك تصريح لاختباره.';
-    }
-    if (mode === 'video' && VIDEO_VAGUE_REQUEST.test(prompt)) {
-        return /[\u0600-\u06ff]/.test(prompt)
-            ? 'أكيد. حتى أجهز الفيديو المطلوب، اكتب لي: شو الموضوع أو المنتج؟ كم مدته وأي أسلوب تفضّل؟ وأضف صورك أو مقاطعك لمجلد المشروع من زر «فتح مجلد». بعدها أقدر أجهز ملفات المونتاج وأطلب موافقتك على تشغيل FFmpeg لإخراج الفيديو؛ لازم يكون FFmpeg مثبتًا.'
-            : 'Sure. Tell me what the video is about, its length and style, then add your images or clips to the project with “Open folder.” I can prepare the edit and ask before running FFmpeg to render it; FFmpeg must be installed.';
     }
     const inspectProject = INSPECT_REQUEST.test(prompt);
     const readOnly = inspectProject && READ_ONLY_REQUEST.test(prompt);
     const inspection = inspectProject ? projectInspectionContext(workspace) : '';
     let modeInstructions = '';
-    if (mode === 'video') {
-        modeInstructions = `\nوضع المونتاج والإعلانات: استخدم الملفات المحلية التالية إن وجدت:\n${projectMediaContext(workspace)}\nإذا كان الطلب مختصرًا أو لم يذكر موضوع الفيديو ومدته وأسلوبه، اسأل المستخدم عنها بدل اختراع منتج أو نص إعلان. إذا لم توجد ملفات وسائط، اطلب من المستخدم إضافتها لمجلد المشروع عبر Open folder ثم أعد فحص الملفات. إذا طلب إخراج فيديو فعلي، جهّز سكربت/أمر FFmpeg مناسبًا للأصول الموجودة، اشرح أن FFmpeg يجب أن يكون مثبتًا، واطلب موافقة المستخدم على الأمر قبل تشغيله. لا تدّعِ تصدير فيديو قبل تشغيل الأمر والتحقق من ملف الناتج. استخدم فقط وسائط يملكها المستخدم أو لديه إذن باستخدامها.`;
-    } else if (mode === 'security') {
+    if (mode === 'security') {
         modeInstructions = '\nوضع الأمن السيبراني دفاعي ومصرّح به: ساعد في مراجعة مشاريع المستخدم التي يملكها، إصلاح الثغرات، تأمين الإعدادات، وفهم المفاهيم داخل مختبر تعليمي. لا تساعد على اختراق أنظمة أو حسابات الآخرين، سرقة كلمات المرور أو الرموز، التصيد، البرمجيات الخبيثة، التخفي أو تعطيل الخدمات. لا تنفّذ فحصًا شبكيًا ولا تطلب تشغيل أوامر في هذا الوضع؛ اقترح بديلًا دفاعيًا آمنًا عند الحاجة.';
     } else if (mode === 'search') {
         try {
@@ -436,7 +481,7 @@ async function route(request, response) {
 
     const settings = loadSettings();
     if (request.method === 'GET' && url.pathname === '/api/bootstrap') {
-        return sendJson(response, 200, { csrf: SESSION_KEY, workspaces: listWorkspaces(), settings: { baseUrl: settings.baseUrl, model: settings.model, hasKey: settings.hasKey } });
+        return sendJson(response, 200, { csrf: SESSION_KEY, workspaces: listWorkspaces(), settings: { baseUrl: settings.baseUrl, model: settings.model, hasKey: settings.hasKey, hasVideoKey: settings.hasVideoKey } });
     }
     if (request.method === 'GET' && url.pathname === '/api/workspace/files') {
         try { return sendJson(response, 200, { files: listFiles(getWorkspace(url.searchParams.get('workspace'))) }); }
@@ -449,6 +494,16 @@ async function route(request, response) {
             if (fs.statSync(file).size > 100000) return sendJson(response, 413, { error: 'الملف أكبر من حد المحرر (100KB). استخدم Terminal أو افتحه بمحرر خارجي.' });
             return sendJson(response, 200, { content: fs.readFileSync(file, 'utf8') });
         } catch (error) { return sendJson(response, 400, { error: error.message || 'تعذر فتح الملف.' }); }
+    }
+    if (request.method === 'GET' && url.pathname === '/api/workspace/media') {
+        try {
+            const file = safePath(getWorkspace(url.searchParams.get('workspace')), url.searchParams.get('path') || '');
+            const stat = fs.statSync(file);
+            if (!stat.isFile() || !/\.mp4$/i.test(file) || stat.size > 150 * 1024 * 1024) throw new Error('ملف الفيديو غير صالح.');
+            response.writeHead(200, { 'content-type': 'video/mp4', 'content-length': stat.size, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'content-disposition': `inline; filename="${path.basename(file)}"` });
+            fs.createReadStream(file).pipe(response);
+            return;
+        } catch (error) { return sendJson(response, 404, { error: error.message || 'الفيديو غير موجود.' }); }
     }
 
     let body;
@@ -488,14 +543,34 @@ async function route(request, response) {
     }
     if (request.method === 'POST' && url.pathname === '/api/settings') {
         const currentEnv = readLocalEnv();
-        const baseUrl = String(body.baseUrl || '').trim().replace(/\/+$/, '');
-        const model = String(body.model || '').trim().slice(0, 160);
+        const currentSettings = loadSettings();
+        const requestedBaseUrl = String(body.baseUrl || '').trim().replace(/\/+$/, '');
+        const requestedModel = String(body.model || '').trim().slice(0, 160);
+        const codingSettingsChanged = Boolean(requestedModel || body.apiKey || (requestedBaseUrl && requestedBaseUrl !== currentSettings.baseUrl));
+        const baseUrl = codingSettingsChanged ? requestedBaseUrl : currentSettings.baseUrl;
+        const model = codingSettingsChanged ? requestedModel : currentSettings.model;
         const apiKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
-        if (!/^https?:\/\//i.test(baseUrl) || !model) return sendJson(response, 400, { error: 'تحقق من رابط المزود واسم النموذج.' });
+        const videoApiKey = typeof body.videoApiKey === 'string' ? body.videoApiKey.trim() : '';
+        if (codingSettingsChanged && (!/^https?:\/\//i.test(baseUrl) || !model)) return sendJson(response, 400, { error: 'لإعداد محادثة البرمجة، أدخل رابط المزود واسم النموذج معًا. يمكن حفظ مفتاح الفيديو وحده.' });
         if (apiKey && apiKey.length > 1000) return sendJson(response, 400, { error: 'مفتاح AI أطول من الحد.' });
-        fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ baseUrl, model, provider: 'openai-compatible' }, null, 2), 'utf8');
-        saveEnvValues(ENV_FILE, { AI_BASE_URL: baseUrl, AI_MODEL: model, ...(apiKey ? { AI_API_KEY: apiKey } : currentEnv.AI_API_KEY ? {} : { AI_API_KEY: '' }) });
-        return sendJson(response, 200, { saved: true, hasKey: Boolean(apiKey || currentEnv.AI_API_KEY) });
+        if (videoApiKey && videoApiKey.length > 1000) return sendJson(response, 400, { error: 'مفتاح الفيديو أطول من الحد.' });
+        if (codingSettingsChanged) {
+            fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ baseUrl, model, provider: 'openai-compatible' }, null, 2), { mode: 0o600 });
+            saveEnvValues(ENV_FILE, { AI_BASE_URL: baseUrl, AI_MODEL: model, ...(apiKey ? { AI_API_KEY: apiKey } : currentEnv.AI_API_KEY ? {} : { AI_API_KEY: '' }) });
+        }
+        if (videoApiKey) saveEnvValues(ENV_FILE, { GEMINI_VIDEO_API_KEY: videoApiKey });
+        return sendJson(response, 200, { saved: true, hasKey: Boolean(apiKey || currentEnv.AI_API_KEY), hasVideoKey: Boolean(videoApiKey || currentEnv.GEMINI_VIDEO_API_KEY) });
+    }
+    if (request.method === 'POST' && url.pathname === '/api/video/generate') {
+        try {
+            const workspaceId = String(body.workspace || '');
+            const workspace = getWorkspace(workspaceId);
+            const videoBuffer = await createGeneratedVideo(body);
+            if (videoBuffer.length > 150 * 1024 * 1024) throw new Error('حجم الفيديو الناتج تجاوز 150MB.');
+            const filename = `ys-video-${Date.now()}.mp4`;
+            fs.writeFileSync(safePath(workspace, filename), videoBuffer, { mode: 0o600 });
+            return sendJson(response, 200, { saved: true, filename, bytes: videoBuffer.length, url: `/api/workspace/media?workspace=${encodeURIComponent(workspaceId)}&path=${encodeURIComponent(filename)}` });
+        } catch (error) { return sendJson(response, 400, { error: error.message || 'تعذر إنشاء الفيديو.' }); }
     }
     if (request.method === 'POST' && url.pathname === '/api/workspace/file') {
         try {

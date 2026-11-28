@@ -7,16 +7,16 @@ YS Bot Lab is a local AI coding workspace for Windows x64. The desktop build ope
 1. Install Node.js 20 or newer for development.
 2. Run `npm install` in this directory.
 3. Run `npm run dist:windows`.
-4. The installer is written to `dist-v104/YS-Bot-Lab-Setup-1.0.4.exe`.
-5. To build the portable app directly, run `npm run dist:portable`; it is written to `dist-v104/YS-Bot-Lab-Portable-1.0.4.exe`.
+4. The installer is written to `dist-v105/YS-Bot-Lab-Setup-1.0.5.exe`.
+5. To build the portable app directly, run `npm run dist:portable`; it is written to `dist-v105/YS-Bot-Lab-Portable-1.0.5.exe`.
 
 The installer creates Start menu and desktop shortcuts. Install this version once to get in-app update checks from public GitHub releases; the portable EXE cannot update itself. The app's settings and workspaces live in Electron's per-user data directory, outside the installed app. Use **New** to create a project in the app workspace, or **Open folder** to work on an existing directory in place. Opened folders are remembered for this Windows account. Project `.env` files remain hidden from the AI file tools and file browser.
 
-The assistant has Programming, Video & Ads, Web Search (Wikipedia and GitHub), and Defensive Security modes. Video mode asks for the subject, duration, style, and local media before preparing an FFmpeg render; FFmpeg must be installed, and each command waits for the user's approval. It does not generate new footage. Security mode is limited to defensive work and does not let the AI request terminal commands.
+The assistant has Programming, Video & Ads, Web Search (Wikipedia and GitHub), and Defensive Security modes. Video & Ads sends the user's description directly to Gemini Omni 1.2 Flash, generates an MP4, previews it in the chat, and saves it into the selected project. FFmpeg is not required for direct generation. Every request shows an estimated cost and asks for confirmation first. Official estimated video rates are about $0.023/sec at 360p, $0.07/sec at 720p, and $0.104/sec at 1080p; actual billing may vary. Video generation needs an API key and a paid Gemini API account. A minor should ask the billing account holder before adding a key or enabling billing. The app stores the key in its local settings `.env`, separate from project `.env` files. Security mode is limited to defensive work and does not let the AI request terminal commands.
 
 ## AI provider setup
 
-Open Settings and enter an OpenAI-compatible API URL, model name, and API key. A local model endpoint is also supported without an API key. Provider quotas, privacy terms, and charges are controlled by that provider.
+Open Settings and enter an OpenAI-compatible API URL, model name, and API key for coding chat. To generate videos, separately add a Gemini API key in the video key field. Do not share API keys in chat or source files. Provider quotas, privacy terms, and charges are controlled by that provider.
 
 ## Android
 

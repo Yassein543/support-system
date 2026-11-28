@@ -22,3 +22,4 @@ node_modules/
 __pycache__/
 *.pyc
 .neon
+ys-bot-lab/dist-v105/
