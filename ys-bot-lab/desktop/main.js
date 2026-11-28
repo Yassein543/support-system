@@ -1,6 +1,7 @@
 'use strict';
 
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const net = require('node:net');
 const path = require('node:path');
 
@@ -8,6 +9,8 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
     let mainWindow;
     let appOrigin = '';
+    let updateCheckManual = false;
+    let updateDialogOpen = false;
 
     app.on('second-instance', () => {
         if (!mainWindow) return;
@@ -25,6 +28,62 @@ else {
             });
         });
     }
+
+    function canAutoUpdate() {
+        return app.isPackaged && !process.env.PORTABLE_EXECUTABLE_DIR && process.platform === 'win32';
+    }
+
+    async function checkForUpdates(manual = false) {
+        if (!canAutoUpdate()) {
+            if (manual) await dialog.showMessageBox(mainWindow, {
+                type: 'info', title: 'YS Bot Lab updates',
+                message: 'Install the Windows Setup version once to receive updates inside the app. The portable copy cannot replace itself while it is running.'
+            });
+            return;
+        }
+        updateCheckManual = manual;
+        try { await autoUpdater.checkForUpdates(); }
+        catch (error) {
+            updateCheckManual = false;
+            if (manual) await dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Update check failed', message: error.message });
+        }
+    }
+
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.on('update-available', async (info) => {
+        if (updateDialogOpen || !mainWindow) return;
+        updateDialogOpen = true;
+        const choice = await dialog.showMessageBox(mainWindow, {
+            type: 'info', title: 'YS Bot Lab update available',
+            message: `Version ${info.version} is ready. Download and install it now?`,
+            buttons: ['Download update', 'Later'], defaultId: 0, cancelId: 1
+        });
+        updateDialogOpen = false;
+        updateCheckManual = false;
+        if (choice.response === 0) {
+            try { await autoUpdater.downloadUpdate(); }
+            catch (error) { await dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Update download failed', message: error.message }); }
+        }
+    });
+    autoUpdater.on('update-not-available', async () => {
+        if (!updateCheckManual || !mainWindow) return;
+        updateCheckManual = false;
+        await dialog.showMessageBox(mainWindow, { type: 'info', title: 'YS Bot Lab', message: 'You already have the latest version.' });
+    });
+    autoUpdater.on('update-downloaded', async (info) => {
+        if (!mainWindow) return;
+        const choice = await dialog.showMessageBox(mainWindow, {
+            type: 'info', title: 'Update downloaded',
+            message: `Version ${info.version} has been downloaded. Restart the app to finish updating.`,
+            buttons: ['Restart and install', 'Later'], defaultId: 0, cancelId: 1
+        });
+        if (choice.response === 0) autoUpdater.quitAndInstall(false, true);
+    });
+    autoUpdater.on('download-progress', (progress) => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setTitle(`YS Bot Lab — downloading update ${Math.round(progress.percent)}%`);
+    });
+    autoUpdater.on('error', (error) => console.warn('[YS Bot Lab updater]', error.message));
 
     async function waitForServer(url) {
         let lastError;
@@ -79,6 +138,7 @@ else {
             if (result.canceled || !result.filePaths[0]) return null;
             return result.filePaths[0];
         });
+        ipcMain.handle('ys-lab:check-updates', () => checkForUpdates(true));
 
         mainWindow.once('ready-to-show', () => mainWindow.show());
         mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -90,6 +150,7 @@ else {
         });
         mainWindow.on('closed', () => { mainWindow = null; });
         await mainWindow.loadURL(appOrigin);
+        setTimeout(() => checkForUpdates(false), 5000);
     }
 
     startApp().catch((error) => {

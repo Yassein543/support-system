@@ -1,18 +1,21 @@
 {
   "name": "ys-bot-lab",
   "productName": "YS Bot Lab",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "author": "YS-Bot",
   "description": "Local AI coding workspace for Discord bots and general projects",
   "main": "desktop/main.js",
   "scripts": {
     "start": "electron .",
-    "dist:windows": "electron-builder --win nsis",
+    "dist:windows": "electron-builder --win nsis --publish never",
     "dist:portable": "electron-builder --win portable -c.artifactName=YS-Bot-Lab-Portable-${version}.${ext}"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
   },
   "devDependencies": {
     "electron": "45.5.0",
@@ -30,7 +33,7 @@
       "package.json"
     ],
     "directories": {
-      "output": "dist-v102"
+      "output": "dist-v103"
     },
     "win": {
       "target": [
@@ -47,6 +50,12 @@
       "createStartMenuShortcut": true,
       "perMachine": false
     },
-    "artifactName": "YS-Bot-Lab-Setup-${version}.${ext}"
+    "artifactName": "YS-Bot-Lab-Setup-${version}.${ext}",
+    "publish": {
+      "provider": "github",
+      "owner": "Yassein543",
+      "repo": "support-system",
+      "releaseType": "release"
+    }
   }
 }
