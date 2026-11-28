@@ -139,6 +139,7 @@ else {
             show: false,
             autoHideMenuBar: true,
             title: 'YS Bot Lab',
+            icon: path.join(__dirname, '..', 'assets', 'ys-bot-lab.png'),
             backgroundColor: '#080d0b',
             webPreferences: {
                 preload: path.join(__dirname, 'preload.js'),

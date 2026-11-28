@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">YS Bot Lab</title>
+  <desc id="desc">A custom YS Bot Lab mark combining a code terminal and a protective shield.</desc>
+  <defs>
+    <linearGradient id="background" x1="54" y1="36" x2="450" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102c2a"/>
+      <stop offset="1" stop-color="#07120f"/>
+    </linearGradient>
+    <linearGradient id="border" x1="92" y1="70" x2="420" y2="438" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#62f2cc"/>
+      <stop offset=".52" stop-color="#26c69f"/>
+      <stop offset="1" stop-color="#52a7ff"/>
+    </linearGradient>
+    <linearGradient id="terminal" x1="146" y1="142" x2="362" y2="331" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#193b3a"/>
+      <stop offset="1" stop-color="#101e29"/>
+    </linearGradient>
+    <linearGradient id="code" x1="174" y1="210" x2="338" y2="296" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#85ffe0"/>
+      <stop offset="1" stop-color="#76baff"/>
+    </linearGradient>
+    <filter id="glow" x="62" y="52" width="388" height="410" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="17"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#background)"/>
+  <circle cx="256" cy="247" r="163" fill="#27d2a8" fill-opacity=".14" filter="url(#glow)"/>
+  <path d="M256 55 419 119v123c0 99-59 170-163 219C152 412 93 341 93 242V119L256 55Z" fill="#0b1717" stroke="url(#border)" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M256 77 397 133v108c0 86-49 149-141 194-92-45-141-108-141-194V133l141-56Z" fill="#102326" stroke="#8cf5dc" stroke-opacity=".22" stroke-width="3"/>
+  <rect x="133" y="144" width="246" height="190" rx="28" fill="url(#terminal)" stroke="#7ae9d1" stroke-opacity=".8" stroke-width="7"/>
+  <path d="M136 179h240" stroke="#7ae9d1" stroke-opacity=".27" stroke-width="5"/>
+  <circle cx="163" cy="163" r="6" fill="#72f0ce"/>
+  <circle cx="184" cy="163" r="6" fill="#82b9ff"/>
+  <circle cx="205" cy="163" r="6" fill="#f4d478"/>
+  <path d="m188 215 42 38-42 38m71 0h64" fill="none" stroke="url(#code)" stroke-linecap="round" stroke-linejoin="round" stroke-width="18"/>
+  <text x="256" y="402" fill="#ddfff7" font-family="Segoe UI, Arial, sans-serif" font-size="51" font-weight="800" letter-spacing="8" text-anchor="middle">YS</text>
+  <path d="M203 420h106" stroke="url(#border)" stroke-linecap="round" stroke-width="6"/>
+</svg>

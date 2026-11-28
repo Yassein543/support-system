@@ -1,7 +1,7 @@
 {
   "name": "ys-bot-lab",
   "productName": "YS Bot Lab",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "private": true,
   "author": "YS-Bot",
   "description": "Local AI coding workspace for Discord bots and general projects",
@@ -37,12 +37,14 @@
       "desktop/preload.js",
       "server.js",
       "index.html",
+      "assets/**",
       "package.json"
     ],
     "directories": {
-      "output": "dist-v108"
+      "output": "dist-v109"
     },
     "win": {
+      "icon": "assets/ys-bot-lab.ico",
       "target": [
         {
           "target": "nsis",
