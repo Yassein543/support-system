@@ -13,6 +13,10 @@
           "emojis/*.svg",
           "button-effects.js",
           "consent.js",
+          "mobile-studio.html",
+          "mobile-studio.webmanifest",
+          "mobile-studio-sw.js",
+          "mobile-studio-icon.svg",
           "services/**"
         ]
       }

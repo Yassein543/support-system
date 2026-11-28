@@ -1,0 +1,13 @@
+{
+  "id": "/ys-bot-lab/mobile",
+  "name": "YS Studio Mobile",
+  "short_name": "YS Studio",
+  "description": "Edit and export videos locally on your phone.",
+  "start_url": "/ys-bot-lab/mobile/",
+  "scope": "/ys-bot-lab/mobile/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07100c",
+  "theme_color": "#07100c",
+  "icons": [{"src":"/ys-bot-lab/mobile/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

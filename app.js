@@ -102,6 +102,21 @@ app.get(['/ys-bot-lab', '/lab'], (req, res) => {
     res.sendFile(path.join(__dirname, 'ys-bot-lab.html'));
 });
 
+app.get(['/ys-bot-lab/mobile', '/ys-bot-lab/mobile/'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    res.sendFile(path.join(__dirname, 'mobile-studio.html'));
+});
+app.get('/ys-bot-lab/mobile/manifest.webmanifest', (req, res) => {
+    res.type('application/manifest+json').sendFile(path.join(__dirname, 'mobile-studio.webmanifest'));
+});
+app.get('/ys-bot-lab/mobile/sw.js', (req, res) => {
+    res.setHeader('Service-Worker-Allowed', '/ys-bot-lab/mobile/');
+    res.type('application/javascript').sendFile(path.join(__dirname, 'mobile-studio-sw.js'));
+});
+app.get('/ys-bot-lab/mobile/icon.svg', (req, res) => {
+    res.type('image/svg+xml').sendFile(path.join(__dirname, 'mobile-studio-icon.svg'));
+});
+
 const YS_BOT_LAB_WINDOWS_APP = 'https://github.com/Yassein543/support-system/releases/download/ys-bot-lab-v1.0.6/YS-Bot-Lab-Setup-1.0.6.exe';
 const YS_BOT_LAB_WINDOWS_SETUP = YS_BOT_LAB_WINDOWS_APP;
 app.get(['/downloads/ys-bot-lab.zip', '/downloads/ys-bot-lab-setup.exe'], (req, res) => {
