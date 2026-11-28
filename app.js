@@ -117,7 +117,7 @@ app.get('/ys-bot-lab/mobile/icon.svg', (req, res) => {
     res.type('image/svg+xml').sendFile(path.join(__dirname, 'mobile-studio-icon.svg'));
 });
 
-const YS_BOT_LAB_WINDOWS_APP = 'https://github.com/Yassein543/support-system/releases/download/ys-bot-lab-v1.0.6/YS-Bot-Lab-Setup-1.0.6.exe';
+const YS_BOT_LAB_WINDOWS_APP = 'https://github.com/Yassein543/support-system/releases/download/ys-bot-lab-v1.0.7/YS-Bot-Lab-Setup-1.0.7.exe';
 const YS_BOT_LAB_WINDOWS_SETUP = YS_BOT_LAB_WINDOWS_APP;
 app.get(['/downloads/ys-bot-lab.zip', '/downloads/ys-bot-lab-setup.exe'], (req, res) => {
     res.redirect(302, YS_BOT_LAB_WINDOWS_SETUP);

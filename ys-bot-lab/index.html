@@ -15,6 +15,10 @@
     .side-head{gap:6px}.side-head>div{display:flex;gap:6px}.side-head .btn{padding:7px 9px;font-size:12px}
     .head-copy{min-width:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.mode-select{width:auto;min-width:150px;max-width:210px;padding:7px 8px;font-size:11px}.message .formatted{white-space:normal}.message .formatted p{margin:0 0 10px}.message .formatted p:last-child{margin-bottom:0}.message .formatted h1,.message .formatted h2,.message .formatted h3{margin:7px 0;font-size:1.05em}.message .formatted ul,.message .formatted ol{margin:4px 0 10px;padding-inline-start:24px}.message .formatted li{margin:3px 0}.message .formatted code{direction:ltr;unicode-bidi:isolate;background:#07110b;border:1px solid #294133;border-radius:4px;padding:1px 4px;font: .9em var(--mono)}.message .formatted hr{border:0;border-top:1px solid var(--line);margin:10px 0}.message .formatted a{color:#79deb2;text-decoration:underline}.video-options{display:none;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 9px}.video-options.visible{display:flex}.video-options label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.video-options select{width:auto;min-width:82px;padding:6px 8px;font-size:11px}.video-options .cost-hint{font-size:10px;color:#e9c96a}.generated-video{display:block;width:min(100%,640px);max-height:65vh;margin-top:10px;border:1px solid var(--line);border-radius:9px;background:#000}.video-download{display:inline-flex;margin-top:8px;color:#79deb2}
   </style>
+  <style>
+    .terminal-actions{display:flex;align-items:center;gap:5px}.terminal-actions .btn{padding:6px 8px;font-size:11px}#terminal-close{display:none}.tabs{align-items:center}#new-chat{white-space:nowrap;font-size:11px}.command-result{display:block;max-height:220px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:9px 0 0;direction:ltr;text-align:left;font:11px/1.6 var(--mono);color:#c8edce;background:#070b09;border:1px solid #24382d;border-radius:7px;padding:9px}.command-box.finished .command-result{max-height:160px}.section-label>div{display:flex;gap:5px}.terminal-output{scrollbar-gutter:stable}.file-tree .tree-row{font-family:var(--mono)}
+    @media(max-width:720px){.terminal.mobile-open{position:fixed;inset:auto 0 calc(57px + env(safe-area-inset-bottom)) 0;height:min(44dvh,390px);z-index:10;border:1px solid var(--line);border-radius:13px 13px 0 0;box-shadow:0 -18px 70px #000b}.terminal.mobile-open .terminal-output{max-height:none}.terminal.mobile-open #terminal-close{display:inline-grid}.main-head{flex-wrap:wrap}.head-copy{max-width:calc(100% - 110px)}.mode-select{max-width:150px;min-width:125px}}
+  </style>
 </head>
 <body>
 <div class="app">
@@ -26,12 +30,12 @@
     <aside class="sidebar">
       <div class="side-head"><span class="eyebrow" id="projects-label">PROJECTS</span><div><button class="btn primary" id="new-project">+ New</button><button class="btn ghost" id="open-project">Open folder</button><button id="mobile-file-close" class="icon-btn" style="display:none" aria-label="Close files">×</button></div></div>
       <select id="project-select" class="project-select" aria-label="Project"></select>
-      <div class="section-label"><span>FILES</span><button id="new-folder" class="icon-btn" style="width:27px;height:27px">＋</button></div>
+      <div class="section-label"><span>FILES</span><div><button id="new-file" class="icon-btn" style="width:27px;height:27px" title="New file">＋</button><button id="new-folder" class="icon-btn" style="width:27px;height:27px" title="New folder">▱</button></div></div>
       <div id="file-tree" class="file-tree"></div>
       <div class="side-bottom"><button id="refresh-files" class="btn ghost">↻ Refresh files</button><div class="small-note">Your project files stay on this device. Secret files are hidden from the AI and file browser.</div></div>
     </aside>
     <main class="main">
-      <div class="main-head"><div class="head-copy"><div><div class="main-title" id="current-project-title">YS Bot Lab</div><div class="main-sub" id="mode-hint">Build and edit code in the selected project.</div></div><select id="assistant-mode" class="project-select mode-select" aria-label="AI mode"><option value="code">Programming</option><option value="video">Video & ads</option><option value="search">Search (Wikipedia/GitHub)</option><option value="security">Defensive security</option></select></div><div class="tabs"><button class="tab active" data-view="chat">AI Chat</button><button class="tab" data-view="editor">Code Editor</button><button class="tab" data-view="montage" data-i18n="montageTab">Video Editor</button></div></div>
+      <div class="main-head"><div class="head-copy"><div><div class="main-title" id="current-project-title">YS Bot Lab</div><div class="main-sub" id="mode-hint">Build and edit code in the selected project.</div></div><select id="assistant-mode" class="project-select mode-select" aria-label="AI mode"><option value="chat">General chat</option><option value="code">Programming</option><option value="video">Video & ads</option><option value="search">Search (Wikipedia/GitHub)</option><option value="security">Defensive security</option></select></div><button class="btn ghost" id="new-chat" data-i18n="newChat">محادثة جديدة</button><div class="tabs"><button class="tab active" data-view="chat">AI Chat</button><button class="tab" data-view="editor">Code Editor</button><button class="tab" data-view="montage" data-i18n="montageTab">Video Editor</button></div></div>
       <div class="work-area">
         <section class="chat-pane" id="chat-pane">
           <div class="messages" id="messages">
@@ -76,7 +80,7 @@
           <div class="ve-footer"><span class="small-note" data-i18n="localEditingNote">Editing and export run locally on this PC. Imported media stays inside this project.</span><span id="montage-export-status" class="small-note"></span></div>
         </section>
         <aside class="terminal" id="terminal">
-          <div class="terminal-head"><span><span class="eyebrow">TERMINAL</span><div class="main-sub">Project-scoped · approval required</div></span><button id="clear-terminal" class="btn ghost">Clear</button></div>
+          <div class="terminal-head"><span><span class="eyebrow" data-i18n="terminalTitle">TERMINAL</span><div class="main-sub" id="terminal-cwd">Project-scoped · approval required</div></span><div class="terminal-actions"><button id="terminal-stop" class="btn danger" data-i18n="terminalStop">Stop</button><button id="terminal-close" class="icon-btn" aria-label="Close terminal">×</button><button id="clear-terminal" class="btn ghost">Clear</button></div></div>
           <div id="terminal-output" class="terminal-output">YS Bot Lab local runner
 Commands requested by AI appear here after you approve them.
 </div>
@@ -95,6 +99,10 @@ Commands requested by AI appear here after you approve them.
   let workspace = '';
   let history = [];
   let currentFile = '';
+  let welcomeTemplate = null;
+  let activeTerminalRunId = '';
+  let activeTerminalWorkspace = '';
+  let terminalCwd = '';
   let montageClips = [];
   let montageAssets = [];
   let selectedMontageClip = -1;
@@ -110,6 +118,11 @@ Commands requested by AI appear here after you approve them.
     ar:{montageTab:'المونتاج',montageEyebrow:'YS STUDIO · محرر يدوي',montageTitle:'استوديو المونتاج اليدوي',montageSubtitle:'رتّب وعدّل بنفسك ثم صدّر MP4 من جهازك.',importMedia:'＋ استيراد وسائط',exportMp4:'تصدير MP4',previewHelp:'استورد مقطعًا أو صورة لبدء المونتاج.',playTimeline:'▶ معاينة الخط الزمني',pauseTimeline:'Ⅱ إيقاف المعاينة',downloadVideo:'تنزيل MP4',montageEmpty:'ما في مقاطع بعد',timelineTitle:'الخط الزمني',splitClip:'تقسيم عند المؤشر',moveUp:'تحريك لليسار',moveDown:'تحريك لليمين',removeClip:'حذف',videoTrack:'فيديو · صور',audioTrack:'صوت · موسيقى',inspectorTitle:'إعدادات المقطع والتصدير',trimStart:'بداية القص (ثانية)',trimEnd:'نهاية القص / مدة الصورة',aspectRatio:'الأبعاد',resolution:'الدقة',transition:'الانتقال بين المقاطع',cutTransition:'قطع مباشر',fadeTransition:'تلاشي ناعم',keepClipAudio:'الإبقاء على صوت المقاطع',backgroundMusic:'موسيقى خلفية',noMusic:'ما أضفت موسيقى',musicVolume:'مستوى الموسيقى',titleOverlay:'عنوان أو كتابة على الفيديو',titlePlaceholder:'اكتب العنوان…',brightness:'السطوع',saturation:'تشبع الألوان',localEditingNote:'التعديل والتصدير يصيران محليًا على الكمبيوتر، والوسائط تبقى داخل المشروع.',videoType:'فيديو',imageType:'صورة',audioType:'صوت',importing:'جاري استيراد الوسائط…',exporting:'جاري تصدير الفيديو… انتظر شوي.',playFailed:'ما قدرت أشغّل هذا المقطع.',splitHint:'حرّك مؤشر الفيديو لمكان التقسيم داخل المقطع.',trimHint:'اختار فيديو أو صورة من الخط الزمني أولًا.',noAudioFiles:'استورد ملف صوت لإضافته كموسيقى.',durationLabel:'ثانية',exportDone:'اكتمل التصدير',maxFiles:'حجم كل ملف لازم يكون 500MB أو أقل.',clipCounter:'مقاطع'}
   };
   Object.assign(labels.en,montageLabels.en); Object.assign(labels.ar,montageLabels.ar);
+  const workflowLabels={
+    en:{modeChat:'Everyday chat',modeChatHint:'Ask regular questions or switch to Programming when you want project files changed.',newChat:'New chat',newChatConfirm:'Start a new chat? Project files and currently running commands will continue unchanged.',modeGeneralName:'General chat',fileNew:'New file',folderNew:'New folder',fileName:'Enter a file name, for example src/index.js',terminalTitle:'LIVE TERMINAL',terminalStop:'Stop process',terminalClose:'Close terminal',terminalStarted:'Process started. Live output will appear here.',terminalInputHint:'A command is running. Enter a response in the terminal input.',terminalExited:'Process exited with code',terminalStopped:'Process stopped.',terminalBusy:'Stop the current process before starting another command.',filesCreated:'Files saved in the selected project:',output:'Output',generalWelcome:'Hi! Ask me a normal question, or switch to Programming when you want me to build or edit project files.'},
+    ar:{modeChat:'محادثة عامة',modeChatHint:'اسأل أي سؤال عادي، أو اختر البرمجة عندما تريد تعديل ملفات المشروع.',newChat:'محادثة جديدة',newChatConfirm:'تبدأ محادثة جديدة؟ ستبقى الملفات كما هي، وستستمر العمليات التي تعمل الآن.',modeGeneralName:'محادثة عامة',fileNew:'ملف جديد',folderNew:'مجلد جديد',fileName:'اكتب اسم الملف، مثل src/index.js',terminalTitle:'طرفية مباشرة',terminalStop:'إيقاف العملية',terminalClose:'إغلاق الطرفية',terminalStarted:'بدأت العملية. سيظهر الخرج هنا مباشرة.',terminalInputHint:'في عملية تعمل الآن؛ اكتب ردًا لها في الطرفية.',terminalExited:'انتهت العملية برمز',terminalStopped:'تم إيقاف العملية.',terminalBusy:'أوقف العملية الحالية قبل تشغيل أمر آخر.',filesCreated:'تم حفظ الملفات داخل المشروع:',output:'الناتج',generalWelcome:'أهلًا! اسألني عن أي موضوع عادي، أو اختر البرمجة إذا بدك أعدّل ملفات مشروعك.'}
+  };
+  Object.assign(labels.en,workflowLabels.en);Object.assign(labels.ar,workflowLabels.ar);
   const t = (key) => labels[language][key] || key;
   const esc = (value) => String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   async function api(url, options = {}) {
@@ -122,13 +135,20 @@ Commands requested by AI appear here after you approve them.
     return data;
   }
   function addMessage(role, content) {
+    const container=$('#messages');const shouldFollow=container.scrollHeight-container.scrollTop-container.clientHeight<80;
     $('#welcome')?.remove();
     const bubble = document.createElement('div'); bubble.className = `message ${role}`;
     const who = document.createElement('div'); who.className = 'who'; who.textContent = role === 'user' ? 'YOU' : 'YS AI';
     const text = document.createElement('div');
     if (role === 'assistant') { text.className = 'formatted'; renderMarkdown(text, content); }
     else text.textContent = content;
-    bubble.append(who, text); $('#messages').appendChild(bubble); $('#messages').scrollTop = $('#messages').scrollHeight;
+    bubble.append(who, text); container.appendChild(bubble); if(shouldFollow)container.scrollTop=container.scrollHeight;
+  }
+  async function startNewChat(){
+    const pending=[...$('#messages').querySelectorAll('.command-box[data-command-id]:not(.running):not(.finished)')];
+    if(pending.length&&!window.confirm(t('newChatConfirm')))return;
+    for(const box of pending){try{await api('/api/agent/reject-command',{method:'POST',body:JSON.stringify({id:box.dataset.commandId})});}catch{}}
+    history=[];const messages=$('#messages');messages.replaceChildren();if(welcomeTemplate)messages.appendChild(welcomeTemplate.cloneNode(true));
   }
   function renderMarkdown(target, markdown) {
     let list = null;
@@ -167,7 +187,7 @@ Commands requested by AI appear here after you approve them.
     flushList();
   }
   function printTerminal(text, kind = '') {
-    const output = $('#terminal-output'); const line = document.createElement('div'); line.className = kind; line.textContent = text; output.appendChild(line); output.scrollTop = output.scrollHeight;
+    const output = $('#terminal-output'); const shouldFollow=output.scrollHeight-output.scrollTop-output.clientHeight<60;const line = document.createElement('div'); line.className = kind; line.textContent = text; output.appendChild(line); if(shouldFollow||$('#terminal').classList.contains('mobile-open'))output.scrollTop = output.scrollHeight;
   }
   function renderTree(entries, target, level = 0) {
     for (const entry of entries || []) {
@@ -204,7 +224,9 @@ Commands requested by AI appear here after you approve them.
     const data = await api('/api/bootstrap'); csrf = data.csrf;
     if (!data.workspaces.length) { const created = await api('/api/workspaces', { method:'POST', body:JSON.stringify({name:'my-first-bot'}) }); data.workspaces = [{id:created.id,name:created.id}]; }
     setWorkspaces(data.workspaces);
-    const savedMode=localStorage.getItem('ys-lab-mode');if(['code','video','search','security'].includes(savedMode))$('#assistant-mode').value=savedMode;
+    await loadTerminalCwd();
+    welcomeTemplate=$('#welcome').cloneNode(true);
+    const savedMode=localStorage.getItem('ys-lab-mode');if(['chat','code','video','search','security'].includes(savedMode))$('#assistant-mode').value=savedMode;
     $('#base-url').value = data.settings.baseUrl; $('#model-name').value = data.settings.model; $('#key-state').dataset.hasKey = String(data.settings.hasKey); $('#video-key-state').dataset.hasKey=String(data.settings.hasVideoKey);
     await refreshFiles(); applyLanguage();
   }
@@ -215,7 +237,7 @@ Commands requested by AI appear here after you approve them.
   }
   function updateModeHint() {
     const mode=$('#assistant-mode').value;
-    $('#mode-hint').textContent=t(({code:'modeCodeHint',video:'modeVideoHint',search:'modeSearchHint',security:'modeSecurityHint'})[mode]||'modeCodeHint');
+    $('#mode-hint').textContent=t(({chat:'modeChatHint',code:'modeCodeHint',video:'modeVideoHint',search:'modeSearchHint',security:'modeSecurityHint'})[mode]||'modeCodeHint');
     const videoMode = mode === 'video';
     $('#video-options').classList.toggle('visible', videoMode);
     $('#prompt').placeholder = videoMode ? t('videoPrompt') : t('prompt');
@@ -227,6 +249,8 @@ Commands requested by AI appear here after you approve them.
   function clipLength(clip) { return Math.max(0, clip.end - clip.start); }
   function montageTotal() { return montageClips.reduce((sum,clip)=>sum+clipLength(clip),0); }
   function setMontageStatus(message) { $('#montage-status').textContent=message; }
+  function setTerminalCwd(value){terminalCwd=value;localStorage.setItem(`ys-lab-terminal-cwd:${workspace}`,value);$('#terminal-cwd').textContent=`${t('terminalHint')} · ${value||'.'}`;}
+  async function loadTerminalCwd(){if(!workspace)return;const saved=localStorage.getItem(`ys-lab-terminal-cwd:${workspace}`)||'';try{const data=await api(`/api/agent/terminal/pwd?workspace=${encodeURIComponent(workspace)}`);terminalCwd=data.cwd||saved;if(terminalCwd&&terminalCwd!==data.cwd){const restored=await api('/api/agent/terminal/cd',{method:'POST',body:JSON.stringify({workspace,target:terminalCwd})});terminalCwd=restored.cwd;}}catch{terminalCwd=saved;}$('#terminal-cwd').textContent=`${t('terminalHint')} · ${terminalCwd||'.'}`;}
   function resetMontage() { montageClips=[];montageAssets=[];selectedMontageClip=-1;montagePlayback=false;clearTimeout(window.ysMontageTimer);$('#montage-download').hidden=true;$('#montage-export-status').textContent='';populateMontageMusic();renderMontageTimeline();showMontagePreview(null); }
   function getMediaDuration(file) {
     if(file.type.startsWith('image/')) return Promise.resolve(3);
@@ -295,7 +319,8 @@ Commands requested by AI appear here after you approve them.
     document.documentElement.lang = language; document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     $('#runtime-label').textContent = t('local'); $('#projects-label').textContent = t('projects'); $('#new-project').textContent = `+ ${t('new')}`; $('#open-project').textContent = t('openFolder'); $('#update-open').setAttribute('aria-label',t('updates'));$('#update-open').title=t('updates'); $('#assistant-mode').options[0].textContent=t('modeCode');$('#assistant-mode').options[1].textContent=t('modeVideo');$('#assistant-mode').options[2].textContent=t('modeSearch');$('#assistant-mode').options[3].textContent=t('modeSecurity'); $('.section-label span').textContent = t('files'); $('#refresh-files').textContent = t('refresh'); $('#save-file').textContent = t('save'); $('#close-editor').setAttribute('aria-label',t('close')); $('#send').textContent = t('send'); $('#prompt').placeholder = t('prompt'); $('#ai-state').textContent = t('ready'); $('#welcome-title').textContent=t('welcomeTitle');$('#welcome-copy').textContent=t('welcomeCopy');
     document.querySelector('[data-view="chat"]').textContent = t('ai'); document.querySelector('[data-view="editor"]').textContent = t('editor');
-    $('#settings-title').textContent=t('settingsTitle');$('#settings-description').textContent=t('settingsDescription');$('#base-label').textContent=t('baseUrl');$('#model-label').textContent=t('model');$('#api-key-label').textContent=t('apiKey');$('#key-state').textContent=$('#key-state').dataset.hasKey==='true'?t('keySaved'):t('noKey');$('#api-key').placeholder=t('keepKey');$('#settings-cancel').textContent=t('cancel');$('#settings-save').textContent=t('saveLocal');$('#mobile-file-close').setAttribute('aria-label',t('closeFiles'));$('.side-bottom .small-note').textContent=t('fileHint');$('#composer-hint').textContent=t('composerHint');$('#terminal .main-sub').textContent=t('terminalHint');$('#clear-terminal').textContent=t('clear');$('#terminal-command').placeholder=t('commandInput');$('#terminal-command').setAttribute('aria-label',t('commandInput'));$('#terminal-form button').textContent=t('runButton');$('#editor-path').textContent=currentFile||t('selectFile');$('#editor').placeholder=t('openFileHint');document.querySelectorAll('[data-i18n]').forEach(el=>{const key=el.dataset.i18n;if(labels[language][key])el.textContent=t(key);});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const key=el.dataset.i18nPlaceholder;if(labels[language][key])el.placeholder=t(key);});updateModeHint();
+    $('#assistant-mode').options[0].textContent=t('modeChat');$('#assistant-mode').options[1].textContent=t('modeCode');$('#assistant-mode').options[2].textContent=t('modeVideo');$('#assistant-mode').options[3].textContent=t('modeSearch');$('#assistant-mode').options[4].textContent=t('modeSecurity');$('#new-chat').textContent=t('newChat');$('#terminal-stop').textContent=t('terminalStop');$('#terminal-close').setAttribute('aria-label',t('terminalClose'));$('#new-file').title=t('fileNew');$('#new-folder').title=t('folderNew');
+    $('#settings-title').textContent=t('settingsTitle');$('#settings-description').textContent=t('settingsDescription');$('#base-label').textContent=t('baseUrl');$('#model-label').textContent=t('model');$('#api-key-label').textContent=t('apiKey');$('#key-state').textContent=$('#key-state').dataset.hasKey==='true'?t('keySaved'):t('noKey');$('#api-key').placeholder=t('keepKey');$('#settings-cancel').textContent=t('cancel');$('#settings-save').textContent=t('saveLocal');$('#mobile-file-close').setAttribute('aria-label',t('closeFiles'));$('.side-bottom .small-note').textContent=t('fileHint');$('#composer-hint').textContent=t('composerHint');$('#terminal .main-sub').textContent=t('terminalHint');$('#terminal-cwd').textContent=`${t('terminalHint')} · ${terminalCwd||'.'}`;$('#clear-terminal').textContent=t('clear');$('#terminal-command').placeholder=t('commandInput');$('#terminal-command').setAttribute('aria-label',t('commandInput'));$('#terminal-form button').textContent=t('runButton');$('#editor-path').textContent=currentFile||t('selectFile');$('#editor').placeholder=t('openFileHint');document.querySelectorAll('[data-i18n]').forEach(el=>{const key=el.dataset.i18n;if(labels[language][key])el.textContent=t(key);});document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const key=el.dataset.i18nPlaceholder;if(labels[language][key])el.placeholder=t(key);});updateModeHint();
     document.querySelector('[data-suggestion="discord"]').textContent=t('suggestDiscord');document.querySelector('[data-suggestion="website"]').textContent=t('suggestWebsite');document.querySelector('[data-suggestion="project"]').textContent=t('suggestProject');
     document.querySelectorAll('[data-mobile]').forEach((button)=>{const label=button.lastChild;if(label?.nodeType===Node.TEXT_NODE)label.textContent=t(`${button.dataset.mobile}Nav`);});
     localStorage.setItem('ys-lab-language', language); $('#language-btn').textContent = language === 'ar' ? 'EN' : 'ع';
@@ -329,6 +354,7 @@ Commands requested by AI appear here after you approve them.
     try {
       const result = await api('/api/agent/chat',{method:'POST',body:JSON.stringify({workspace,prompt,mode:$('#assistant-mode').value,history:history.slice(0,-1)})});
       $('#typing')?.remove(); addMessage('assistant',result.answer); history.push({role:'assistant',content:result.answer});
+      if(result.createdFiles?.length)addMessage('assistant',`${t('filesCreated')}\n${result.createdFiles.map(file=>`${file.kind==='folder'?'▱':'•'} ${file.path}`).join('\n')}`);
       for (const request of result.secretRequests || []) showSecretRequest(request);
       for (const command of result.commands || []) showCommandRequest(command);
       if (result.filesChanged) await refreshFiles();
@@ -339,11 +365,27 @@ Commands requested by AI appear here after you approve them.
     const box = document.createElement('div'); box.className='secret-box'; box.innerHTML=`<label>${esc(request.name)} — ${esc(request.reason)}<br><span class="small-note">${esc(t('secretHint'))}</span></label><div class="secret-row"><input class="field" type="password" autocomplete="new-password" placeholder="${esc(request.name)}"><button class="btn primary">${esc(t('secret'))}</button></div>`;
     box.querySelector('button').addEventListener('click',async()=>{const value=box.querySelector('input').value;if(!value)return;try{await api('/api/workspace/secret',{method:'POST',body:JSON.stringify({workspace,name:request.name,value})});box.replaceChildren(Object.assign(document.createElement('span'),{textContent:`${request.name} — ${t('secretSaved')}`}));}catch(error){alert(error.message);}});$('#messages').appendChild(box);
   }
-  function showCommandRequest(command) {
-    const box=document.createElement('div');box.className='command-box';box.innerHTML=`<div>${esc(t('command'))}${command.reason?`: ${esc(command.reason)}`:''}</div><div class="command-line">${esc(command.command)}<br>${command.cwd?`cd ${esc(command.cwd)}`:''}</div><div class="command-actions"><button class="btn primary">${esc(t('approve'))}</button><button class="btn danger">${esc(t('reject'))}</button></div>`;
-    const [approve,reject]=box.querySelectorAll('button');approve.addEventListener('click',async()=>{approve.disabled=true;try{const result=await api('/api/agent/approve-command',{method:'POST',body:JSON.stringify({id:command.id,workspace})});printTerminal(`$ ${command.command}\n${result.output}\n[exit ${result.code}]`,result.code===0?'ok':'bad');box.remove();}catch(error){printTerminal(error.message,'bad');approve.disabled=false;}});reject.addEventListener('click',async()=>{await api('/api/agent/reject-command',{method:'POST',body:JSON.stringify({id:command.id})});box.remove();});$('#messages').appendChild(box);$('#messages').scrollTop=$('#messages').scrollHeight;
+  async function pollTerminalRun(runId, runWorkspace, outputNode, statusNode) {
+    let offset=0;
+    while(activeTerminalRunId===runId){
+      try{
+        const query=`/api/agent/terminal/poll?workspace=${encodeURIComponent(runWorkspace)}&runId=${encodeURIComponent(runId)}&offset=${offset}`;
+        const state=await api(query);
+        if(state.output){outputNode.textContent+=state.output;printTerminal(state.output);const messages=$('#messages');if(messages.scrollHeight-messages.scrollTop-messages.clientHeight<100)messages.scrollTop=messages.scrollHeight;}
+        offset=state.offset;
+        if(state.finished){statusNode.textContent=`${t('terminalExited')} ${state.code}`;statusNode.className=state.code===0?'small-note ok':'small-note bad';statusNode.closest('.command-box')?.classList.add('finished');boxScroll(statusNode);activeTerminalRunId='';activeTerminalWorkspace='';return;}
+      }catch(error){statusNode.textContent=error.message;statusNode.className='small-note bad';activeTerminalRunId='';activeTerminalWorkspace='';return;}
+      await new Promise(resolve=>setTimeout(resolve,350));
+    }
   }
-  $('#send').addEventListener('click',()=>sendPrompt());$('#prompt').addEventListener('keydown',(event)=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPrompt();}});
+  function boxScroll(node){node.closest('.command-box')?.scrollIntoView({block:'nearest',behavior:'smooth'});}
+  function showCommandRequest(command) {
+    const box=document.createElement('div');box.className='command-box';box.dataset.commandId=command.id;box.innerHTML=`<div>${esc(t('command'))}${command.reason?`: ${esc(command.reason)}`:''}</div><div class="command-line">${esc(command.command)}<br>${command.cwd?`cd ${esc(command.cwd)}`:''}</div><div class="command-actions"><button class="btn primary">${esc(t('approve'))}</button><button class="btn danger">${esc(t('reject'))}</button></div>`;
+    const [approve,reject]=box.querySelectorAll('button');
+    approve.addEventListener('click',async()=>{if(activeTerminalRunId){printTerminal(t('terminalBusy'),'bad');return;}approve.disabled=true;try{const runWorkspace=workspace;const started=await api('/api/agent/approve-command',{method:'POST',body:JSON.stringify({id:command.id,workspace:runWorkspace})});box.classList.add('running');box.querySelector('.command-actions')?.remove();const status=document.createElement('div');status.className='small-note';status.textContent=t('terminalStarted');const output=document.createElement('pre');output.className='command-result';output.textContent='';box.append(status,output);printTerminal(`$ ${command.command}`);activeTerminalRunId=started.runId;activeTerminalWorkspace=runWorkspace;await pollTerminalRun(started.runId,runWorkspace,output,status);}catch(error){printTerminal(error.message,'bad');const status=document.createElement('div');status.className='small-note bad';status.textContent=error.message;box.append(status);approve.disabled=false;}});
+    reject.addEventListener('click',async()=>{try{await api('/api/agent/reject-command',{method:'POST',body:JSON.stringify({id:command.id})});box.remove();}catch(error){printTerminal(error.message,'bad');}});
+    $('#messages').appendChild(box);$('#messages').scrollTop=$('#messages').scrollHeight;
+  }  $('#send').addEventListener('click',()=>sendPrompt());$('#prompt').addEventListener('keydown',(event)=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPrompt();}});
   $('#montage-import').addEventListener('change',event=>importMontageFiles(event.target.files));
   $('#montage-export').addEventListener('click',()=>exportMontage());
   $('#montage-split').addEventListener('click',splitMontageClip);
@@ -359,19 +401,23 @@ Commands requested by AI appear here after you approve them.
   $('#montage-music').addEventListener('change',renderMontageTimeline);
   ['montage-music-volume','montage-brightness','montage-saturation'].forEach(id=>$(`#${id}`).addEventListener('input',updateMontageInspector));
   $('#messages').addEventListener('click',(event)=>{const button=event.target.closest('[data-prompt]');if(button)sendPrompt(button.dataset.prompt);});
-  $('#project-select').addEventListener('change',async(event)=>{workspace=event.target.value;$('#current-project-title').textContent=event.target.selectedOptions[0]?.textContent||workspace;history=[];resetMontage();$('#messages').replaceChildren();await refreshFiles();});
+  $('#project-select').addEventListener('change',async(event)=>{workspace=event.target.value;$('#current-project-title').textContent=event.target.selectedOptions[0]?.textContent||workspace;history=[];await loadTerminalCwd();resetMontage();$('#messages').replaceChildren();await refreshFiles();});
   $('#assistant-mode').addEventListener('change',event=>{localStorage.setItem('ys-lab-mode',event.target.value);updateModeHint();});$('#video-duration').addEventListener('change',updateVideoEstimate);$('#video-resolution').addEventListener('change',updateVideoEstimate);
   $('#update-open').addEventListener('click',()=>{if(window.ysLabDesktop?.checkForUpdates)window.ysLabDesktop.checkForUpdates();else alert('التحديثات متاحة في تطبيق Windows المثبّت.');});
-  $('#new-project').addEventListener('click',async()=>{const name=prompt(t('project'));if(!name)return;try{const created=await api('/api/workspaces',{method:'POST',body:JSON.stringify({name})});const data=await api('/api/bootstrap');setWorkspaces(data.workspaces,created.id);resetMontage();await refreshFiles();history=[];$('#messages').replaceChildren();}catch(error){alert(error.message);}});
-  $('#open-project').addEventListener('click',async()=>{try{if(!window.ysLabDesktop?.chooseProjectFolder){alert(t('folderPickerDesktopOnly'));return;}const selectedPath=await window.ysLabDesktop.chooseProjectFolder();if(!selectedPath)return;const opened=await api('/api/workspaces/open',{method:'POST',body:JSON.stringify({path:selectedPath})});const data=await api('/api/bootstrap');setWorkspaces(data.workspaces,opened.id);resetMontage();$('#current-project-title').textContent=opened.name;await refreshFiles();history=[];$('#messages').replaceChildren();}catch(error){alert(error.message);}});
+  $('#new-project').addEventListener('click',async()=>{const name=prompt(t('project'));if(!name)return;try{const created=await api('/api/workspaces',{method:'POST',body:JSON.stringify({name})});const data=await api('/api/bootstrap');setWorkspaces(data.workspaces,created.id);await loadTerminalCwd();resetMontage();await refreshFiles();history=[];$('#messages').replaceChildren();}catch(error){alert(error.message);}});
+  $('#open-project').addEventListener('click',async()=>{try{if(!window.ysLabDesktop?.chooseProjectFolder){alert(t('folderPickerDesktopOnly'));return;}const selectedPath=await window.ysLabDesktop.chooseProjectFolder();if(!selectedPath)return;const opened=await api('/api/workspaces/open',{method:'POST',body:JSON.stringify({path:selectedPath})});const data=await api('/api/bootstrap');setWorkspaces(data.workspaces,opened.id);await loadTerminalCwd();resetMontage();$('#current-project-title').textContent=opened.name;await refreshFiles();history=[];$('#messages').replaceChildren();}catch(error){alert(error.message);}});
   $('#new-folder').addEventListener('click',async()=>{const name=prompt(t('folder'));if(!name)return;try{await api('/api/workspace/folder',{method:'POST',body:JSON.stringify({workspace,path:name})});await refreshFiles();}catch(error){alert(error.message);}});
   $('#refresh-files').addEventListener('click',()=>refreshFiles().catch(error=>alert(error.message)));
+  $('#new-file').addEventListener('click',async()=>{const name=prompt(t('fileName'));if(!name)return;try{await api('/api/workspace/file',{method:'POST',body:JSON.stringify({workspace,path:name,content:'',createOnly:true})});await refreshFiles();await openFile(name.replace(/\\/g,'/'));}catch(error){alert(error.message);}});
   $('#save-file').addEventListener('click',async()=>{if(!currentFile)return;try{await api('/api/workspace/file',{method:'POST',body:JSON.stringify({workspace,path:currentFile,content:$('#editor').value})});$('#ai-state').textContent=t('saved');setTimeout(()=>$('#ai-state').textContent=t('ready'),1400);}catch(error){alert(error.message);}});
   $('#close-editor').addEventListener('click',()=>{ $('#editor-pane').classList.remove('visible'); setWorkView('chat'); });
   document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>{if(tab.dataset.view==='editor')$('#editor-pane').classList.add('visible');else $('#editor-pane').classList.remove('visible');setWorkView(tab.dataset.view);}));
   $('#settings-open').addEventListener('click',()=>$('#settings-modal').classList.add('open'));$('#settings-cancel').addEventListener('click',()=>$('#settings-modal').classList.remove('open'));
   $('#settings-save').addEventListener('click',async()=>{try{const result=await api('/api/settings',{method:'POST',body:JSON.stringify({baseUrl:$('#base-url').value,model:$('#model-name').value,apiKey:$('#api-key').value,videoApiKey:$('#video-api-key').value})});$('#api-key').value='';$('#video-api-key').value='';$('#key-state').dataset.hasKey=String(result.hasKey);$('#video-key-state').dataset.hasKey=String(result.hasVideoKey);applyLanguage();$('#settings-modal').classList.remove('open');}catch(error){alert(error.message);}});
-  $('#terminal-form').addEventListener('submit',async(event)=>{event.preventDefault();const command=$('#terminal-command').value.trim();if(!command)return;$('#terminal-command').value='';try{const request=await api('/api/agent/request-command',{method:'POST',body:JSON.stringify({workspace,command,cwd:'',reason:t('commandReason')})});showCommandRequest({...request,reason:t('commandReason')});}catch(error){printTerminal(error.message,'bad');}});
+  $('#terminal-form').addEventListener('submit',async(event)=>{event.preventDefault();const command=$('#terminal-command').value;if(!command.trim())return;$('#terminal-command').value='';if(activeTerminalRunId){try{await api('/api/agent/terminal/input',{method:'POST',body:JSON.stringify({workspace:activeTerminalWorkspace,runId:activeTerminalRunId,input:`${command}\n`})});printTerminal(`> ${command}`);}catch(error){printTerminal(error.message,'bad');}return;}const cd=command.trim().match(/^(?:cd|chdir|Set-Location|pushd)(?:\s+(.+))?$/i);if(cd){try{const result=await api('/api/agent/terminal/cd',{method:'POST',body:JSON.stringify({workspace,target:cd[1]||''})});setTerminalCwd(result.cwd);printTerminal(`${t('terminalHint')} · ${result.cwd||'.'}`,'ok');}catch(error){printTerminal(error.message,'bad');}return;}try{const request=await api('/api/agent/request-command',{method:'POST',body:JSON.stringify({workspace,command:command.trim(),cwd:terminalCwd,reason:t('commandReason')})});showCommandRequest({...request,reason:t('commandReason')});}catch(error){printTerminal(error.message,'bad');}});
+  $('#terminal-stop').addEventListener('click',async()=>{if(!activeTerminalRunId)return;try{await api('/api/agent/terminal/stop',{method:'POST',body:JSON.stringify({workspace:activeTerminalWorkspace,runId:activeTerminalRunId})});printTerminal(t('terminalStopped'));}catch(error){printTerminal(error.message,'bad');}});
+  $('#terminal-close').addEventListener('click',()=>$('#terminal').classList.remove('mobile-open'));
+  $('#new-chat').addEventListener('click',()=>startNewChat().catch(error=>alert(error.message)));
   $('#clear-terminal').addEventListener('click',()=>$('#terminal-output').replaceChildren());
   $('#language-btn').addEventListener('click',()=>{language=language==='ar'?'en':'ar';applyLanguage();});
   document.querySelectorAll('[data-mobile]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-mobile]').forEach(item=>item.classList.toggle('active',item===button));if(button.dataset.mobile==='settings')$('#settings-modal').classList.add('open');if(button.dataset.mobile==='terminal')$('#terminal').classList.toggle('mobile-open');if(button.dataset.mobile==='files')$('.sidebar').classList.toggle('mobile-visible');if(button.dataset.mobile==='chat'){$('.sidebar').classList.remove('mobile-visible');$('#terminal').classList.remove('mobile-open');$('#editor-pane').classList.remove('visible');setWorkView('chat');}if(button.dataset.mobile==='montage'){$('.sidebar').classList.remove('mobile-visible');$('#terminal').classList.remove('mobile-open');$('#editor-pane').classList.remove('visible');setWorkView('montage');}}));
