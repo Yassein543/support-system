@@ -1,7 +1,7 @@
 {
   "name": "ys-bot-lab",
   "productName": "YS Bot Lab",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "private": true,
   "author": "YS-Bot",
   "description": "Local AI coding workspace for Discord bots and general projects",
@@ -19,12 +19,14 @@
   },
   "devDependencies": {
     "electron": "45.5.0",
-    "electron-builder": "26.18.0"
+    "electron-builder": "26.18.0",
+    "ffmpeg-static": "^5.3.0"
   },
   "build": {
     "appId": "com.ysbot.lab",
     "productName": "YS Bot Lab",
     "asar": true,
+    "extraResources": [{ "from": "node_modules/ffmpeg-static/ffmpeg.exe", "to": "bin/ffmpeg.exe" }],
     "files": [
       "desktop/main.js",
       "desktop/preload.js",
@@ -33,7 +35,7 @@
       "package.json"
     ],
     "directories": {
-      "output": "dist-v105"
+      "output": "dist-v106"
     },
     "win": {
       "target": [

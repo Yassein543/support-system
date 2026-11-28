@@ -5,6 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
+const { pipeline } = require('node:stream/promises');
+const { Transform } = require('node:stream');
 
 const ROOT = __dirname;
 const DATA_HOME = process.env.YS_BOT_LAB_HOME || ROOT;
@@ -13,6 +15,13 @@ const SETTINGS_FILE = path.join(DATA_HOME, 'settings.json');
 const ENV_FILE = path.join(DATA_HOME, '.env');
 const EXTERNAL_WORKSPACES_FILE = path.join(DATA_HOME, 'external-workspaces.json');
 const PORT = Math.max(1024, Math.min(65535, Number(process.env.PORT) || 3210));
+const FFMPEG_PATH = process.resourcesPath && process.resourcesPath !== process.cwd()
+    ? (process.env.YS_BOT_LAB_PACKAGED === '1' ? path.join(process.resourcesPath, 'bin', 'ffmpeg.exe') : path.join(ROOT, 'node_modules', 'ffmpeg-static', 'ffmpeg.exe'))
+    : path.join(ROOT, 'node_modules', 'ffmpeg-static', 'ffmpeg.exe');
+const MEDIA_TYPES = Object.freeze({ mp4: 'video/mp4', m4v: 'video/x-m4v', mov: 'video/quicktime', mkv: 'video/x-matroska', webm: 'video/webm', avi: 'video/x-msvideo', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', aac: 'audio/aac', ogg: 'audio/ogg', flac: 'audio/flac', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' });
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp']);
+const AUDIO_EXTENSIONS = new Set(['mp3', 'm4a', 'wav', 'aac', 'ogg', 'flac']);
+const MAX_MEDIA_UPLOAD = 500 * 1024 * 1024;
 const SESSION_KEY = crypto.randomBytes(32).toString('hex');
 const pendingCommands = new Map();
 const MAX_BODY = 3 * 1024 * 1024;
@@ -363,6 +372,130 @@ async function createGeneratedVideo(body) {
     return bytes;
 }
 
+function getMediaExtension(file) { return path.extname(file).slice(1).toLowerCase(); }
+
+function runFfmpeg(args, { timeout = 15 * 60 * 1000 } = {}) {
+    return new Promise((resolve, reject) => {
+        if (!fs.existsSync(FFMPEG_PATH)) return reject(new Error('ملف FFmpeg المرفق غير موجود. أعد تثبيت نسخة YS Bot Lab.'));
+        const child = spawn(FFMPEG_PATH, args, { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+        let stderr = '';
+        const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('تجاوز التصدير الحد الزمني (15 دقيقة). قلّل طول المقاطع أو دقتها ثم جرّب مجددًا.')); }, timeout);
+        child.stderr.on('data', (chunk) => { if (stderr.length < 24000) stderr += chunk.toString('utf8').slice(0, 24000 - stderr.length); });
+        child.once('error', (error) => { clearTimeout(timer); reject(new Error(`تعذر تشغيل FFmpeg: ${error.message}`)); });
+        child.once('close', (code) => {
+            clearTimeout(timer);
+            if (code === 0) resolve();
+            else reject(new Error(`تعذر تصدير الفيديو: ${stderr.trim().split(/\r?\n/).slice(-3).join(' ').slice(-700) || `FFmpeg exit ${code}`}`));
+        });
+    });
+}
+
+function escapeFilterPath(file) {
+    return file.replace(/\\/g, '\\\\').replace(/:/g, '\\:').replace(/'/g, "\\'").replace(/,/g, '\\,').replace(/\[/g, '\\[').replace(/\]/g, '\\]');
+}
+
+async function inputHasAudio(file) {
+    return new Promise((resolve) => {
+        const child = spawn(FFMPEG_PATH, ['-hide_banner', '-i', file], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+        let stderr = '';
+        const timer = setTimeout(() => { child.kill('SIGKILL'); resolve(false); }, 8000);
+        child.stderr.on('data', (chunk) => { if (stderr.length < 16000) stderr += chunk.toString('utf8').slice(0, 16000 - stderr.length); });
+        child.once('error', () => { clearTimeout(timer); resolve(false); });
+        child.once('close', () => { clearTimeout(timer); resolve(/Stream #\d+:\d+.*Audio:/i.test(stderr)); });
+    });
+}
+
+async function renderMontage(body, workspaceId) {
+    const workspace = getWorkspace(workspaceId);
+    const inputClips = Array.isArray(body.clips) ? body.clips : [];
+    if (!inputClips.length || inputClips.length > 30) throw new Error('أضف من مقطع واحد إلى 30 مقطعًا أو صورة.');
+    const clips = [];
+    let sourceDuration = 0;
+    for (const raw of inputClips) {
+        const filename = String(raw.filename || '');
+        const ext = getMediaExtension(filename);
+        if (!Object.hasOwn(MEDIA_TYPES, ext) || AUDIO_EXTENSIONS.has(ext)) throw new Error('أحد عناصر الخط الزمني ليس مقطع فيديو أو صورة مدعومة.');
+        const file = safePath(workspace, filename);
+        const stat = fs.statSync(file);
+        if (!stat.isFile() || stat.size > MAX_MEDIA_UPLOAD) throw new Error('أحد ملفات الوسائط غير صالح أو كبير جدًا.');
+        const image = IMAGE_EXTENSIONS.has(ext);
+        const start = image ? 0 : Math.max(0, Number(raw.start) || 0);
+        const end = image ? Math.max(1, Math.min(600, Number(raw.duration) || 3)) : Number(raw.end);
+        const duration = image ? end : end - start;
+        if (!Number.isFinite(duration) || duration < 0.15 || duration > 600) throw new Error('تحقق من بداية ونهاية المقاطع.');
+        sourceDuration += duration;
+        clips.push({ file, image, start, duration, keepAudio: !image && body.keepClipAudio === true && await inputHasAudio(file) });
+    }
+    if (sourceDuration > 600) throw new Error('المدة الكاملة للمشروع تتجاوز 10 دقائق.');
+    const outputSize = ({ '720p': { '16:9': [1280, 720], '9:16': [720, 1280], '1:1': [720, 720] }, '1080p': { '16:9': [1920, 1080], '9:16': [1080, 1920], '1:1': [1080, 1080] } })[body.resolution]?.[body.aspectRatio] || [1280, 720];
+    const transition = body.transition === 'fade' && clips.length > 1 ? 'fade' : 'cut';
+    const fadeDuration = transition === 'fade' ? Math.min(0.45, ...clips.map((clip) => clip.duration / 2)) : 0;
+    const timelineDuration = sourceDuration - fadeDuration * (clips.length - 1);
+    const brightness = Math.max(-0.35, Math.min(0.35, Number(body.brightness) || 0));
+    const saturation = Math.max(0, Math.min(2, Number.isFinite(Number(body.saturation)) ? Number(body.saturation) : 1));
+    const args = ['-hide_banner', '-y'];
+    for (const clip of clips) {
+        if (clip.image) args.push('-loop', '1', '-framerate', '30', '-t', clip.duration.toFixed(3), '-i', clip.file);
+        else args.push('-ss', clip.start.toFixed(3), '-t', clip.duration.toFixed(3), '-i', clip.file);
+    }
+    const musicName = typeof body.music === 'string' ? body.music : '';
+    let musicInput = -1;
+    if (musicName) {
+        const ext = getMediaExtension(musicName);
+        if (!AUDIO_EXTENSIONS.has(ext)) throw new Error('اختر ملفًا صوتيًا مدعومًا للموسيقى الخلفية.');
+        const musicFile = safePath(workspace, musicName);
+        if (!fs.statSync(musicFile).isFile()) throw new Error('ملف الموسيقى غير موجود.');
+        args.push('-stream_loop', '-1', '-i', musicFile); musicInput = clips.length;
+    }
+    const graph = [];
+    const [width, height] = outputSize;
+    clips.forEach((clip, index) => {
+        const videoLabel = `v${index}`;
+        const audioLabel = `a${index}`;
+        const trim = clip.image ? `trim=duration=${clip.duration.toFixed(3)}` : 'null';
+        graph.push(`[${index}:v]${trim},setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black,fps=30,setsar=1,format=yuv420p[${videoLabel}]`);
+        if (clip.keepAudio) graph.push(`[${index}:a]atrim=duration=${clip.duration.toFixed(3)},asetpts=PTS-STARTPTS,aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,apad,atrim=duration=${clip.duration.toFixed(3)}[${audioLabel}]`);
+        else graph.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${clip.duration.toFixed(3)},asetpts=PTS-STARTPTS[${audioLabel}]`);
+    });
+    let videoLabel = 'v0'; let audioLabel = 'a0'; let accumulated = clips[0].duration;
+    for (let index = 1; index < clips.length; index += 1) {
+        const nextVideo = `v${index}`; const nextAudio = `a${index}`;
+        const mergedVideo = `vm${index}`; const mergedAudio = `am${index}`;
+        if (transition === 'fade') {
+            const offset = Math.max(0, accumulated - fadeDuration).toFixed(3);
+            graph.push(`[${videoLabel}][${nextVideo}]xfade=transition=fade:duration=${fadeDuration}:offset=${offset}[${mergedVideo}]`);
+            graph.push(`[${audioLabel}][${nextAudio}]acrossfade=d=${fadeDuration}:c1=tri:c2=tri[${mergedAudio}]`);
+            accumulated += clips[index].duration - fadeDuration;
+        } else {
+            graph.push(`[${videoLabel}][${audioLabel}][${nextVideo}][${nextAudio}]concat=n=2:v=1:a=1[${mergedVideo}][${mergedAudio}]`);
+            accumulated += clips[index].duration;
+        }
+        videoLabel = mergedVideo; audioLabel = mergedAudio;
+    }
+    const overlay = typeof body.title === 'string' ? body.title.trim().slice(0, 150) : '';
+    let titlePath = '';
+    if (overlay) {
+        titlePath = path.join(require('node:os').tmpdir(), `ys-title-${crypto.randomBytes(8).toString('hex')}.txt`);
+        fs.writeFileSync(titlePath, overlay, { encoding: 'utf8', mode: 0o600 });
+        graph.push(`[${videoLabel}]eq=brightness=${brightness.toFixed(3)}:saturation=${saturation.toFixed(3)},drawtext=fontfile='C\\:/Windows/Fonts/arial.ttf':textfile='${escapeFilterPath(titlePath)}':fontcolor=white:fontsize=${Math.round(width * 0.055)}:x=(w-text_w)/2:y=h*0.78:box=1:boxcolor=black@0.48:boxborderw=20[vout]`);
+        videoLabel = 'vout';
+    } else graph.push(`[${videoLabel}]eq=brightness=${brightness.toFixed(3)}:saturation=${saturation.toFixed(3)}[vout]`);
+    const musicVolume = Math.max(0, Math.min(2, Number(body.musicVolume) || 0));
+    if (musicInput >= 0 && musicVolume > 0) {
+        graph.push(`[${musicInput}:a]atrim=duration=${timelineDuration.toFixed(3)},asetpts=PTS-STARTPTS,aresample=48000,volume=${musicVolume.toFixed(2)}[music]`);
+        graph.push(`[${audioLabel}][music]amix=inputs=2:duration=first:dropout_transition=2:normalize=0,alimiter=limit=0.95[aout]`);
+    } else graph.push(`[${audioLabel}]anull[aout]`);
+    const filename = `ys-montage-${Date.now()}.mp4`;
+    const output = safePath(workspace, filename);
+    args.push('-filter_complex', graph.join(';'), '-map', '[vout]', '-map', '[aout]', '-t', timelineDuration.toFixed(3), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output);
+    try { await runFfmpeg(args); }
+    catch (error) { try { fs.unlinkSync(output); } catch {} throw error; }
+    finally { if (titlePath) try { fs.unlinkSync(titlePath); } catch {} }
+    const stat = fs.statSync(output);
+    if (!stat.size || stat.size > 250 * 1024 * 1024) { try { fs.unlinkSync(output); } catch {} throw new Error('ملف التصدير فارغ أو أكبر من 250MB. خفّض الدقة أو المدة.'); }
+    return { filename, bytes: stat.size, duration: timelineDuration };
+}
+
 async function callAi(body, workspace, events) {
     const env = readLocalEnv();
     const settings = loadSettings();
@@ -499,11 +632,34 @@ async function route(request, response) {
         try {
             const file = safePath(getWorkspace(url.searchParams.get('workspace')), url.searchParams.get('path') || '');
             const stat = fs.statSync(file);
-            if (!stat.isFile() || !/\.mp4$/i.test(file) || stat.size > 150 * 1024 * 1024) throw new Error('ملف الفيديو غير صالح.');
-            response.writeHead(200, { 'content-type': 'video/mp4', 'content-length': stat.size, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'content-disposition': `inline; filename="${path.basename(file)}"` });
+            const contentType = MEDIA_TYPES[getMediaExtension(file)];
+            if (!stat.isFile() || !contentType || stat.size > 250 * 1024 * 1024) throw new Error('ملف الوسائط غير صالح.');
+            response.writeHead(200, { 'content-type': contentType, 'content-length': stat.size, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'content-disposition': `inline; filename="${path.basename(file)}"` });
             fs.createReadStream(file).pipe(response);
             return;
-        } catch (error) { return sendJson(response, 404, { error: error.message || 'الفيديو غير موجود.' }); }
+        } catch (error) { return sendJson(response, 404, { error: error.message || 'ملف الوسائط غير موجود.' }); }
+    }
+    if (request.method === 'POST' && url.pathname === '/api/workspace/assets') {
+        let target = '';
+        try {
+            const workspace = getWorkspace(url.searchParams.get('workspace'));
+            const originalName = String(url.searchParams.get('name') || '');
+            const ext = getMediaExtension(originalName);
+            if (!Object.hasOwn(MEDIA_TYPES, ext)) throw new Error('نوع الملف غير مدعوم.');
+            const size = Number(request.headers['content-length'] || 0);
+            if (size > MAX_MEDIA_UPLOAD) return sendJson(response, 413, { error: 'الحد الأقصى للملف 500MB.' });
+            const base = path.basename(originalName, path.extname(originalName)).normalize('NFKC').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 48) || 'media';
+            const filename = `${base}-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
+            target = safePath(workspace, filename);
+            let written = 0;
+            const limit = new Transform({ transform(chunk, encoding, callback) { written += chunk.length; if (written > MAX_MEDIA_UPLOAD) callback(new Error('الحد الأقصى للملف 500MB.')); else callback(null, chunk); } });
+            await pipeline(request, limit, fs.createWriteStream(target, { flags: 'wx', mode: 0o600 }));
+            if (!written) throw new Error('الملف فارغ.');
+            return sendJson(response, 201, { filename, originalName: path.basename(originalName), bytes: written, contentType: MEDIA_TYPES[ext], url: `/api/workspace/media?workspace=${encodeURIComponent(url.searchParams.get('workspace'))}&path=${encodeURIComponent(filename)}` });
+        } catch (error) {
+            if (target) try { fs.unlinkSync(target); } catch {}
+            return sendJson(response, error.message?.includes('500MB') ? 413 : 400, { error: error.message || 'تعذر استيراد الوسيط.' });
+        }
     }
 
     let body;
@@ -571,6 +727,12 @@ async function route(request, response) {
             fs.writeFileSync(safePath(workspace, filename), videoBuffer, { mode: 0o600 });
             return sendJson(response, 200, { saved: true, filename, bytes: videoBuffer.length, url: `/api/workspace/media?workspace=${encodeURIComponent(workspaceId)}&path=${encodeURIComponent(filename)}` });
         } catch (error) { return sendJson(response, 400, { error: error.message || 'تعذر إنشاء الفيديو.' }); }
+    }
+    if (request.method === 'POST' && url.pathname === '/api/montage/export') {
+        try {
+            const result = await renderMontage(body, String(body.workspace || ''));
+            return sendJson(response, 200, { ...result, url: `/api/workspace/media?workspace=${encodeURIComponent(String(body.workspace))}&path=${encodeURIComponent(result.filename)}` });
+        } catch (error) { return sendJson(response, 400, { error: error.message || 'تعذر تصدير الفيديو.' }); }
     }
     if (request.method === 'POST' && url.pathname === '/api/workspace/file') {
         try {

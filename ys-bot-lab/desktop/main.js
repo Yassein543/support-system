@@ -103,6 +103,7 @@ else {
         const port = await reservePort();
         process.env.PORT = String(port);
         process.env.YS_BOT_LAB_HOME = app.getPath('userData');
+        process.env.YS_BOT_LAB_PACKAGED = app.isPackaged ? '1' : '0';
         appOrigin = `http://127.0.0.1:${port}`;
         require(path.join(__dirname, '..', 'server.js'));
 
